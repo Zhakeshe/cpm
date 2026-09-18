@@ -94,7 +94,25 @@ Click-to-call: `POST /api/calls` с `contactId`. Если `SIP_ORIGINATE_URL` н
 
 ### Meta Lead Ads
 
-`POST /api/webhooks/meta-leads`
+- Verify: `GET /api/webhooks/meta-leads` (`META_LEADS_VERIFY_TOKEN`, по умолчанию берётся WABA-токен)
+- Inbound: `POST /api/webhooks/meta-leads`, подпись проверяется тем же `WHATSAPP_APP_SECRET`
+
+Meta присылает только `leadgen_id`, поэтому ответы формы дочитываются из Graph API токеном `META_LEADS_ACCESS_TOKEN`. Из заявки сохраняются имя, телефон, email, кампания, объявление и форма; дальше работает обычный round-robin и дедупликация по телефону. Если токена нет, событие помечается FAILED и остаётся в очереди — его можно повторить из «Мониторинга» после настройки.
+
+## Мониторинг и эксплуатация
+
+Раздел «Мониторинг» (ADMIN, SUPERVISOR): состояние базы и Redis, счётчики событий по интеграциям и таблица вебхуков с ошибками. Упавшее событие повторяется кнопкой поштучно или все сразу; повтор пишется в audit log.
+
+## Защита
+
+- Rate limit на Redis: вход по IP и по аккаунту, общий бюджет API на пользователя (`API_RATE_LIMIT`, по умолчанию 600/мин)
+- Мутации с чужого Origin отклоняются (`CROSS_ORIGIN_BLOCKED`), сессия в httpOnly-cookie SameSite=Lax
+- Заголовки: `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` (микрофон только для софтфона), HSTS в production
+- Подписи вебхуков Meta и секрет SIP, RBAC на каждом эндпоинте, audit log
+
+## CI
+
+`.github/workflows/ci.yml` поднимает PostgreSQL и Redis и прогоняет lint, typecheck, модульные тесты, миграции, интеграционные тесты и сборку.
 
 ## Ключевые правила
 

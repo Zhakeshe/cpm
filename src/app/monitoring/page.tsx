@@ -31,6 +31,8 @@ export default function MonitoringPage() {
   const [filter, setFilter] = useState("");
   const [health, setHealth] = useState<{ db: string; redis: string; uptime: number } | null>(null);
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/webhook-events${filter ? `?status=${filter}` : ""}`);
@@ -49,11 +51,18 @@ export default function MonitoringPage() {
   }, [load]);
 
   async function retry(id?: string) {
-    await fetch("/api/webhook-events", {
+    setBusy(id || "all");
+    const res = await fetch("/api/webhook-events", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(id ? { id } : { retryAllFailed: true }),
     });
+    const result = await res.json().catch(() => ({}));
+    setBusy(null);
+    setNotice(res.ok ? `Поставлено в очередь: ${result.requeued ?? 0}` : "Не удалось поставить в очередь");
+    setTimeout(() => setNotice(null), 5000);
+    // the worker needs a moment before the new status is visible
+    setTimeout(load, 1500);
     load();
   }
 
@@ -76,11 +85,16 @@ export default function MonitoringPage() {
             <option value="PENDING">В очереди</option>
             <option value="PROCESSED">Обработанные</option>
           </select>
-          <button className="rounded-xl bg-[#2563eb] px-4" onClick={() => retry()}>
-            Повторить все ошибки
+          <button
+            className="rounded-xl bg-[#2563eb] px-4 disabled:opacity-50"
+            disabled={busy !== null}
+            onClick={() => retry()}
+          >
+            {busy === "all" ? "Ставим в очередь…" : "Повторить все ошибки"}
           </button>
         </div>
       </div>
+      {notice && <div className="card px-4 py-2 mb-4 text-sm text-[#34d399]">{notice}</div>}
 
       <div className="grid sm:grid-cols-3 gap-4 mb-6">
         <div className="card p-4">
@@ -138,8 +152,8 @@ export default function MonitoringPage() {
                 </td>
                 <td className="p-3">
                   {e.processingStatus === "FAILED" && (
-                    <button className="chip" onClick={() => retry(e.id)}>
-                      Повторить
+                    <button className="chip disabled:opacity-50" disabled={busy !== null} onClick={() => retry(e.id)}>
+                      {busy === e.id ? "В очереди…" : "Повторить"}
                     </button>
                   )}
                 </td>
