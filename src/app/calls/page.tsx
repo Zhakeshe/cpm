@@ -1,7 +1,8 @@
 "use client";
 
 import { AppShell } from "@/components/AppShell";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useRealtime } from "@/lib/use-realtime";
 
 type Call = {
   id: string;
@@ -33,9 +34,18 @@ export default function CallsPage() {
   const [calls, setCalls] = useState<Call[]>([]);
   const [modal, setModal] = useState<Call | null>(null);
   const [callbackAt, setCallbackAt] = useState("");
-  useEffect(() => {
-    fetch("/api/calls").then((r) => r.json()).then(setCalls);
+  const load = useCallback(async () => {
+    setCalls(await fetch("/api/calls").then((r) => r.json()));
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  useRealtime({
+    "call:incoming": () => load(),
+    "call:updated": () => load(),
+  });
 
   async function setResult(result: string) {
     if (!modal) return;
@@ -45,7 +55,7 @@ export default function CallsPage() {
       body: JSON.stringify({ callId: modal.id, result, callbackAt: result === "CALLBACK" ? callbackAt : undefined }),
     });
     setModal(null);
-    setCalls(await fetch("/api/calls").then((r) => r.json()));
+    await load();
   }
 
   return (

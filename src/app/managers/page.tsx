@@ -1,6 +1,7 @@
 "use client";
 
 import { AppShell } from "@/components/AppShell";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 type User = {
@@ -39,7 +40,9 @@ export default function ManagersPage() {
         {users.filter((u) => u.role !== "ADMIN").map((u) => (
           <div key={u.id} className="card p-5 space-y-2">
             <div className="flex justify-between">
-              <div className="font-medium">{u.name}</div>
+              <Link href={`/managers/${u.id}`} className="font-medium text-[#93c5fd]">
+                {u.name}
+              </Link>
               <span className="chip">{online(u) ? "online" : "offline"}</span>
             </div>
             <div className="text-sm muted">{u.email} · SIP {u.sipExtension || "—"}</div>

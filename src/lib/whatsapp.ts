@@ -164,8 +164,14 @@ export async function handleWhatsAppInbound(db: PrismaClient, payload: unknown) 
             contactId: ingest.contactId,
             messageId: saved.id,
           });
+          if (ingest.createdContact) {
+            emitToUser(ingest.managerId, "lead:new", { contactId: ingest.contactId });
+          }
         }
         emitToAdmins("whatsapp:message", { conversationId: conversation.id });
+        if (ingest.createdContact) {
+          emitToAdmins("lead:new", { contactId: ingest.contactId });
+        }
         results.push({ type: "message", ingest, messageId: saved.id });
       }
     }

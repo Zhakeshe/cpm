@@ -105,8 +105,19 @@ export async function handleTelephonyEvent(db: PrismaClient, event: TelephonyWeb
         data: { contactId: ingest.contactId, callId: call.id },
       });
       emitToUser(managerId, "call:incoming", { callId: call.id, contactId: ingest.contactId });
+      if (ingest.createdContact) {
+        emitToUser(managerId, "lead:new", { contactId: ingest.contactId });
+      }
     }
-    emitToAdmins("call:incoming", { callId: call.id });
+    emitToAdmins("call:incoming", { callId: call.id, contactId: ingest.contactId });
+    if (ingest.createdContact) {
+      emitToAdmins("lead:new", { contactId: ingest.contactId });
+    }
+  }
+
+  if (event.event === "call.ended") {
+    if (managerId) emitToUser(managerId, "call:updated", { callId: call.id });
+    emitToAdmins("call:updated", { callId: call.id });
   }
 
   if (event.event === "call.ended" && (status === "MISSED" || status === "NO_ANSWER") && managerId) {

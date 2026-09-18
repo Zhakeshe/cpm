@@ -1,7 +1,8 @@
 "use client";
 
 import { AppShell } from "@/components/AppShell";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useRealtime } from "@/lib/use-realtime";
 
 type Conv = {
   id: string;
@@ -28,15 +29,26 @@ export default function MessagesPage() {
   const [thread, setThread] = useState<{ messages: Message[]; contact: Conv["contact"] } | null>(null);
   const [text, setText] = useState("");
 
-  useEffect(() => {
-    fetch("/api/messages").then((r) => r.json()).then(setList);
+  const loadList = useCallback(async () => {
+    setList(await fetch("/api/messages").then((r) => r.json()));
   }, []);
 
-  async function open(id: string) {
+  const open = useCallback(async (id: string) => {
     setActive(id);
     const data = await fetch(`/api/messages/${id}`).then((r) => r.json());
     setThread(data);
-  }
+  }, []);
+
+  useEffect(() => {
+    loadList();
+  }, [loadList]);
+
+  useRealtime({
+    "whatsapp:message": (payload: { conversationId?: string }) => {
+      loadList();
+      if (payload?.conversationId && payload.conversationId === active) open(active);
+    },
+  });
 
   async function send() {
     if (!thread || !text.trim()) return;
@@ -46,7 +58,8 @@ export default function MessagesPage() {
       body: JSON.stringify({ contactId: thread.contact.id, text }),
     });
     setText("");
-    if (active) open(active);
+    if (active) await open(active);
+    await loadList();
   }
 
   return (

@@ -18,7 +18,7 @@ import {
   Kanban,
   Search,
 } from "lucide-react";
-import { io, type Socket } from "socket.io-client";
+import { useRealtime, usePresence } from "@/lib/use-realtime";
 
 const NAV = [
   { href: "/", label: "Главная", icon: LayoutDashboard },
@@ -44,6 +44,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [q, setQ] = useState("");
   const [notes, setNotes] = useState<Note[]>([]);
   const [openNotes, setOpenNotes] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const [incoming, setIncoming] = useState<{ contactId?: string } | null>(null);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -54,16 +56,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       .then(setNotes);
   }, []);
 
-  useEffect(() => {
-    const socket: Socket = io({ path: "/ws", withCredentials: true });
-    socket.on("notification", (n: Note) => setNotes((prev) => [n, ...prev].slice(0, 50)));
-    socket.on("whatsapp:message", () => {});
-    const t = setInterval(() => socket.emit("presence"), 30000);
-    return () => {
-      clearInterval(t);
-      socket.disconnect();
-    };
-  }, []);
+  usePresence();
+  useRealtime({
+    notification: (n: Note) => {
+      setNotes((prev) => [n, ...prev].slice(0, 50));
+      setToast(n.title);
+      setTimeout(() => setToast(null), 6000);
+    },
+    "call:incoming": (payload: { contactId?: string }) => {
+      setIncoming(payload);
+      setTimeout(() => setIncoming(null), 20000);
+    },
+  });
 
   const items = useMemo(
     () => NAV.filter((n) => !n.admin || me?.role === "ADMIN" || me?.role === "SUPERVISOR"),
@@ -74,6 +78,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
+  }
+
+  async function markNotesRead() {
+    setOpenNotes((v) => !v);
+    if (unread === 0) return;
+    await fetch("/api/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    setNotes((prev) => prev.map((n) => ({ ...n, readAt: n.readAt || new Date().toISOString() })));
   }
 
   function search(e: React.FormEvent) {
@@ -126,7 +141,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               onChange={(e) => setQ(e.target.value)}
             />
           </form>
-          <button className="relative p-2" onClick={() => setOpenNotes((v) => !v)}>
+          <button className="relative p-2" onClick={markNotesRead}>
             <Bell size={18} />
             {unread > 0 && (
               <span className="absolute -top-1 -right-1 bg-[#ef4444] text-[10px] px-1.5 rounded-full">{unread}</span>
@@ -143,6 +158,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             ))}
             {notes.length === 0 && <div className="muted text-sm">Нет уведомлений</div>}
           </div>
+        )}
+        {incoming && (
+          <div className="fixed bottom-4 right-4 z-30 card p-4 w-80">
+            <div className="font-medium">Входящий звонок</div>
+            <div className="muted text-sm">Клиент определён, карточка готова</div>
+            {incoming.contactId && (
+              <Link href={`/contacts/${incoming.contactId}`} className="mt-3 inline-block chip">
+                Открыть карточку
+              </Link>
+            )}
+          </div>
+        )}
+        {toast && (
+          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 card px-4 py-3 text-sm">{toast}</div>
         )}
         <main className="p-4 md:p-6">{children}</main>
       </div>

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { jsonError, requireUser } from "@/lib/api";
-import { canListenAllRecordings, canDownloadRecordings, scopeManagerId } from "@/lib/rbac";
+import { canListenAllRecordings, scopeManagerId } from "@/lib/rbac";
 import { originateCall, handleTelephonyEvent } from "@/lib/telephony";
 import { z } from "zod";
 
@@ -91,8 +91,4 @@ export async function PATCH(req: NextRequest) {
   } catch (err) {
     return jsonError(err);
   }
-}
-
-export function recordingAccess(role: string) {
-  return { listenAll: canListenAllRecordings(role as never), download: canDownloadRecordings(role as never) };
 }

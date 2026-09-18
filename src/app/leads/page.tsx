@@ -2,9 +2,10 @@
 
 import { AppShell } from "@/components/AppShell";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { useRealtime } from "@/lib/use-realtime";
 
 type Contact = {
   id: string;
@@ -21,16 +22,19 @@ function LeadsInner() {
   const params = useSearchParams();
   const [rows, setRows] = useState<Contact[]>([]);
   const [form, setForm] = useState({ firstName: "", phone: "", source: "MANUAL", comment: "" });
-  useEffect(() => {
+  const load = useCallback(async () => {
     const q = params.get("q");
-    fetch(q ? `/api/contacts?q=${encodeURIComponent(q)}` : "/api/leads")
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data) && data[0]?.contact) {
-          setRows(data.map((l: { contact: Contact }) => l.contact));
-        } else setRows(data);
-      });
+    const data = await fetch(q ? `/api/contacts?q=${encodeURIComponent(q)}` : "/api/leads").then((r) => r.json());
+    if (Array.isArray(data) && data[0]?.contact) {
+      setRows(data.map((l: { contact: Contact }) => l.contact));
+    } else setRows(data);
   }, [params]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  useRealtime({ "lead:new": () => load() });
 
   async function create(e: React.FormEvent) {
     e.preventDefault();

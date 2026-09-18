@@ -2,7 +2,8 @@
 
 import { AppShell } from "@/components/AppShell";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useRealtime } from "@/lib/use-realtime";
 
 type Card = {
   id: string;
@@ -19,9 +20,15 @@ type Stage = { id: string; name: string; contacts: Card[] };
 
 export default function PipelinePage() {
   const [stages, setStages] = useState<Stage[]>([]);
-  useEffect(() => {
-    fetch("/api/pipeline").then((r) => r.json()).then(setStages);
+  const load = useCallback(async () => {
+    setStages(await fetch("/api/pipeline").then((r) => r.json()));
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  useRealtime({ "lead:new": () => load() });
 
   async function move(contactId: string, pipelineStageId: string) {
     await fetch("/api/contacts", {

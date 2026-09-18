@@ -1,7 +1,10 @@
 "use client";
 
 import { AppShell } from "@/components/AppShell";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { BarChart, DonutChart, LineChart } from "@/components/Charts";
+import { dayLabel, sourceLabel } from "@/lib/chart-data";
+import { useRealtime } from "@/lib/use-realtime";
 
 type Stats = {
   newLeads: number;
@@ -18,13 +21,37 @@ type Stats = {
   onlineManagers: number;
 };
 
+type Charts = {
+  byDay?: Array<{ day: string; count: number }>;
+  salesByDay?: Array<{ day: string; amount: number }>;
+  bySource?: Array<{ source: string; _count: number }>;
+};
+
 export default function HomePage() {
   const [stats, setStats] = useState<Stats | null>(null);
+  const [charts, setCharts] = useState<Charts>({});
+  const [managers, setManagers] = useState<Array<Record<string, unknown>>>([]);
   const [role, setRole] = useState("MANAGER");
-  useEffect(() => {
-    fetch("/api/dashboard").then((r) => r.json()).then(setStats);
-    fetch("/api/auth/me").then((r) => r.json()).then((u) => setRole(u.role));
+
+  const load = useCallback(async () => {
+    const [dash, week] = await Promise.all([
+      fetch("/api/dashboard").then((r) => r.json()),
+      fetch("/api/analytics?preset=week").then((r) => r.json()),
+    ]);
+    setStats(dash);
+    setCharts(week.stats || {});
+    setManagers(week.managers || []);
   }, []);
+
+  useEffect(() => {
+    load();
+    fetch("/api/auth/me").then((r) => r.json()).then((u) => setRole(u.role));
+  }, [load]);
+
+  useRealtime({
+    "lead:new": () => load(),
+    "call:updated": () => load(),
+  });
   const cards = [
     ["Новые лиды", stats?.newLeads],
     ["Необработанные", stats?.unprocessed],
@@ -64,6 +91,29 @@ export default function HomePage() {
           </div>
         </div>
       )}
+      <div className="grid lg:grid-cols-2 gap-4 mt-6">
+        <div className="card p-5">
+          <div className="muted text-sm mb-3">Лиды за неделю</div>
+          <LineChart data={(charts.byDay || []).map((d) => ({ label: dayLabel(d.day), value: Number(d.count) }))} />
+        </div>
+        <div className="card p-5">
+          <div className="muted text-sm mb-3">Продажи за неделю</div>
+          <BarChart data={(charts.salesByDay || []).map((d) => ({ label: dayLabel(d.day), value: Number(d.amount) }))} />
+        </div>
+        <div className="card p-5">
+          <div className="muted text-sm mb-3">Источники клиентов</div>
+          <DonutChart data={(charts.bySource || []).map((d) => ({ label: sourceLabel(d.source), value: Number(d._count) }))} />
+        </div>
+        {(role === "ADMIN" || role === "SUPERVISOR") && (
+          <div className="card p-5">
+            <div className="muted text-sm mb-3">Эффективность менеджеров (лиды за неделю)</div>
+            <BarChart
+              color="#fbbf24"
+              data={managers.map((m) => ({ label: String(m.name), value: Number(m.newLeads) || 0 }))}
+            />
+          </div>
+        )}
+      </div>
     </AppShell>
   );
 }
