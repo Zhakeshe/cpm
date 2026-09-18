@@ -1,0 +1,507 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  SUPERVISOR
+  OPERATOR
+}
+
+enum ContactSource {
+  WHATSAPP
+  INSTAGRAM
+  FACEBOOK
+  PHONE_CALL
+  MANUAL
+  WEBSITE
+  REFERRAL
+  OTHER
+  META_LEAD_ADS
+}
+
+enum ContactStatus {
+  NEW
+  IN_PROGRESS
+  WON
+  LOST
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  DOCUMENT
+  AUDIO
+  VOICE
+  VIDEO
+  LOCATION
+  CONTACT
+  TEMPLATE
+}
+
+enum MessageStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum CallDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum CallStatus {
+  RINGING
+  ANSWERED
+  MISSED
+  BUSY
+  FAILED
+  NO_ANSWER
+}
+
+enum CallResult {
+  CONTACTED
+  NO_ANSWER
+  CALLBACK
+  INTERESTED
+  DEMO_BOOKED
+  THINKING
+  REJECTED
+  SALE
+}
+
+enum TaskType {
+  CALL
+  WHATSAPP
+  DEMO
+  MEETING
+  SEND_PROPOSAL
+  FOLLOW_UP
+  OTHER
+}
+
+enum TaskStatus {
+  OPEN
+  DONE
+  CANCELLED
+}
+
+enum MeetingFormat {
+  ONLINE
+  OFFLINE
+  PHONE
+}
+
+enum MeetingStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum ActivityType {
+  LEAD_CREATED
+  MANAGER_ASSIGNED
+  WHATSAPP_IN
+  WHATSAPP_OUT
+  CALL_IN
+  CALL_OUT
+  STAGE_CHANGED
+  TASK_CREATED
+  TASK_COMPLETED
+  MEETING_CREATED
+  NOTE
+  CUSTOM_FIELD
+}
+
+enum SlaAction {
+  NOTIFY_MANAGER
+  NOTIFY_ADMIN
+  REASSIGN
+}
+
+enum IntegrationType {
+  WHATSAPP_BUSINESS
+  TELEPHONY
+  META_LEADS
+}
+
+enum IntegrationStatus {
+  CONNECTED
+  ERROR
+  DISCONNECTED
+}
+
+enum WebhookProcessingStatus {
+  PENDING
+  PROCESSING
+  PROCESSED
+  FAILED
+}
+
+enum NotificationType {
+  NEW_LEAD
+  NEW_WHATSAPP
+  INCOMING_CALL
+  MISSED_CALL
+  NEW_TASK
+  OVERDUE_TASK
+  LEAD_REASSIGNED
+  MEETING_ASSIGNED
+}
+
+model User {
+  id                 String   @id @default(cuid())
+  email              String   @unique
+  name               String
+  passwordHash       String
+  role               Role     @default(MANAGER)
+  isActive           Boolean  @default(true)
+  acceptsNewLeads    Boolean  @default(true)
+  sipExtension       String?
+  sipUsername        String?
+  lastSeenAt         DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  contacts           Contact[]           @relation("ContactManager")
+  assignedLeads      Lead[]
+  conversations      Conversation[]
+  messages           Message[]
+  calls              Call[]
+  tasks              Task[]              @relation("TaskManager")
+  createdTasks       Task[]              @relation("TaskCreator")
+  meetings           Meeting[]           @relation("MeetingManager")
+  activities         Activity[]
+  auditLogs          AuditLog[]
+  notifications      Notification[]
+  passwordResets     PasswordResetToken[]
+  assignmentChangesFrom ManagerChange[]  @relation("FromManager")
+  assignmentChangesTo   ManagerChange[]  @relation("ToManager")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+}
+
+model Pipeline {
+  id        String          @id @default(cuid())
+  name      String
+  isDefault Boolean         @default(false)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  stages    PipelineStage[]
+}
+
+model PipelineStage {
+  id              String    @id @default(cuid())
+  pipelineId      String
+  pipeline        Pipeline  @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  name            String
+  slug            String
+  order           Int
+  isActive        Boolean   @default(true)
+  isWon           Boolean   @default(false)
+  isLost          Boolean   @default(false)
+  requiredFields  String[]  @default([])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  contacts        Contact[]
+  leads           Lead[]
+
+  @@unique([pipelineId, slug])
+  @@index([pipelineId, order])
+}
+
+model Contact {
+  id               String         @id @default(cuid())
+  firstName        String
+  lastName         String         @default("")
+  phoneNormalized  String         @unique
+  phoneDisplay     String
+  whatsappNumber   String?
+  email            String?
+  source           ContactSource
+  managerId        String?
+  manager          User?          @relation("ContactManager", fields: [managerId], references: [id])
+  pipelineStageId  String?
+  pipelineStage    PipelineStage? @relation(fields: [pipelineStageId], references: [id])
+  status           ContactStatus  @default(NEW)
+  dealAmount       Decimal        @default(0) @db.Decimal(14, 2)
+  comment          String         @default("")
+  customFields     Json           @default("{}")
+  lastContactAt    DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  leads            Lead[]
+  conversations    Conversation[]
+  messages         Message[]
+  calls            Call[]
+  tasks            Task[]
+  meetings         Meeting[]
+  activities       Activity[]
+  managerChanges   ManagerChange[]
+
+  @@index([managerId])
+  @@index([pipelineStageId])
+  @@index([email])
+}
+
+model Lead {
+  id              String         @id @default(cuid())
+  contactId       String
+  contact         Contact        @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  managerId       String?
+  manager         User?          @relation(fields: [managerId], references: [id])
+  source          ContactSource
+  pipelineStageId String?
+  pipelineStage   PipelineStage? @relation(fields: [pipelineStageId], references: [id])
+  processedAt     DateTime?
+  slaBreachedAt   DateTime?
+  campaign        String?
+  adName          String?
+  formName        String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([managerId, createdAt])
+  @@index([contactId])
+}
+
+model Conversation {
+  id           String    @id @default(cuid())
+  contactId    String
+  contact      Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  managerId    String?
+  manager      User?     @relation(fields: [managerId], references: [id])
+  channel      String    @default("whatsapp")
+  lastMessage  String?
+  lastMessageAt DateTime?
+  unreadCount  Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  messages     Message[]
+
+  @@unique([contactId, channel])
+  @@index([managerId, lastMessageAt])
+}
+
+model Message {
+  id                 String           @id @default(cuid())
+  externalMessageId  String?          @unique
+  conversationId     String
+  conversation       Conversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  contactId          String
+  contact            Contact          @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  managerId          String?
+  manager            User?            @relation(fields: [managerId], references: [id])
+  direction          MessageDirection
+  type               MessageType      @default(TEXT)
+  text               String?
+  mediaUrl           String?
+  mediaId            String?
+  locationLat        Float?
+  locationLng        Float?
+  status             MessageStatus    @default(PENDING)
+  sentAt             DateTime         @default(now())
+  deliveredAt        DateTime?
+  readAt             DateTime?
+  rawPayload         Json?
+  createdAt          DateTime         @default(now())
+
+  @@index([conversationId, sentAt])
+  @@index([contactId])
+}
+
+model Call {
+  id               String         @id @default(cuid())
+  externalCallId   String?        @unique
+  contactId        String?
+  contact          Contact?       @relation(fields: [contactId], references: [id])
+  managerId        String?
+  manager          User?          @relation(fields: [managerId], references: [id])
+  direction        CallDirection
+  fromNumber       String
+  toNumber         String
+  corporateNumber  String?
+  status           CallStatus     @default(RINGING)
+  startedAt        DateTime       @default(now())
+  answeredAt       DateTime?
+  endedAt          DateTime?
+  duration         Int            @default(0)
+  answerDuration   Int            @default(0)
+  recordingUrl     String?
+  result           CallResult?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  recordings       CallRecording[]
+
+  @@index([managerId, startedAt])
+  @@index([contactId])
+}
+
+model CallRecording {
+  id        String   @id @default(cuid())
+  callId    String
+  call      Call     @relation(fields: [callId], references: [id], onDelete: Cascade)
+  url       String
+  storedAt  DateTime @default(now())
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  contactId   String?
+  contact     Contact?   @relation(fields: [contactId], references: [id])
+  managerId   String
+  manager     User       @relation("TaskManager", fields: [managerId], references: [id])
+  creatorId   String?
+  creator     User?      @relation("TaskCreator", fields: [creatorId], references: [id])
+  type        TaskType
+  description String
+  dueAt       DateTime
+  reminderAt  DateTime?
+  status      TaskStatus @default(OPEN)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([managerId, dueAt])
+  @@index([status, dueAt])
+}
+
+model Meeting {
+  id          String         @id @default(cuid())
+  contactId   String?
+  contact     Contact?       @relation(fields: [contactId], references: [id])
+  managerId   String
+  manager     User           @relation("MeetingManager", fields: [managerId], references: [id])
+  startsAt    DateTime
+  endsAt      DateTime?
+  format      MeetingFormat  @default(ONLINE)
+  comment     String         @default("")
+  status      MeetingStatus  @default(SCHEDULED)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([managerId, startsAt])
+}
+
+model Activity {
+  id        String       @id @default(cuid())
+  contactId String
+  contact   Contact      @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  managerId String?
+  manager   User?        @relation(fields: [managerId], references: [id])
+  type      ActivityType
+  title     String
+  payload   Json         @default("{}")
+  createdAt DateTime     @default(now())
+
+  @@index([contactId, createdAt])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id])
+  action     String
+  entityType String
+  entityId   String
+  oldValue   Json?
+  newValue   Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+model ManagerChange {
+  id         String   @id @default(cuid())
+  contactId  String
+  contact    Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  fromUserId String?
+  fromUser   User?    @relation("FromManager", fields: [fromUserId], references: [id])
+  toUserId   String
+  toUser     User     @relation("ToManager", fields: [toUserId], references: [id])
+  reason     String?
+  createdAt  DateTime @default(now())
+}
+
+model ManagerAssignmentState {
+  id             String   @id @default("global")
+  lastAssignedAt DateTime @default(now())
+  lastManagerId  String?
+}
+
+model Integration {
+  id            String            @id @default(cuid())
+  type          IntegrationType   @unique
+  status        IntegrationStatus @default(DISCONNECTED)
+  config        Json              @default("{}")
+  lastSyncAt    DateTime?
+  lastError     String?
+  updatedAt     DateTime          @updatedAt
+}
+
+model WebhookEvent {
+  id               String                   @id @default(cuid())
+  provider         String
+  eventId          String
+  eventType        String
+  payload          Json
+  receivedAt       DateTime                 @default(now())
+  processedAt      DateTime?
+  processingStatus WebhookProcessingStatus  @default(PENDING)
+  error            String?
+
+  @@unique([provider, eventId])
+  @@index([processingStatus, receivedAt])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  body      String
+  data      Json             @default("{}")
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model SystemSetting {
+  key   String @id
+  value Json
+}
+
+model CustomFieldDef {
+  id        String  @id @default(cuid())
+  name      String
+  key       String  @unique
+  fieldType String  @default("text")
+  options   Json    @default("[]")
+  required  Boolean @default(false)
+}

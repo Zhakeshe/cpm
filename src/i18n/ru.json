@@ -1,0 +1,81 @@
+{
+  "appName": "Amanat CRM",
+  "nav": {
+    "home": "Главная",
+    "leads": "Лиды",
+    "pipeline": "Воронка",
+    "messages": "Сообщения",
+    "calls": "Звонки",
+    "tasks": "Задачи",
+    "meetings": "Демо",
+    "analytics": "Аналитика",
+    "managers": "Менеджеры",
+    "settings": "Настройки",
+    "audit": "Журнал",
+    "logout": "Выйти"
+  },
+  "auth": {
+    "login": "Вход",
+    "email": "Email / логин",
+    "password": "Пароль",
+    "submit": "Войти",
+    "forgot": "Восстановить пароль",
+    "sendReset": "Отправить ссылку",
+    "disabled": "Аккаунт отключён"
+  },
+  "dashboard": {
+    "newLeads": "Новые лиды",
+    "unprocessed": "Необработанные лиды",
+    "callsToday": "Звонки сегодня",
+    "missed": "Пропущенные",
+    "messages": "Новые сообщения",
+    "demos": "Демо",
+    "sales": "Продажи",
+    "overdue": "Просроченные задачи",
+    "activeClients": "Активные клиенты",
+    "conversion": "Конверсия",
+    "salesAmount": "Сумма продаж",
+    "online": "Менеджеры онлайн"
+  },
+  "contact": {
+    "title": "Клиент",
+    "phone": "Телефон",
+    "email": "Email",
+    "source": "Источник",
+    "manager": "Менеджер",
+    "stage": "Стадия",
+    "status": "Статус",
+    "amount": "Сумма сделки",
+    "comment": "Комментарий",
+    "call": "Позвонить",
+    "timeline": "История"
+  },
+  "sources": {
+    "WHATSAPP": "WhatsApp",
+    "INSTAGRAM": "Instagram",
+    "FACEBOOK": "Facebook",
+    "PHONE_CALL": "Телефонный звонок",
+    "MANUAL": "Вручную",
+    "WEBSITE": "Сайт",
+    "REFERRAL": "Рекомендация",
+    "OTHER": "Другое",
+    "META_LEAD_ADS": "Meta Lead Ads"
+  },
+  "callResults": {
+    "CONTACTED": "Связались",
+    "NO_ANSWER": "Не ответил",
+    "CALLBACK": "Перезвонить",
+    "INTERESTED": "Заинтересован",
+    "DEMO_BOOKED": "Записан на демо",
+    "THINKING": "Думает",
+    "REJECTED": "Отказ",
+    "SALE": "Продажа"
+  },
+  "tasks": {
+    "overdue": "Просрочено",
+    "today": "Сегодня",
+    "tomorrow": "Завтра",
+    "week": "Неделя",
+    "done": "Выполнено"
+  }
+}

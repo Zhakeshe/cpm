@@ -1,0 +1,26 @@
+{
+  "appName": "Amanat CRM",
+  "nav": {
+    "home": "Басты бет",
+    "leads": "Лидтер",
+    "pipeline": "Воронка",
+    "messages": "Хабарламалар",
+    "calls": "Қоңыраулар",
+    "tasks": "Тапсырмалар",
+    "meetings": "Демо",
+    "analytics": "Аналитика",
+    "managers": "Менеджерлер",
+    "settings": "Баптаулар",
+    "audit": "Журнал",
+    "logout": "Шығу"
+  },
+  "auth": {
+    "login": "Кіру",
+    "email": "Email / логин",
+    "password": "Құпиясөз",
+    "submit": "Кіру",
+    "forgot": "Құпиясөзді қалпына келтіру",
+    "sendReset": "Сілтеме жіберу",
+    "disabled": "Аккаунт өшірулі"
+  }
+}
