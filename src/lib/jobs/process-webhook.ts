@@ -1,8 +1,6 @@
-import type { PrismaClient } from "@prisma/client";
 import { handleWhatsAppInbound } from "../whatsapp";
 import { handleTelephonyEvent, type TelephonyWebhook } from "../telephony";
-import { ingestContact } from "../contacts";
-import { notifyUser } from "../notifications";
+import { handleMetaLead } from "../meta-leads";
 
 export async function processWebhookJob(data: { webhookEventId: string; provider: string }) {
   const { prisma } = await import("../db");
@@ -19,6 +17,8 @@ export async function processWebhookJob(data: { webhookEventId: string; provider
       await handleTelephonyEvent(prisma, event.payload as TelephonyWebhook);
     } else if (event.provider === "meta-leads") {
       await handleMetaLead(prisma, event.payload);
+    } else {
+      throw new Error(`Unknown webhook provider: ${event.provider}`);
     }
     await prisma.webhookEvent.update({
       where: { id: event.id },
@@ -33,36 +33,5 @@ export async function processWebhookJob(data: { webhookEventId: string; provider
       },
     });
     throw err;
-  }
-}
-
-async function handleMetaLead(db: PrismaClient, payload: unknown) {
-  const p = payload as {
-    phone?: string;
-    firstName?: string;
-    lastName?: string;
-    campaign?: string;
-    ad?: string;
-    form?: string;
-  };
-  if (!p.phone) return;
-  const ingest = await ingestContact(db, {
-    phone: p.phone,
-    firstName: p.firstName,
-    lastName: p.lastName,
-    source: "META_LEAD_ADS",
-    campaign: p.campaign,
-    adName: p.ad,
-    formName: p.form,
-    createLeadOnDuplicate: true,
-  });
-  if (ingest.managerId && ingest.createdContact) {
-    await notifyUser(db, {
-      userId: ingest.managerId,
-      type: "NEW_LEAD",
-      title: "Новый лид из Meta",
-      body: `${p.firstName || ""} ${p.phone}`,
-      data: { contactId: ingest.contactId },
-    });
   }
 }

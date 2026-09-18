@@ -3,13 +3,49 @@ import { jwtVerify } from "jose";
 
 const PUBLIC = ["/login", "/forgot-password", "/reset-password"];
 const WEBHOOKS = ["/api/webhooks/", "/api/health"];
+const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+function isWebhookOrHealth(pathname: string) {
+  return WEBHOOKS.some((p) => pathname.startsWith(p));
+}
+
+/**
+ * Session cookies are SameSite=Lax, so cross-site form posts are already blocked;
+ * this adds an explicit origin check for JSON mutations from other origins.
+ */
+function sameOrigin(req: NextRequest) {
+  const origin = req.headers.get("origin");
+  if (!origin) return true;
+  try {
+    const allowed = new Set<string>();
+    const host = req.headers.get("host");
+    if (host) {
+      allowed.add(`http://${host}`);
+      allowed.add(`https://${host}`);
+    }
+    if (process.env.APP_URL) allowed.add(new URL(process.env.APP_URL).origin);
+    return allowed.has(new URL(origin).origin);
+  } catch {
+    return false;
+  }
+}
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
-    WEBHOOKS.some((p) => pathname.startsWith(p)) ||
+    isWebhookOrHealth(pathname)
+  ) {
+    return NextResponse.next();
+  }
+
+  if (UNSAFE_METHODS.has(req.method) && !sameOrigin(req)) {
+    return NextResponse.json({ error: "CROSS_ORIGIN_BLOCKED" }, { status: 403 });
+  }
+
+  if (
     pathname.startsWith("/api/auth/login") ||
     pathname.startsWith("/api/auth/forgot") ||
     pathname.startsWith("/api/auth/reset")

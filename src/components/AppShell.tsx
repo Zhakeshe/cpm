@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
+  Activity,
   BarChart3,
   Bell,
   Calendar,
@@ -32,6 +33,7 @@ const NAV = [
   { href: "/analytics", label: "Аналитика", icon: BarChart3, admin: true },
   { href: "/managers", label: "Менеджеры", icon: UsersRound, admin: true },
   { href: "/audit", label: "Журнал", icon: Shield, admin: true },
+  { href: "/monitoring", label: "Мониторинг", icon: Activity, admin: true },
   { href: "/settings", label: "Настройки", icon: Settings, admin: true },
 ];
 
