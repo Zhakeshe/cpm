@@ -2,7 +2,7 @@ import { createServer } from "http";
 import next from "next";
 import { Server as SocketIOServer } from "socket.io";
 import { jwtVerify } from "jose";
-import { setIO, registerAdmin } from "./lib/realtime";
+import { setIO, subscribeRealtime } from "./lib/realtime";
 import { prisma } from "./lib/db";
 
 const dev = process.env.NODE_ENV !== "production";
@@ -21,6 +21,7 @@ async function main() {
     cors: { origin: process.env.APP_URL || true, credentials: true },
   });
   setIO(io);
+  subscribeRealtime();
 
   io.use(async (socket, nextMw) => {
     try {
@@ -41,7 +42,6 @@ async function main() {
     const user = socket.data.user as { id: string; role: string };
     socket.join(`user:${user.id}`);
     socket.join(`role:${user.role}`);
-    registerAdmin(user.id, user.role === "ADMIN" || user.role === "SUPERVISOR");
     await prisma.user.update({
       where: { id: user.id },
       data: { lastSeenAt: new Date() },
