@@ -32,6 +32,17 @@ services:
     volumes:
       - minio:/data
 
+  createbuckets:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 minio minio12345; do sleep 2; done;
+      mc mb --ignore-existing local/crm-media;
+      exit 0;
+      "
+
   migrate:
     build: .
     command: sh -c "npx prisma migrate deploy && npx tsx prisma/seed.ts"
@@ -53,7 +64,15 @@ services:
       SESSION_SECRET: change-me-to-a-long-random-secret-at-least-32-chars
       COOKIE_SECURE: "false"
       WHATSAPP_VERIFY_TOKEN: change-verify-token
+      WHATSAPP_ACCESS_TOKEN: ${WHATSAPP_ACCESS_TOKEN:-}
+      WHATSAPP_APP_SECRET: ${WHATSAPP_APP_SECRET:-}
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
+      WHATSAPP_BUSINESS_ACCOUNT_ID: ${WHATSAPP_BUSINESS_ACCOUNT_ID:-}
       SIP_WEBHOOK_SECRET: change-sip-secret
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: minio
+      S3_SECRET_KEY: minio12345
+      S3_BUCKET: crm-media
     ports:
       - "3000:3000"
     depends_on:
@@ -71,6 +90,12 @@ services:
       DATABASE_URL: postgresql://crm:crm@postgres:5432/crm?schema=public
       REDIS_URL: redis://redis:6379
       SESSION_SECRET: change-me-to-a-long-random-secret-at-least-32-chars
+      WHATSAPP_ACCESS_TOKEN: ${WHATSAPP_ACCESS_TOKEN:-}
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: minio
+      S3_SECRET_KEY: minio12345
+      S3_BUCKET: crm-media
     depends_on:
       postgres:
         condition: service_healthy

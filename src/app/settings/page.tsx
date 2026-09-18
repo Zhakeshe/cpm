@@ -3,6 +3,111 @@
 import { AppShell } from "@/components/AppShell";
 import { useEffect, useState } from "react";
 
+type Template = {
+  id: string;
+  name: string;
+  metaName: string;
+  language: string;
+  category: string;
+  body: string;
+  status: string;
+  isActive: boolean;
+};
+
+function TemplatesSection() {
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [draft, setDraft] = useState({
+    name: "",
+    metaName: "",
+    language: "ru",
+    category: "MARKETING",
+    body: "",
+    status: "APPROVED",
+  });
+
+  async function load() {
+    setTemplates(await fetch("/api/templates").then((r) => (r.ok ? r.json() : [])));
+  }
+  useEffect(() => {
+    load();
+  }, []);
+
+  async function create(e: React.FormEvent) {
+    e.preventDefault();
+    await fetch("/api/templates", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...draft, isActive: true }),
+    });
+    setDraft({ ...draft, name: "", metaName: "", body: "" });
+    load();
+  }
+
+  async function patch(id: string, data: object) {
+    await fetch("/api/templates", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, ...data }),
+    });
+    load();
+  }
+
+  return (
+    <div className="card p-5 mb-6 space-y-3">
+      <div className="font-medium">Шаблоны WhatsApp</div>
+      <div className="muted text-sm">
+        Отправляются вне 24-часового окна. В CRM доступны только шаблоны со статусом APPROVED в Meta.
+      </div>
+      <form onSubmit={create} className="grid md:grid-cols-5 gap-2">
+        <input placeholder="Название" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+        <input placeholder="Имя в Meta" value={draft.metaName} onChange={(e) => setDraft({ ...draft, metaName: e.target.value })} />
+        <input placeholder="Язык" value={draft.language} onChange={(e) => setDraft({ ...draft, language: e.target.value })} />
+        <select value={draft.status} onChange={(e) => setDraft({ ...draft, status: e.target.value })}>
+          <option value="APPROVED">APPROVED</option>
+          <option value="PENDING">PENDING</option>
+          <option value="REJECTED">REJECTED</option>
+        </select>
+        <button className="rounded-xl bg-[#2563eb]">Добавить</button>
+        <textarea
+          className="md:col-span-5"
+          rows={2}
+          placeholder="Текст шаблона, переменные вида {{1}}"
+          value={draft.body}
+          onChange={(e) => setDraft({ ...draft, body: e.target.value })}
+        />
+      </form>
+      <div className="space-y-2">
+        {templates.map((t) => (
+          <div key={t.id} className="border-t border-[#243049] pt-2 text-sm">
+            <div className="flex justify-between gap-2">
+              <div>
+                <div className="font-medium">{t.name}</div>
+                <div className="muted text-xs">
+                  {t.metaName} · {t.language} · {t.category}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="chip">{t.status}</span>
+                <label className="text-xs flex items-center gap-1">
+                  <input
+                    type="checkbox"
+                    className="w-auto"
+                    checked={t.isActive}
+                    onChange={(e) => patch(t.id, { isActive: e.target.checked })}
+                  />
+                  активен
+                </label>
+              </div>
+            </div>
+            <div className="muted text-xs whitespace-pre-line mt-1">{t.body}</div>
+          </div>
+        ))}
+        {templates.length === 0 && <div className="muted text-sm">Шаблонов пока нет</div>}
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const [data, setData] = useState<{
     integrations: Array<{ type: string; status: string; lastSyncAt?: string; lastError?: string }>;
@@ -87,6 +192,7 @@ export default function SettingsPage() {
         </select>
         <button className="rounded-xl bg-[#2563eb] px-4 py-2" onClick={saveSla}>Сохранить</button>
       </div>
+      <TemplatesSection />
       <div className="card p-5 space-y-3">
         <div className="font-medium">Стадии воронки</div>
         {stages.map((s, idx) => (

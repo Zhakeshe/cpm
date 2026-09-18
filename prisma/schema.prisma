@@ -297,6 +297,9 @@ model Conversation {
   channel      String    @default("whatsapp")
   lastMessage  String?
   lastMessageAt DateTime?
+  lastCustomerMessageAt   DateTime?
+  serviceWindowExpiresAt  DateTime?
+  status       String    @default("open")
   unreadCount  Int       @default(0)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
@@ -320,6 +323,12 @@ model Message {
   text               String?
   mediaUrl           String?
   mediaId            String?
+  mediaMimeType      String?
+  mediaFileName      String?
+  mediaSize          Int?
+  templateId         String?
+  template           MessageTemplate? @relation(fields: [templateId], references: [id])
+  errorMessage       String?
   locationLat        Float?
   locationLng        Float?
   status             MessageStatus    @default(PENDING)
@@ -331,6 +340,29 @@ model Message {
 
   @@index([conversationId, sentAt])
   @@index([contactId])
+}
+
+enum TemplateStatus {
+  APPROVED
+  PENDING
+  REJECTED
+}
+
+model MessageTemplate {
+  id           String         @id @default(cuid())
+  name         String
+  metaName     String
+  language     String         @default("ru")
+  category     String         @default("MARKETING")
+  body         String
+  placeholders String[]       @default([])
+  status       TemplateStatus @default(PENDING)
+  isActive     Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  messages     Message[]
+
+  @@unique([metaName, language])
 }
 
 model Call {

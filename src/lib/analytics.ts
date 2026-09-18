@@ -123,6 +123,7 @@ export async function analytics(range: DateRange, managerId?: string) {
   const conversion = newLeads ? Number(salesAgg._count) / newLeads : 0;
   const salesAmount = Number(salesAgg._sum.dealAmount || 0);
   const avgCheck = salesAgg._count ? salesAmount / salesAgg._count : 0;
+  const responseTime = await avgResponseSeconds(range, managerId);
 
   const byDay = await prisma.$queryRaw<Array<{ day: Date; count: bigint }>>(
     Prisma.sql`SELECT date_trunc('day', "createdAt") as day, count(*)::bigint as count
@@ -154,10 +155,38 @@ export async function analytics(range: DateRange, managerId?: string) {
     salesAmount,
     avgCheck,
     avgTalk: talk._avg.duration || 0,
+    avgResponseSeconds: responseTime,
     byDay: byDay.map((d) => ({ day: d.day, count: Number(d.count) })),
     bySource,
     salesByDay: salesByDay.map((d) => ({ day: d.day, amount: Number(d.amount) })),
   };
+}
+
+/**
+ * Response time = seconds between an inbound WhatsApp message and the first
+ * outbound message that follows it in the same conversation.
+ */
+export async function avgResponseSeconds(range: DateRange, managerId?: string) {
+  const rows = await prisma.$queryRaw<Array<{ avg: number | null }>>(
+    Prisma.sql`
+      SELECT avg(EXTRACT(EPOCH FROM (reply."sentAt" - inbound."sentAt")))::float AS avg
+      FROM "Message" inbound
+      CROSS JOIN LATERAL (
+        SELECT m."sentAt"
+        FROM "Message" m
+        WHERE m."conversationId" = inbound."conversationId"
+          AND m.direction = 'OUTBOUND'
+          AND m."sentAt" > inbound."sentAt"
+        ORDER BY m."sentAt"
+        LIMIT 1
+      ) reply
+      WHERE inbound.direction = 'INBOUND'
+        AND inbound."sentAt" >= ${range.from}
+        AND inbound."sentAt" <= ${range.to}
+        ${managerId ? Prisma.sql`AND inbound."managerId" = ${managerId}` : Prisma.empty}
+    `,
+  );
+  return Math.round(rows[0]?.avg || 0);
 }
 
 export async function managerTable(range: DateRange) {

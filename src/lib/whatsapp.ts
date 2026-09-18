@@ -3,6 +3,19 @@ import type { PrismaClient } from "@prisma/client";
 import { ingestContact } from "./contacts";
 import { notifyUser } from "./notifications";
 import { emitToUser, emitToAdmins } from "./realtime";
+import { extensionFor, putObject, storageConfigured } from "./storage";
+
+/** Meta allows free-form replies only within 24h of the customer's last message. */
+export const SERVICE_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+export function isServiceWindowOpen(expiresAt: Date | null | undefined) {
+  return Boolean(expiresAt && expiresAt.getTime() > Date.now());
+}
+
+function graphUrl(path: string) {
+  const version = process.env.WHATSAPP_GRAPH_VERSION || "v21.0";
+  return `https://graph.facebook.com/${version}/${path}`;
+}
 
 type WhatsAppMessage = {
   id?: string;
@@ -108,6 +121,8 @@ export async function handleWhatsAppInbound(db: PrismaClient, payload: unknown) 
           lastName: names.slice(1).join(" "),
           source: "WHATSAPP",
         });
+        const receivedAt = msg.timestamp ? new Date(Number(msg.timestamp) * 1000) : new Date();
+        const windowExpiresAt = new Date(receivedAt.getTime() + SERVICE_WINDOW_MS);
         const conversation = await db.conversation.upsert({
           where: { contactId_channel: { contactId: ingest.contactId, channel: "whatsapp" } },
           create: {
@@ -115,12 +130,16 @@ export async function handleWhatsAppInbound(db: PrismaClient, payload: unknown) 
             managerId: ingest.managerId,
             channel: "whatsapp",
             lastMessage: extractText(msg),
-            lastMessageAt: new Date(),
+            lastMessageAt: receivedAt,
+            lastCustomerMessageAt: receivedAt,
+            serviceWindowExpiresAt: windowExpiresAt,
             unreadCount: 1,
           },
           update: {
             lastMessage: extractText(msg),
-            lastMessageAt: new Date(),
+            lastMessageAt: receivedAt,
+            lastCustomerMessageAt: receivedAt,
+            serviceWindowExpiresAt: windowExpiresAt,
             unreadCount: { increment: 1 },
             managerId: ingest.managerId ?? undefined,
           },
@@ -138,10 +157,11 @@ export async function handleWhatsAppInbound(db: PrismaClient, payload: unknown) 
             locationLat: msg.location?.latitude,
             locationLng: msg.location?.longitude,
             status: "DELIVERED",
-            sentAt: msg.timestamp ? new Date(Number(msg.timestamp) * 1000) : new Date(),
+            sentAt: receivedAt,
             rawPayload: msg as object,
           },
         });
+        await storeInboundMedia(db, saved.id, saved.mediaId, msg.document?.filename);
         await db.activity.create({
           data: {
             contactId: ingest.contactId,
@@ -179,40 +199,123 @@ export async function handleWhatsAppInbound(db: PrismaClient, payload: unknown) 
   return results;
 }
 
-export async function sendWhatsAppText(params: {
-  to: string;
-  text: string;
-  templateName?: string;
-  templateLang?: string;
-}) {
+/**
+ * Media lives behind Meta's CDN with a short-lived URL, so it is copied into our
+ * own object storage while the access token is still valid.
+ */
+export async function storeInboundMedia(
+  db: PrismaClient,
+  messageId: string,
+  mediaId: string | null,
+  fileName?: string,
+) {
+  if (!mediaId) return;
+  const token = process.env.WHATSAPP_ACCESS_TOKEN;
+  if (!token || !storageConfigured()) return;
+  try {
+    const metaRes = await fetch(graphUrl(mediaId), { headers: { Authorization: `Bearer ${token}` } });
+    if (!metaRes.ok) throw new Error(`media lookup failed: ${metaRes.status}`);
+    const meta = (await metaRes.json()) as { url?: string; mime_type?: string; file_size?: number };
+    if (!meta.url) throw new Error("media url missing");
+    const fileRes = await fetch(meta.url, { headers: { Authorization: `Bearer ${token}` } });
+    if (!fileRes.ok) throw new Error(`media download failed: ${fileRes.status}`);
+    const buffer = Buffer.from(await fileRes.arrayBuffer());
+    const key = `whatsapp/${messageId}.${extensionFor(meta.mime_type)}`;
+    await putObject(key, buffer, meta.mime_type);
+    await db.message.update({
+      where: { id: messageId },
+      data: {
+        mediaUrl: key,
+        mediaMimeType: meta.mime_type,
+        mediaFileName: fileName,
+        mediaSize: meta.file_size ?? buffer.length,
+      },
+    });
+  } catch (err) {
+    console.error("whatsapp_media_store_failed", (err as Error).message);
+  }
+}
+
+async function postMessage(body: Record<string, unknown>) {
   const token = process.env.WHATSAPP_ACCESS_TOKEN;
   const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-  const version = process.env.WHATSAPP_GRAPH_VERSION || "v21.0";
   if (!token || !phoneId) {
     return { mocked: true, id: `local-${crypto.randomUUID()}` };
   }
-  const body = params.templateName
-    ? {
-        messaging_product: "whatsapp",
-        to: params.to,
-        type: "template",
-        template: { name: params.templateName, language: { code: params.templateLang || "ru" } },
-      }
-    : {
-        messaging_product: "whatsapp",
-        to: params.to,
-        type: "text",
-        text: { body: params.text },
-      };
-  const res = await fetch(`https://graph.facebook.com/${version}/${phoneId}/messages`, {
+  const res = await fetch(graphUrl(`${phoneId}/messages`), {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ messaging_product: "whatsapp", ...body }),
   });
   if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`WhatsApp API error: ${err}`);
+    throw new Error(`WhatsApp API error: ${await res.text()}`);
   }
   const json = (await res.json()) as { messages?: Array<{ id: string }> };
   return { mocked: false, id: json.messages?.[0]?.id || crypto.randomUUID() };
+}
+
+export async function sendWhatsAppText(params: { to: string; text: string }) {
+  return postMessage({ to: params.to, type: "text", text: { body: params.text } });
+}
+
+export async function sendWhatsAppTemplate(params: {
+  to: string;
+  metaName: string;
+  language: string;
+  parameters?: string[];
+}) {
+  return postMessage({
+    to: params.to,
+    type: "template",
+    template: {
+      name: params.metaName,
+      language: { code: params.language },
+      ...(params.parameters?.length
+        ? {
+            components: [
+              {
+                type: "body",
+                parameters: params.parameters.map((text) => ({ type: "text", text })),
+              },
+            ],
+          }
+        : {}),
+    },
+  });
+}
+
+export async function uploadMediaToMeta(file: { buffer: Buffer; mime: string; name: string }) {
+  const token = process.env.WHATSAPP_ACCESS_TOKEN;
+  const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  if (!token || !phoneId) return { mocked: true, id: `local-media-${crypto.randomUUID()}` };
+  const form = new FormData();
+  form.append("messaging_product", "whatsapp");
+  form.append("type", file.mime);
+  form.append("file", new Blob([new Uint8Array(file.buffer)], { type: file.mime }), file.name);
+  const res = await fetch(graphUrl(`${phoneId}/media`), {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
+  if (!res.ok) throw new Error(`WhatsApp media upload error: ${await res.text()}`);
+  const json = (await res.json()) as { id: string };
+  return { mocked: false, id: json.id };
+}
+
+export type OutboundMediaType = "IMAGE" | "DOCUMENT" | "AUDIO" | "VIDEO";
+
+export async function sendWhatsAppMedia(params: {
+  to: string;
+  type: OutboundMediaType;
+  mediaId: string;
+  caption?: string;
+  fileName?: string;
+}) {
+  const key = params.type.toLowerCase();
+  const payload: Record<string, unknown> = { id: params.mediaId };
+  if (params.caption && (params.type === "IMAGE" || params.type === "VIDEO" || params.type === "DOCUMENT")) {
+    payload.caption = params.caption;
+  }
+  if (params.type === "DOCUMENT" && params.fileName) payload.filename = params.fileName;
+  return postMessage({ to: params.to, type: key, [key]: payload });
 }

@@ -41,13 +41,21 @@ Nginx слушает `:8080`. Для HTTPS поставьте TLS-термина
 
 ## Интеграции
 
-### WhatsApp Cloud API
+### WhatsApp Cloud API (Direct WABA, без посредников)
+
+Что нужно завести в Meta: App, Business Portfolio, WhatsApp Business Account, Business Phone Number. Из них взять `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_BUSINESS_ACCOUNT_ID`, permanent token системного пользователя (`WHATSAPP_ACCESS_TOKEN`), `WHATSAPP_APP_SECRET` и свой `WHATSAPP_VERIFY_TOKEN`. Все они живут только в backend `.env`; во фронтенд не попадает ничего.
 
 - Verify: `GET /api/webhooks/whatsapp`
-- Inbound: `POST /api/webhooks/whatsapp`
+- Inbound: `POST /api/webhooks/whatsapp` (проверка подписи `x-hub-signature-256`)
 - Исходящие: `POST /api/messages/send`
+- Загрузка файла перед отправкой: `POST /api/messages/upload`
+- Отдача медиа с проверкой прав: `GET /api/media/:messageId`
 
-Секреты только на backend: `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`.
+**Окно 24 часа.** Для каждого диалога хранятся `lastCustomerMessageAt` и `serviceWindowExpiresAt`. Пока окно открыто, менеджер пишет свободный текст и шлёт файлы. После закрытия сервер отвечает `SERVICE_WINDOW_CLOSED`, поле ввода блокируется, доступны только шаблоны со статусом APPROVED. Ответ клиента открывает окно заново.
+
+**Шаблоны.** Раздел «Настройки → Шаблоны WhatsApp»: имя в Meta, язык, категория, текст с переменными `{{1}}`, статус. Менеджер выбирает шаблон в инбоксе и заполняет переменные.
+
+**Медиа.** Входящие файлы скачиваются из Graph API и складываются в S3 (`Meta → backend → S3`), в чате показывается превью изображений, аудио и видео. Исходящие файлы сначала грузятся в Meta media API, копия сохраняется в S3.
 
 ### SIP / виртуальная АТС
 
@@ -71,6 +79,18 @@ Nginx слушает `:8080`. Для HTTPS поставьте TLS-термина
 ```
 
 Click-to-call: `POST /api/calls` с `contactId`. Если `SIP_ORIGINATE_URL` не задан, создаётся локальное событие звонка (dev).
+
+**WebRTC-софтфон.** Менеджер говорит из браузера через гарнитуру. Креды не зашиты в фронтенд: `GET /api/sip/credentials` отдаёт залогиненному пользователю WebSocket-URL, SIP URI и пароль его внутреннего номера. Настраивается в Integration `TELEPHONY`:
+
+```json
+{
+  "wsUrl": "wss://pbx.example.com:8089/ws",
+  "domain": "pbx.example.com",
+  "extensions": { "101": "secret-101", "102": "secret-102" }
+}
+```
+
+Пока настройки нет, виджет софтфона просто не показывается.
 
 ### Meta Lead Ads
 

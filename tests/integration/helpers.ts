@@ -11,6 +11,7 @@ export async function resetDatabase() {
     prisma.callRecording.deleteMany(),
     prisma.call.deleteMany(),
     prisma.message.deleteMany(),
+    prisma.messageTemplate.deleteMany(),
     prisma.conversation.deleteMany(),
     prisma.task.deleteMany(),
     prisma.meeting.deleteMany(),

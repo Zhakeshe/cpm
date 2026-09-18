@@ -66,7 +66,8 @@ export default function AnalyticsPage() {
           ["Конверсия", `${((s.conversion || 0) * 100).toFixed(1)}%`],
           ["Сумма", s.salesAmount],
           ["Средний чек", s.avgCheck],
-          ["Среднее время", Math.round(s.avgTalk || 0)],
+          ["Среднее время разговора, с", Math.round(s.avgTalk || 0)],
+          ["Ответ в WhatsApp, с", Math.round(s.avgResponseSeconds || 0)],
         ].map(([l, v]) => (
           <div key={String(l)} className="card p-4">
             <div className="muted text-sm">{l}</div>
@@ -96,7 +97,7 @@ export default function AnalyticsPage() {
         <table className="w-full text-sm">
           <thead className="bg-[#182235] text-[#93a0bb]">
             <tr>
-              {["Менеджер","Лиды","Обработано","WhatsApp","Звонки","Демо","Продажи","Конверсия","Сумма"].map((h) => (
+              {["Менеджер","Лиды","Обработано","WhatsApp","Звонки","Демо","Продажи","Конверсия","Сумма","Ответ, с"].map((h) => (
                 <th key={h} className="text-left p-3">{h}</th>
               ))}
             </tr>
@@ -117,6 +118,7 @@ export default function AnalyticsPage() {
                 <td className="p-3">{String(m.sales)}</td>
                 <td className="p-3">{((Number(m.conversion) || 0) * 100).toFixed(1)}%</td>
                 <td className="p-3">{String(m.salesAmount)}</td>
+                <td className="p-3">{String(m.avgResponseSeconds ?? 0)}</td>
               </tr>
             ))}
           </tbody>

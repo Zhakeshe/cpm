@@ -99,6 +99,7 @@ export default function ManagerDetailPage() {
           ["Среднее время разговора, с", Math.round(s.avgTalk || 0)],
           ["Открытые задачи", data.openTasks],
           ["Пропущенные", s.missed],
+          ["Ответ в WhatsApp, с", Math.round(s.avgResponseSeconds || 0)],
         ].map(([label, value]) => (
           <div key={String(label)} className="card p-4">
             <div className="muted text-sm">{label}</div>

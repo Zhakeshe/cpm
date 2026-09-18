@@ -105,6 +105,33 @@ async function main() {
     },
   });
 
+  await prisma.messageTemplate.upsert({
+    where: { metaName_language: { metaName: "consultation_followup", language: "ru" } },
+    update: {},
+    create: {
+      name: "Продолжение консультации",
+      metaName: "consultation_followup",
+      language: "ru",
+      category: "MARKETING",
+      body: "Здравствуйте, {{1}}. Ранее вы обращались к нам. Хотите продолжить консультацию?",
+      placeholders: ["{{1}}"],
+      status: "APPROVED",
+    },
+  });
+  await prisma.messageTemplate.upsert({
+    where: { metaName_language: { metaName: "demo_reminder", language: "ru" } },
+    update: {},
+    create: {
+      name: "Напоминание о демо",
+      metaName: "demo_reminder",
+      language: "ru",
+      category: "UTILITY",
+      body: "{{1}}, напоминаем о демонстрации {{2}}. Подтвердите, пожалуйста, участие.",
+      placeholders: ["{{1}}", "{{2}}"],
+      status: "APPROVED",
+    },
+  });
+
   console.log("Seeded", { admin: admin.email, managers: managers.map((m) => m.email) });
 }
 
