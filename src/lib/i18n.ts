@@ -8,6 +8,13 @@ export function getDictionary(locale: Locale = "ru") {
   return dictionaries[locale] || ru;
 }
 
+export function interpolate(template: string, vars?: Record<string, string | number>) {
+  if (!vars) return template;
+  return template.replace(/\{(\w+)\}/g, (_, key: string) =>
+    vars[key] == null ? `{${key}}` : String(vars[key]),
+  );
+}
+
 export function t(dict: Record<string, unknown>, path: string): string {
   const parts = path.split(".");
   let cur: unknown = dict;

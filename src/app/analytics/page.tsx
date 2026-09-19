@@ -1,6 +1,8 @@
 "use client";
 
 import { AppShell } from "@/components/AppShell";
+import { ExportButton } from "@/components/ExportButton";
+import { useI18n } from "@/components/I18nProvider";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { BarChart, DonutChart, LineChart } from "@/components/Charts";
@@ -16,6 +18,7 @@ type AnalyticsResponse = {
 };
 
 export default function AnalyticsPage() {
+  const { t } = useI18n();
   const [preset, setPreset] = useState("week");
   const [custom, setCustom] = useState({ from: "", to: "" });
   const [data, setData] = useState<AnalyticsResponse | null>(null);
@@ -29,22 +32,26 @@ export default function AnalyticsPage() {
   const s = data?.stats || {};
   const leadsSeries = (s.byDay || []).map((d) => ({ label: dayLabel(d.day), value: Number(d.count) }));
   const salesSeries = (s.salesByDay || []).map((d) => ({ label: dayLabel(d.day), value: Number(d.amount) }));
-  const sourceSeries = (s.bySource || []).map((d) => ({ label: sourceLabel(d.source), value: Number(d._count) }));
+  const sourceSeries = (s.bySource || []).map((d) => ({ label: t(`sources.${d.source}`, sourceLabel(d.source)), value: Number(d._count) }));
   const managerSeries = (data?.managers || []).map((m) => ({
     label: String(m.name),
     value: Number(m.sales) || 0,
   }));
+  const exportHref =
+    preset === "custom" && custom.from && custom.to
+      ? `/api/export/analytics?preset=custom&from=${custom.from}&to=${custom.to}`
+      : `/api/export/analytics?preset=${preset}`;
   return (
     <AppShell>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Аналитика</h1>
+        <h1 className="text-2xl font-semibold">{t("analytics.title")}</h1>
         <div className="flex gap-2 items-center">
           <select value={preset} onChange={(e) => setPreset(e.target.value)} className="w-auto">
-            <option value="today">Сегодня</option>
-            <option value="yesterday">Вчера</option>
-            <option value="week">Неделя</option>
-            <option value="month">Месяц</option>
-            <option value="custom">Период</option>
+            <option value="today">{t("analytics.today")}</option>
+            <option value="yesterday">{t("analytics.yesterday")}</option>
+            <option value="week">{t("analytics.week")}</option>
+            <option value="month">{t("analytics.month")}</option>
+            <option value="custom">{t("analytics.custom")}</option>
           </select>
           {preset === "custom" && (
             <>
@@ -52,22 +59,23 @@ export default function AnalyticsPage() {
               <input type="date" className="w-auto" value={custom.to} onChange={(e) => setCustom({ ...custom, to: e.target.value })} />
             </>
           )}
+          <ExportButton href={exportHref} />
         </div>
       </div>
       <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         {[
-          ["Новые лиды", s.newLeads],
-          ["Обработано", s.processed],
-          ["Звонки", s.calls],
-          ["Missed", s.missed],
-          ["WhatsApp", s.conversations],
-          ["Демо", s.demos],
-          ["Продажи", s.sales],
-          ["Конверсия", `${((s.conversion || 0) * 100).toFixed(1)}%`],
-          ["Сумма", s.salesAmount],
-          ["Средний чек", s.avgCheck],
-          ["Среднее время разговора, с", Math.round(s.avgTalk || 0)],
-          ["Ответ в WhatsApp, с", Math.round(s.avgResponseSeconds || 0)],
+          [t("analytics.newLeads"), s.newLeads],
+          [t("analytics.processed"), s.processed],
+          [t("analytics.calls"), s.calls],
+          [t("analytics.missed"), s.missed],
+          [t("analytics.whatsapp"), s.conversations],
+          [t("analytics.demos"), s.demos],
+          [t("analytics.sales"), s.sales],
+          [t("analytics.conversion"), `${((s.conversion || 0) * 100).toFixed(1)}%`],
+          [t("analytics.amount"), s.salesAmount],
+          [t("analytics.avgCheck"), s.avgCheck],
+          [t("analytics.avgTalk"), Math.round(s.avgTalk || 0)],
+          [t("analytics.avgReply"), Math.round(s.avgResponseSeconds || 0)],
         ].map(([l, v]) => (
           <div key={String(l)} className="card p-4">
             <div className="muted text-sm">{l}</div>
@@ -77,19 +85,19 @@ export default function AnalyticsPage() {
       </div>
       <div className="grid lg:grid-cols-2 gap-4 mb-6">
         <div className="card p-5">
-          <div className="muted text-sm mb-3">Лиды по дням</div>
+          <div className="muted text-sm mb-3">{t("analytics.leadsByDay")}</div>
           <LineChart data={leadsSeries} />
         </div>
         <div className="card p-5">
-          <div className="muted text-sm mb-3">Продажи по дням</div>
+          <div className="muted text-sm mb-3">{t("analytics.salesByDay")}</div>
           <BarChart data={salesSeries} />
         </div>
         <div className="card p-5">
-          <div className="muted text-sm mb-3">Источники клиентов</div>
+          <div className="muted text-sm mb-3">{t("analytics.sources")}</div>
           <DonutChart data={sourceSeries} />
         </div>
         <div className="card p-5">
-          <div className="muted text-sm mb-3">Эффективность менеджеров (продажи)</div>
+          <div className="muted text-sm mb-3">{t("analytics.managerSales")}</div>
           <BarChart data={managerSeries} color="#fbbf24" />
         </div>
       </div>
@@ -97,8 +105,21 @@ export default function AnalyticsPage() {
         <table className="w-full text-sm">
           <thead className="bg-[#182235] text-[#93a0bb]">
             <tr>
-              {["Менеджер","Лиды","Обработано","WhatsApp","Звонки","Демо","Продажи","Конверсия","Сумма","Ответ, с"].map((h) => (
-                <th key={h} className="text-left p-3">{h}</th>
+              {[
+                t("analytics.manager"),
+                t("analytics.leads"),
+                t("analytics.processed"),
+                t("analytics.whatsapp"),
+                t("analytics.calls"),
+                t("analytics.demos"),
+                t("analytics.sales"),
+                t("analytics.conversion"),
+                t("analytics.amount"),
+                t("analytics.reply"),
+              ].map((h) => (
+                <th key={h} className="text-left p-3">
+                  {h}
+                </th>
               ))}
             </tr>
           </thead>

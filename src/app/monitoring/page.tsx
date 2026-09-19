@@ -1,6 +1,7 @@
 "use client";
 
 import { AppShell } from "@/components/AppShell";
+import { useI18n } from "@/components/I18nProvider";
 import { useCallback, useEffect, useState } from "react";
 
 type Event = {
@@ -27,6 +28,7 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export default function MonitoringPage() {
+  const { t, localeTag } = useI18n();
   const [data, setData] = useState<Payload | null>(null);
   const [filter, setFilter] = useState("");
   const [health, setHealth] = useState<{ db: string; redis: string; uptime: number } | null>(null);
@@ -37,12 +39,12 @@ export default function MonitoringPage() {
   const load = useCallback(async () => {
     const res = await fetch(`/api/webhook-events${filter ? `?status=${filter}` : ""}`);
     if (!res.ok) {
-      setError("Нет доступа к мониторингу");
+      setError(t("monitoring.forbidden"));
       return;
     }
     setData(await res.json());
     setHealth(await fetch("/api/health").then((r) => r.json()));
-  }, [filter]);
+  }, [filter, t]);
 
   useEffect(() => {
     load();
@@ -59,9 +61,8 @@ export default function MonitoringPage() {
     });
     const result = await res.json().catch(() => ({}));
     setBusy(null);
-    setNotice(res.ok ? `Поставлено в очередь: ${result.requeued ?? 0}` : "Не удалось поставить в очередь");
+    setNotice(res.ok ? t("monitoring.queued", { count: result.requeued ?? 0 }) : t("monitoring.queueFailed"));
     setTimeout(() => setNotice(null), 5000);
-    // the worker needs a moment before the new status is visible
     setTimeout(load, 1500);
     load();
   }
@@ -77,20 +78,16 @@ export default function MonitoringPage() {
   return (
     <AppShell>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Мониторинг</h1>
+        <h1 className="text-2xl font-semibold">{t("monitoring.title")}</h1>
         <div className="flex gap-2">
           <select className="w-auto" value={filter} onChange={(e) => setFilter(e.target.value)}>
-            <option value="">Все события</option>
-            <option value="FAILED">Только ошибки</option>
-            <option value="PENDING">В очереди</option>
-            <option value="PROCESSED">Обработанные</option>
+            <option value="">{t("monitoring.all")}</option>
+            <option value="FAILED">{t("monitoring.failedOnly")}</option>
+            <option value="PENDING">{t("monitoring.pending")}</option>
+            <option value="PROCESSED">{t("monitoring.processed")}</option>
           </select>
-          <button
-            className="rounded-xl bg-[#2563eb] px-4 disabled:opacity-50"
-            disabled={busy !== null}
-            onClick={() => retry()}
-          >
-            {busy === "all" ? "Ставим в очередь…" : "Повторить все ошибки"}
+          <button className="rounded-xl bg-[#2563eb] px-4 disabled:opacity-50" disabled={busy !== null} onClick={() => retry()}>
+            {busy === "all" ? t("monitoring.queueing") : t("monitoring.retryAll")}
           </button>
         </div>
       </div>
@@ -98,15 +95,15 @@ export default function MonitoringPage() {
 
       <div className="grid sm:grid-cols-3 gap-4 mb-6">
         <div className="card p-4">
-          <div className="muted text-sm">База данных</div>
-          <div className="text-2xl mt-1">{health?.db || "—"}</div>
+          <div className="muted text-sm">{t("monitoring.db")}</div>
+          <div className="text-2xl mt-1">{health?.db || t("common.dash")}</div>
         </div>
         <div className="card p-4">
-          <div className="muted text-sm">Redis</div>
-          <div className="text-2xl mt-1">{health?.redis || "—"}</div>
+          <div className="muted text-sm">{t("monitoring.redis")}</div>
+          <div className="text-2xl mt-1">{health?.redis || t("common.dash")}</div>
         </div>
         <div className="card p-4">
-          <div className="muted text-sm">Ошибок вебхуков</div>
+          <div className="muted text-sm">{t("monitoring.failedHooks")}</div>
           <div className="text-2xl mt-1" style={{ color: data?.failedJobs ? "#f87171" : undefined }}>
             {data?.failedJobs ?? 0}
           </div>
@@ -114,7 +111,7 @@ export default function MonitoringPage() {
       </div>
 
       <div className="card p-5 mb-6">
-        <div className="font-medium mb-3">События по интеграциям</div>
+        <div className="font-medium mb-3">{t("monitoring.byIntegration")}</div>
         <div className="flex flex-wrap gap-2">
           {(data?.counts || []).map((c) => (
             <span key={`${c.provider}-${c.processingStatus}`} className="chip">
@@ -122,7 +119,7 @@ export default function MonitoringPage() {
               {c.provider} · {c.processingStatus} · {c._count}
             </span>
           ))}
-          {(data?.counts || []).length === 0 && <div className="muted text-sm">Событий пока нет</div>}
+          {(data?.counts || []).length === 0 && <div className="muted text-sm">{t("monitoring.noEvents")}</div>}
         </div>
       </div>
 
@@ -130,18 +127,18 @@ export default function MonitoringPage() {
         <table className="w-full text-sm">
           <thead className="bg-[#182235] text-[#93a0bb]">
             <tr>
-              <th className="text-left p-3">Получено</th>
-              <th className="text-left p-3">Интеграция</th>
-              <th className="text-left p-3">Тип</th>
-              <th className="text-left p-3">Статус</th>
-              <th className="text-left p-3">Ошибка</th>
+              <th className="text-left p-3">{t("monitoring.received")}</th>
+              <th className="text-left p-3">{t("monitoring.integration")}</th>
+              <th className="text-left p-3">{t("monitoring.type")}</th>
+              <th className="text-left p-3">{t("common.status")}</th>
+              <th className="text-left p-3">{t("monitoring.error")}</th>
               <th className="text-left p-3"></th>
             </tr>
           </thead>
           <tbody>
             {(data?.events || []).map((e) => (
               <tr key={e.id} className="border-t border-[#243049]">
-                <td className="p-3">{new Date(e.receivedAt).toLocaleString("ru")}</td>
+                <td className="p-3">{new Date(e.receivedAt).toLocaleString(localeTag)}</td>
                 <td className="p-3">{e.provider}</td>
                 <td className="p-3">{e.eventType}</td>
                 <td className="p-3" style={{ color: STATUS_COLOR[e.processingStatus] }}>
@@ -153,7 +150,7 @@ export default function MonitoringPage() {
                 <td className="p-3">
                   {e.processingStatus === "FAILED" && (
                     <button className="chip disabled:opacity-50" disabled={busy !== null} onClick={() => retry(e.id)}>
-                      {busy === e.id ? "В очереди…" : "Повторить"}
+                      {busy === e.id ? t("monitoring.retrying") : t("monitoring.retry")}
                     </button>
                   )}
                 </td>

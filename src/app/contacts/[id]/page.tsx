@@ -2,6 +2,7 @@
 
 import { AppShell } from "@/components/AppShell";
 import { QuickActions } from "@/components/QuickActions";
+import { useI18n } from "@/components/I18nProvider";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
@@ -26,15 +27,8 @@ type Contact = {
   meetings: Array<{ id: string; startsAt: string; status: string; format: string }>;
 };
 
-const FIELD_LABELS: Record<string, string> = {
-  dealAmount: "Сумма сделки",
-  email: "Email",
-  comment: "Комментарий",
-  whatsappNumber: "WhatsApp-номер",
-  lastName: "Фамилия",
-};
-
 export default function ContactPage() {
+  const { t, localeTag } = useI18n();
   const params = useParams<{ id: string }>();
   const [c, setC] = useState<Contact | null>(null);
   const [stages, setStages] = useState<Stage[]>([]);
@@ -49,10 +43,18 @@ export default function ContactPage() {
 
   useEffect(() => {
     load();
-    fetch("/api/pipeline").then((r) => r.json()).then(setStages);
-    fetch("/api/users").then((r) => r.json()).then(setManagers);
-    fetch("/api/auth/me").then((r) => r.json()).then(setMe);
+    fetch("/api/pipeline")
+      .then((r) => r.json())
+      .then(setStages);
+    fetch("/api/users")
+      .then((r) => r.json())
+      .then(setManagers);
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then(setMe);
   }, [load]);
+
+  const fieldName = (f: string) => t(`fields.${f}`, f);
 
   async function patch(data: object) {
     setProblem("");
@@ -65,14 +67,14 @@ export default function ContactPage() {
     if (!res.ok) {
       const payload = await res.json().catch(() => ({}));
       if (payload.error === "STAGE_FIELDS_REQUIRED") {
-        const names = (payload.fields as string[]).map((f) => FIELD_LABELS[f] || f).join(", ");
-        setProblem(`Для этой стадии сначала заполните: ${names}`);
+        const names = (payload.fields as string[]).map(fieldName).join(", ");
+        setProblem(t("contact.missing", { fields: names }));
       } else {
-        setProblem("Не удалось сохранить");
+        setProblem(t("contact.saveFailed"));
       }
       return false;
     }
-    setNotice("Сохранено");
+    setNotice(t("contact.saved"));
     await load();
     return true;
   }
@@ -87,7 +89,7 @@ export default function ContactPage() {
   }
 
   if (!c) {
-    return <AppShell>Загрузка…</AppShell>;
+    return <AppShell>{t("common.loading")}</AppShell>;
   }
 
   return (
@@ -111,52 +113,43 @@ export default function ContactPage() {
             </div>
 
             <div className="grid md:grid-cols-2 gap-3 mt-4">
-              <div>Источник: {c.source}</div>
-              <div>Статус: {c.status}</div>
+              <div>{t("contact.source", { source: t(`sources.${c.source}`, c.source) })}</div>
+              <div>{t("contact.status", { status: c.status })}</div>
               <label>
-                Стадия
-                <select
-                  className="mt-1"
-                  value={c.pipelineStage?.id || ""}
-                  onChange={(e) => patch({ pipelineStageId: e.target.value })}
-                >
+                {t("contact.stage")}
+                <select className="mt-1" value={c.pipelineStage?.id || ""} onChange={(e) => patch({ pipelineStageId: e.target.value })}>
                   {stages.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name}
-                      {s.requiredFields.length ? ` (нужны: ${s.requiredFields.map((f) => FIELD_LABELS[f] || f).join(", ")})` : ""}
+                      {s.requiredFields.length ? ` (${t("contact.needs", { fields: s.requiredFields.map(fieldName).join(", ") })})` : ""}
                     </option>
                   ))}
                 </select>
               </label>
-              <div>Менеджер: {c.manager?.name}</div>
+              <div>{t("contact.manager", { name: c.manager?.name || t("common.dash") })}</div>
               <label>
-                Сумма
+                {t("contact.amount")}
                 <input value={String(c.dealAmount)} onChange={(e) => setC({ ...c, dealAmount: e.target.value })} />
               </label>
               <label>
-                Email
+                {t("common.email")}
                 <input value={c.email || ""} onChange={(e) => setC({ ...c, email: e.target.value })} />
               </label>
             </div>
 
-            <textarea
-              className="mt-3"
-              rows={3}
-              value={c.comment}
-              onChange={(e) => setC({ ...c, comment: e.target.value })}
-            />
+            <textarea className="mt-3" rows={3} value={c.comment} onChange={(e) => setC({ ...c, comment: e.target.value })} />
             <button
               className="mt-3 rounded-xl bg-[#1d4ed8] px-4 py-2"
               onClick={() => patch({ comment: c.comment, dealAmount: Number(c.dealAmount), email: c.email })}
             >
-              Сохранить
+              {t("common.save")}
             </button>
             {problem && <div className="mt-2 text-sm text-[#fbbf24]">{problem}</div>}
             {notice && <div className="mt-2 text-sm text-[#34d399]">{notice}</div>}
 
             {(me?.role === "ADMIN" || me?.role === "SUPERVISOR") && (
               <label className="block mt-4 text-sm">
-                Сменить менеджера
+                {t("contact.reassign")}
                 <select className="mt-1" value={c.manager?.id || ""} onChange={(e) => reassign(e.target.value)}>
                   {managers
                     .filter((m) => m.role !== "ADMIN")
@@ -172,25 +165,25 @@ export default function ContactPage() {
 
           <div className="grid md:grid-cols-2 gap-4">
             <div className="card p-5">
-              <div className="font-medium mb-2">Задачи</div>
-              {c.tasks.length === 0 && <div className="muted text-sm">Задач нет</div>}
-              {c.tasks.slice(0, 6).map((t) => (
-                <div key={t.id} className="text-sm border-t border-[#243049] py-2">
-                  <div>{t.description}</div>
+              <div className="font-medium mb-2">{t("contact.tasks")}</div>
+              {c.tasks.length === 0 && <div className="muted text-sm">{t("contact.noTasks")}</div>}
+              {c.tasks.slice(0, 6).map((task) => (
+                <div key={task.id} className="text-sm border-t border-[#243049] py-2">
+                  <div>{task.description}</div>
                   <div className="muted text-xs">
-                    {t.type} · {new Date(t.dueAt).toLocaleString("ru")} · {t.status}
+                    {t(`taskTypes.${task.type}`, task.type)} · {new Date(task.dueAt).toLocaleString(localeTag)} · {task.status}
                   </div>
                 </div>
               ))}
             </div>
             <div className="card p-5">
-              <div className="font-medium mb-2">Демо и встречи</div>
-              {c.meetings.length === 0 && <div className="muted text-sm">Встреч нет</div>}
+              <div className="font-medium mb-2">{t("contact.meetings")}</div>
+              {c.meetings.length === 0 && <div className="muted text-sm">{t("contact.noMeetings")}</div>}
               {c.meetings.slice(0, 6).map((m) => (
                 <div key={m.id} className="text-sm border-t border-[#243049] py-2">
-                  <div>{new Date(m.startsAt).toLocaleString("ru")}</div>
+                  <div>{new Date(m.startsAt).toLocaleString(localeTag)}</div>
                   <div className="muted text-xs">
-                    {m.format} · {m.status}
+                    {t(`meetingFormats.${m.format}`, m.format)} · {t(`meetingStatuses.${m.status}`, m.status)}
                   </div>
                 </div>
               ))}
@@ -198,12 +191,12 @@ export default function ContactPage() {
           </div>
 
           <div className="card p-6">
-            <div className="font-medium mb-3">Записи разговоров</div>
-            {c.calls.length === 0 && <div className="muted text-sm">Звонков нет</div>}
+            <div className="font-medium mb-3">{t("contact.recordings")}</div>
+            {c.calls.length === 0 && <div className="muted text-sm">{t("contact.noCalls")}</div>}
             {c.calls.map((call) => (
               <div key={call.id} className="flex items-center justify-between py-2 border-t border-[#243049]">
                 <div className="text-sm">
-                  {call.direction} · {call.status} · {call.duration}s
+                  {t(`callDirections.${call.direction}`, call.direction)} · {t(`callStatuses.${call.status}`, call.status)} · {call.duration}s
                 </div>
                 {call.recordingUrl && <audio controls src={call.recordingUrl} className="h-8" />}
               </div>
@@ -212,11 +205,11 @@ export default function ContactPage() {
         </div>
 
         <div className="card p-6">
-          <div className="font-medium mb-4">История</div>
+          <div className="font-medium mb-4">{t("contact.timeline")}</div>
           <div className="space-y-3">
             {c.activities.map((a) => (
               <div key={a.id} className="text-sm">
-                <div className="muted text-xs">{new Date(a.createdAt).toLocaleString("ru")}</div>
+                <div className="muted text-xs">{new Date(a.createdAt).toLocaleString(localeTag)}</div>
                 <div>{a.title}</div>
               </div>
             ))}

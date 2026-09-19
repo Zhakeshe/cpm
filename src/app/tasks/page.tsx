@@ -15,7 +15,7 @@ type Task = {
 };
 
 export default function TasksPage() {
-  const { t } = useI18n();
+  const { t, localeTag } = useI18n();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [form, setForm] = useState({ type: "CALL", description: "", dueAt: "" });
   useEffect(() => {
@@ -91,7 +91,7 @@ export default function TasksPage() {
                     <div>{item.description}</div>
                     <div className="muted text-xs">
                       {t(`taskTypes.${item.type}`)} · {item.contact ? item.contact.firstName : ""} ·{" "}
-                      {new Date(item.dueAt).toLocaleString("ru")}
+                      {new Date(item.dueAt).toLocaleString(localeTag)}
                     </div>
                   </div>
                   {item.status === "OPEN" && (
