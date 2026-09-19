@@ -1,10 +1,14 @@
 {
 	email admin@quantum.ushqn.com
+	# Default Caddy redirects http://IP → https://IP, which has no certificate.
+	auto_https disable_redirects
 }
 
-# Let's Encrypt issues a cert only for the hostname, never for a raw IP.
-# https://31.77.12.47 will always fail TLS; send HTTP visitors to the domain.
 http://31.77.12.47 {
+	redir https://quantum.ushqn.com{uri} permanent
+}
+
+http://quantum.ushqn.com {
 	redir https://quantum.ushqn.com{uri} permanent
 }
 
@@ -14,6 +18,5 @@ quantum.ushqn.com {
 		flush_interval -1
 		header_up Host {host}
 		header_up X-Forwarded-Proto https
-		header_up X-Forwarded-For {remote_host}
 	}
 }
