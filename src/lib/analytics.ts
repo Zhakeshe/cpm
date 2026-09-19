@@ -203,6 +203,7 @@ export async function managerTable(range: DateRange) {
       email: m.email,
       isActive: m.isActive,
       acceptsNewLeads: m.acceptsNewLeads,
+      isOnline: m.isOnline,
       sipExtension: m.sipExtension,
       lastSeenAt: m.lastSeenAt,
       ...stats,

@@ -2,10 +2,11 @@ export type ManagerCandidate = {
   id: string;
   isActive: boolean;
   acceptsNewLeads: boolean;
+  isOnline: boolean;
 };
 
 export function eligibleManagers(managers: ManagerCandidate[]): ManagerCandidate[] {
-  return managers.filter((m) => m.isActive && m.acceptsNewLeads);
+  return managers.filter((m) => m.isActive && m.acceptsNewLeads && m.isOnline);
 }
 
 /**

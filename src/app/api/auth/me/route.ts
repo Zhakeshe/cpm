@@ -15,6 +15,7 @@ export async function GET() {
       isActive: true,
       sipExtension: true,
       acceptsNewLeads: true,
+      isOnline: true,
     },
   });
   if (!user?.isActive) return NextResponse.json({ error: "ACCOUNT_DISABLED" }, { status: 403 });

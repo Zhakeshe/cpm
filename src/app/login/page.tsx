@@ -8,8 +8,8 @@ import { LOCALES, useI18n, type Locale } from "@/components/I18nProvider";
 export default function LoginPage() {
   const router = useRouter();
   const { t, locale, setLocale } = useI18n();
-  const [email, setEmail] = useState("admin@crm.local");
-  const [password, setPassword] = useState("Admin123!");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   async function onSubmit(e: React.FormEvent) {

@@ -5,6 +5,7 @@ export const publicUserSelect = {
   role: true,
   isActive: true,
   acceptsNewLeads: true,
+  isOnline: true,
   sipExtension: true,
   lastSeenAt: true,
 } as const;

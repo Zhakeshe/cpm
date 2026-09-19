@@ -47,6 +47,7 @@ function publicSelect() {
     role: true,
     isActive: true,
     acceptsNewLeads: true,
+    isOnline: true,
     sipExtension: true,
     lastSeenAt: true,
     createdAt: true,
@@ -98,22 +99,41 @@ export async function PATCH(req: NextRequest) {
     }
     const data: Record<string, unknown> = {};
     if (canManageUsers(actor.role)) {
-      if (typeof body.isActive === "boolean") data.isActive = body.isActive;
+      if (typeof body.isActive === "boolean") {
+        if (body.id === actor.id && body.isActive === false) {
+          return NextResponse.json({ error: "CANNOT_DISABLE_SELF" }, { status: 400 });
+        }
+        data.isActive = body.isActive;
+      }
       if (typeof body.acceptsNewLeads === "boolean") data.acceptsNewLeads = body.acceptsNewLeads;
+      if (typeof body.isOnline === "boolean") data.isOnline = body.isOnline;
       if (body.role) data.role = body.role;
       if (body.sipExtension !== undefined) data.sipExtension = body.sipExtension;
       if (body.name) data.name = body.name;
-    } else if (typeof body.acceptsNewLeads === "boolean") {
-      data.acceptsNewLeads = body.acceptsNewLeads;
+      if (typeof body.password === "string" && body.password.length >= 8) {
+        data.passwordHash = await hashPassword(body.password);
+      }
+      if (data.isActive === false) {
+        data.acceptsNewLeads = false;
+        data.isOnline = false;
+      }
+    } else {
+      if (typeof body.acceptsNewLeads === "boolean") data.acceptsNewLeads = body.acceptsNewLeads;
+      if (typeof body.isOnline === "boolean") data.isOnline = body.isOnline;
     }
     const updated = await prisma.user.update({ where: { id: body.id }, data });
+    const auditValue = { ...data };
+    delete auditValue.passwordHash;
+    if (typeof body.password === "string" && body.password.length >= 8) {
+      auditValue.passwordReset = true;
+    }
     await prisma.auditLog.create({
       data: {
         actorId: actor.id,
         action: "user.update",
         entityType: "User",
         entityId: body.id,
-        newValue: data as object,
+        newValue: auditValue as object,
       },
     });
     return NextResponse.json({ id: updated.id });

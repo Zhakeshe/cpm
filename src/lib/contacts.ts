@@ -1,5 +1,5 @@
 import type { PrismaClient, ContactSource, Prisma } from "@prisma/client";
-import { pickRoundRobinManager, type ManagerCandidate } from "./assignment";
+import { pickRoundRobinManager, shouldReassignExistingContact, type ManagerCandidate } from "./assignment";
 import { displayPhone, normalizePhone } from "./phone";
 
 type Db = PrismaClient | Prisma.TransactionClient;
@@ -13,7 +13,7 @@ export async function findContactByPhone(db: Db, phone: string) {
 export async function nextManager(db: Db) {
   const managers = (await db.user.findMany({
     where: { role: { in: ["MANAGER", "OPERATOR"] } },
-    select: { id: true, isActive: true, acceptsNewLeads: true },
+    select: { id: true, isActive: true, acceptsNewLeads: true, isOnline: true },
   })) as ManagerCandidate[];
   const state = await db.managerAssignmentState.upsert({
     where: { id: "global" },
@@ -70,7 +70,25 @@ export async function ingestContact(db: Db, input: IngestContactInput): Promise<
   });
 
   if (existing) {
-    const managerId = existing.managerId;
+    let managerId = existing.managerId;
+    if (shouldReassignExistingContact(existing.managerId, existing.manager?.isActive ?? null)) {
+      const assigned = await nextManager(db);
+      if (assigned && assigned.id !== existing.managerId) {
+        await reassignContact(db, {
+          contactId: existing.id,
+          toUserId: assigned.id,
+          actorId: input.actorId || assigned.id,
+          reason: "inactive_manager",
+        });
+        managerId = assigned.id;
+      } else if (!assigned) {
+        await db.contact.update({
+          where: { id: existing.id },
+          data: { managerId: null },
+        });
+        managerId = null;
+      }
+    }
     let leadId: string | null = null;
     let createdLead = false;
     if (input.createLeadOnDuplicate) {

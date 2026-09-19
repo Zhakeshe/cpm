@@ -15,10 +15,11 @@ describe("phone normalization", () => {
 
 describe("round robin", () => {
   const managers = [
-    { id: "a", isActive: true, acceptsNewLeads: true },
-    { id: "b", isActive: true, acceptsNewLeads: true },
-    { id: "c", isActive: true, acceptsNewLeads: false },
-    { id: "d", isActive: false, acceptsNewLeads: true },
+    { id: "a", isActive: true, acceptsNewLeads: true, isOnline: true },
+    { id: "b", isActive: true, acceptsNewLeads: true, isOnline: true },
+    { id: "c", isActive: true, acceptsNewLeads: false, isOnline: true },
+    { id: "d", isActive: false, acceptsNewLeads: true, isOnline: true },
+    { id: "e", isActive: true, acceptsNewLeads: true, isOnline: false },
   ];
 
   it("skips managers who are OFF or inactive", () => {
@@ -37,6 +38,7 @@ describe("round robin", () => {
   it("does not reassign existing customer with active manager", () => {
     expect(shouldReassignExistingContact("a", true)).toBe(false);
     expect(shouldReassignExistingContact(null, null)).toBe(true);
+    expect(shouldReassignExistingContact("a", false)).toBe(true);
   });
 });
 

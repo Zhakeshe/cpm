@@ -171,6 +171,7 @@ model User {
   role               Role     @default(MANAGER)
   isActive           Boolean  @default(true)
   acceptsNewLeads    Boolean  @default(true)
+  isOnline           Boolean  @default(true)
   sipExtension       String?
   sipUsername        String?
   lastSeenAt         DateTime?
