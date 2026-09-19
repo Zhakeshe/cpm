@@ -29,8 +29,8 @@ docker compose up -d --build
 
 В Meta App укажите:
 
-- Callback: `http://YOUR_SERVER_IP/api/webhooks/whatsapp`
-- Verify token: значение `WHATSAPP_VERIFY_TOKEN`
+- Callback: `https://quantum.ushqn.com/api/webhooks/whatsapp`
+- Verify token: `quantum_waba_verify_2026` (`WHATSAPP_VERIFY_TOKEN`)
 - Подписка: `messages`
 
 Для Lead Ads:

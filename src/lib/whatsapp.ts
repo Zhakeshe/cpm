@@ -68,16 +68,22 @@ function extractText(msg: WhatsAppMessage) {
 
 export async function handleWhatsAppInbound(db: PrismaClient, payload: unknown) {
   const body = payload as {
+    object?: string;
     entry?: Array<{
       changes?: Array<{
         value?: {
           messages?: WhatsAppMessage[];
           statuses?: Status[];
           contacts?: Array<{ wa_id?: string; profile?: { name?: string } }>;
+          metadata?: { phone_number_id?: string; display_phone_number?: string };
         };
       }>;
     }>;
   };
+
+  if (body.object && body.object !== "whatsapp_business_account") {
+    return [{ type: "ignored_object", object: body.object }];
+  }
 
   const results: Array<Record<string, unknown>> = [];
   for (const entry of body.entry || []) {

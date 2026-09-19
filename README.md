@@ -46,10 +46,51 @@ Nginx слушает `:80`. Postgres, Redis и MinIO наружу не откр�
 
 ### WhatsApp Cloud API (Direct WABA, без посредников)
 
-Что нужно завести в Meta: App, Business Portfolio, WhatsApp Business Account, Business Phone Number. Из них взять `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_BUSINESS_ACCOUNT_ID`, permanent token системного пользователя (`WHATSAPP_ACCESS_TOKEN`), `WHATSAPP_APP_SECRET` и свой `WHATSAPP_VERIFY_TOKEN`. Все они живут только в backend `.env`; во фронтенд не попадает ничего.
+Что нужно завести в Meta: App, Business Portfolio, WhatsApp Business Account, Business Phone Number. Из них взять `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_BUSINESS_ACCOUNT_ID`, permanent token системного пользователя (`WHATSAPP_ACCESS_TOKEN`), `META_APP_SECRET` (или `WHATSAPP_APP_SECRET`) и `WHATSAPP_VERIFY_TOKEN`. Все они живут только в backend `.env`; во фронтенд не попадает ничего.
 
-- Verify: `GET /api/webhooks/whatsapp`
-- Inbound: `POST /api/webhooks/whatsapp` (проверка подписи `x-hub-signature-256`)
+- Verify: `GET /api/webhooks/whatsapp` — plain text `hub.challenge`
+- Inbound: `POST /api/webhooks/whatsapp` (подпись `X-Hub-Signature-256` по raw body, если секрет задан)
+
+## WHATSAPP CLOUD API SETUP
+
+1. Deploy backend на HTTPS-домен (не localhost и не private IP).
+
+2. В Meta Developers открыть:
+
+   WhatsApp → Настройка рабочей среды → Настроить Webhooks
+
+3. Callback URL:
+
+   `https://quantum.ushqn.com/api/webhooks/whatsapp`
+
+4. Verify Token:
+
+   `quantum_waba_verify_2026`
+
+   Он должен совпадать с `WHATSAPP_VERIFY_TOKEN` в `.env`.
+
+5. Нажать **Подтвердить и сохранить**. Meta шлёт GET с `hub.mode`, `hub.verify_token`, `hub.challenge`. Backend отвечает `200` и телом `hub.challenge` (`text/plain`).
+
+6. После успешной verification подписаться на field: **messages**.
+
+7. Отправить сообщение на WhatsApp test number.
+
+8. Проверить backend logs / таблицу `WebhookEvent` / инбокс CRM.
+
+Запуск и проверка локально:
+
+```bash
+cp .env.example .env
+npm test -- tests/whatsapp-webhook.test.ts
+npm run test:integration
+```
+
+Проверка verification без UI:
+
+```bash
+curl -sS "https://quantum.ushqn.com/api/webhooks/whatsapp?hub.mode=subscribe&hub.verify_token=quantum_waba_verify_2026&hub.challenge=123456"
+# ожидается: 123456
+```
 - Исходящие: `POST /api/messages/send`
 - Загрузка файла перед отправкой: `POST /api/messages/upload`
 - Отдача медиа с проверкой прав: `GET /api/media/:messageId`

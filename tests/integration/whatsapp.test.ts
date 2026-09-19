@@ -48,6 +48,51 @@ describe("WhatsApp WABA", () => {
     expect(conversation.managerId).toBe("mgr-1");
   });
 
+  it("принимает официальный Cloud API payload и не дублирует Message", async () => {
+    const payload = {
+      object: "whatsapp_business_account",
+      entry: [
+        {
+          id: "WABA_ID",
+          changes: [
+            {
+              field: "messages",
+              value: {
+                messaging_product: "whatsapp",
+                metadata: {
+                  display_phone_number: "15551633738",
+                  phone_number_id: "PHONE_NUMBER_ID",
+                },
+                contacts: [{ profile: { name: "Test User" }, wa_id: "77000000000" }],
+                messages: [
+                  {
+                    from: "77000000000",
+                    id: "wamid.TEST123",
+                    timestamp: "1750000000",
+                    text: { body: "Сәлем" },
+                    type: "text",
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    };
+
+    await handleWhatsAppInbound(prisma, payload);
+    await handleWhatsAppInbound(prisma, payload);
+
+    const contact = await prisma.contact.findUniqueOrThrow({ where: { phoneNormalized: "77000000000" } });
+    expect(contact.firstName).toBe("Test");
+    expect(contact.lastName).toBe("User");
+    expect(await prisma.conversation.count({ where: { contactId: contact.id, channel: "whatsapp" } })).toBe(1);
+    expect(await prisma.message.count({ where: { externalMessageId: "wamid.TEST123" } })).toBe(1);
+    const message = await prisma.message.findUniqueOrThrow({ where: { externalMessageId: "wamid.TEST123" } });
+    expect(message.direction).toBe("INBOUND");
+    expect(message.text).toBe("Сәлем");
+  });
+
   it("игнорирует повторную доставку того же message id", async () => {
     const payload = whatsappPayload({ messageId: "wamid.dup", from: "77470000099", text: "Дубль" });
     await handleWhatsAppInbound(prisma, payload);
