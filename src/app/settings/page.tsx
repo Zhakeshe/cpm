@@ -17,6 +17,62 @@ type Template = {
 
 type Integration = { type: string; status: string; lastSyncAt?: string; lastError?: string; config?: Record<string, unknown> };
 
+function TemplateRow({
+  tpl,
+  onSaved,
+  t,
+}: {
+  tpl: Template;
+  onSaved: () => void;
+  t: (path: string) => string;
+}) {
+  const [edit, setEdit] = useState(tpl);
+  useEffect(() => {
+    setEdit(tpl);
+  }, [tpl]);
+
+  async function save() {
+    await fetch("/api/templates", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(edit),
+    });
+    onSaved();
+  }
+
+  return (
+    <div className="border-t border-[#243049] pt-3 space-y-2 text-sm">
+      <div className="grid md:grid-cols-6 gap-2">
+        <input value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} />
+        <input value={edit.metaName} onChange={(e) => setEdit({ ...edit, metaName: e.target.value })} />
+        <input value={edit.language} onChange={(e) => setEdit({ ...edit, language: e.target.value })} />
+        <select value={edit.category} onChange={(e) => setEdit({ ...edit, category: e.target.value })}>
+          <option value="MARKETING">MARKETING</option>
+          <option value="UTILITY">UTILITY</option>
+        </select>
+        <select value={edit.status} onChange={(e) => setEdit({ ...edit, status: e.target.value })}>
+          <option value="APPROVED">APPROVED</option>
+          <option value="PENDING">PENDING</option>
+          <option value="REJECTED">REJECTED</option>
+        </select>
+        <label className="text-xs flex items-center gap-1">
+          <input
+            type="checkbox"
+            className="w-auto"
+            checked={edit.isActive}
+            onChange={(e) => setEdit({ ...edit, isActive: e.target.checked })}
+          />
+          {t("settings.active")}
+        </label>
+      </div>
+      <textarea rows={2} value={edit.body} onChange={(e) => setEdit({ ...edit, body: e.target.value })} />
+      <button type="button" className="rounded-xl bg-[#2563eb] px-3 py-2 text-sm" onClick={save}>
+        {t("settings.saveTemplate")}
+      </button>
+    </div>
+  );
+}
+
 function TemplatesSection() {
   const { t } = useI18n();
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -47,23 +103,18 @@ function TemplatesSection() {
     load();
   }
 
-  async function patch(id: string, data: object) {
-    await fetch("/api/templates", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, ...data }),
-    });
-    load();
-  }
-
   return (
     <div className="card p-5 mb-6 space-y-3">
       <div className="font-medium">{t("settings.templates")}</div>
       <div className="muted text-sm">{t("settings.templatesHint")}</div>
-      <form onSubmit={create} className="grid md:grid-cols-5 gap-2">
+      <form onSubmit={create} className="grid md:grid-cols-6 gap-2">
         <input placeholder={t("settings.titleName")} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
         <input placeholder={t("settings.metaName")} value={draft.metaName} onChange={(e) => setDraft({ ...draft, metaName: e.target.value })} />
         <input placeholder={t("settings.lang")} value={draft.language} onChange={(e) => setDraft({ ...draft, language: e.target.value })} />
+        <select value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })}>
+          <option value="MARKETING">MARKETING</option>
+          <option value="UTILITY">UTILITY</option>
+        </select>
         <select value={draft.status} onChange={(e) => setDraft({ ...draft, status: e.target.value })}>
           <option value="APPROVED">APPROVED</option>
           <option value="PENDING">PENDING</option>
@@ -71,7 +122,7 @@ function TemplatesSection() {
         </select>
         <button className="rounded-xl bg-[#2563eb]">{t("common.add")}</button>
         <textarea
-          className="md:col-span-5"
+          className="md:col-span-6"
           rows={2}
           placeholder={t("settings.templateBody")}
           value={draft.body}
@@ -80,29 +131,7 @@ function TemplatesSection() {
       </form>
       <div className="space-y-2">
         {templates.map((tpl) => (
-          <div key={tpl.id} className="border-t border-[#243049] pt-2 text-sm">
-            <div className="flex justify-between gap-2">
-              <div>
-                <div className="font-medium">{tpl.name}</div>
-                <div className="muted text-xs">
-                  {tpl.metaName} · {tpl.language} · {tpl.category}
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="chip">{tpl.status}</span>
-                <label className="text-xs flex items-center gap-1">
-                  <input
-                    type="checkbox"
-                    className="w-auto"
-                    checked={tpl.isActive}
-                    onChange={(e) => patch(tpl.id, { isActive: e.target.checked })}
-                  />
-                  {t("settings.active")}
-                </label>
-              </div>
-            </div>
-            <div className="muted text-xs whitespace-pre-line mt-1">{tpl.body}</div>
-          </div>
+          <TemplateRow key={tpl.id} tpl={tpl} onSaved={load} t={t} />
         ))}
         {templates.length === 0 && <div className="muted text-sm">{t("settings.noTemplates")}</div>}
       </div>

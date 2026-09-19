@@ -12,12 +12,13 @@ const schema = z.object({
   templateParameters: z.array(z.string()).optional(),
   media: z
     .object({
-      type: z.enum(["IMAGE", "DOCUMENT", "AUDIO", "VIDEO"]),
+      type: z.enum(["IMAGE", "DOCUMENT", "AUDIO", "VIDEO", "VOICE"]),
       metaMediaId: z.string(),
       storageKey: z.string().optional(),
       mimeType: z.string().optional(),
       fileName: z.string().optional(),
       size: z.number().optional(),
+      voiceNote: z.boolean().optional(),
     })
     .optional(),
 });

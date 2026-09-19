@@ -126,6 +126,35 @@ describe("24-часовое окно и шаблоны", () => {
     expect(isServiceWindowOpen(conversation.serviceWindowExpiresAt)).toBe(true);
   });
 
+  it("разрешает фото и голосовое внутри окна и блокирует вне окна", async () => {
+    await handleWhatsAppInbound(prisma, whatsappPayload({ messageId: "wa.m1", from: "77470000108", text: "фото?" }));
+    const contact = await prisma.contact.findUniqueOrThrow({ where: { phoneNormalized: "77470000108" } });
+    const photo = await sendOutboundMessage(prisma, {
+      contactId: contact.id,
+      senderId: contact.managerId!,
+      media: { type: "IMAGE", metaMediaId: "meta-img", mimeType: "image/jpeg", fileName: "a.jpg" },
+    });
+    expect(photo.message.type).toBe("IMAGE");
+    const voice = await sendOutboundMessage(prisma, {
+      contactId: contact.id,
+      senderId: contact.managerId!,
+      media: { type: "VOICE", metaMediaId: "meta-voice", mimeType: "audio/ogg", fileName: "voice.ogg", voiceNote: true },
+    });
+    expect(voice.message.type).toBe("VOICE");
+
+    await prisma.conversation.updateMany({
+      where: { contactId: contact.id },
+      data: { serviceWindowExpiresAt: new Date(Date.now() - 1000) },
+    });
+    await expect(
+      sendOutboundMessage(prisma, {
+        contactId: contact.id,
+        senderId: contact.managerId!,
+        media: { type: "IMAGE", metaMediaId: "meta-img-2", mimeType: "image/jpeg" },
+      }),
+    ).rejects.toBeInstanceOf(ServiceWindowClosedError);
+  });
+
   it("подставляет переменные шаблона по позициям", () => {
     expect(renderTemplate("{{1}}, демо {{2}}", ["Аружан", "в 15:00"])).toBe("Аружан, демо в 15:00");
   });

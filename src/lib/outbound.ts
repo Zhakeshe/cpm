@@ -7,6 +7,7 @@ import {
   type OutboundMediaType,
 } from "./whatsapp";
 import { emitToAdmins, emitToUser } from "./realtime";
+import { renderTemplate } from "./templates";
 
 export class ServiceWindowClosedError extends Error {
   status = 409;
@@ -29,7 +30,15 @@ type SendParams = {
   text?: string;
   templateId?: string;
   templateParameters?: string[];
-  media?: { type: OutboundMediaType; metaMediaId: string; storageKey?: string; mimeType?: string; fileName?: string; size?: number };
+  media?: {
+    type: OutboundMediaType;
+    metaMediaId: string;
+    storageKey?: string;
+    mimeType?: string;
+    fileName?: string;
+    size?: number;
+    voiceNote?: boolean;
+  };
 };
 
 /**
@@ -70,8 +79,9 @@ export async function sendOutboundMessage(db: PrismaClient, params: SendParams) 
       mediaId: params.media.metaMediaId,
       caption: params.text,
       fileName: params.media.fileName,
+      voiceNote: params.media.voiceNote || params.media.type === "VOICE",
     });
-    type = params.media.type as MessageType;
+    type = params.media.voiceNote || params.media.type === "VOICE" ? "VOICE" : (params.media.type as MessageType);
     text = params.text || params.media.fileName || "";
   } else {
     if (!params.text?.trim()) throw Object.assign(new Error("TEXT_REQUIRED"), { status: 400 });
@@ -122,6 +132,4 @@ export async function sendOutboundMessage(db: PrismaClient, params: SendParams) 
   return { message, conversation, mocked: sent.mocked };
 }
 
-export function renderTemplate(body: string, parameters: string[]) {
-  return body.replace(/\{\{(\d+)\}\}/g, (_match, index) => parameters[Number(index) - 1] ?? `{{${index}}}`);
-}
+export { renderTemplate } from "./templates";
