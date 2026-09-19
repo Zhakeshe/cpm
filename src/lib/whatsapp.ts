@@ -68,16 +68,22 @@ function extractText(msg: WhatsAppMessage) {
 
 export async function handleWhatsAppInbound(db: PrismaClient, payload: unknown) {
   const body = payload as {
+    object?: string;
     entry?: Array<{
       changes?: Array<{
         value?: {
           messages?: WhatsAppMessage[];
           statuses?: Status[];
           contacts?: Array<{ wa_id?: string; profile?: { name?: string } }>;
+          metadata?: { phone_number_id?: string; display_phone_number?: string };
         };
       }>;
     }>;
   };
+
+  if (body.object && body.object !== "whatsapp_business_account") {
+    return [{ type: "ignored_object", object: body.object }];
+  }
 
   const results: Array<Record<string, unknown>> = [];
   for (const entry of body.entry || []) {
@@ -236,6 +242,16 @@ export async function storeInboundMedia(
   }
 }
 
+export class WhatsAppApiError extends Error {
+  status = 400;
+  constructor(
+    public code: string,
+    public metaCode?: number,
+  ) {
+    super(code);
+  }
+}
+
 async function postMessage(body: Record<string, unknown>) {
   const token = process.env.WHATSAPP_ACCESS_TOKEN;
   const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
@@ -248,7 +264,18 @@ async function postMessage(body: Record<string, unknown>) {
     body: JSON.stringify({ messaging_product: "whatsapp", ...body }),
   });
   if (!res.ok) {
-    throw new Error(`WhatsApp API error: ${await res.text()}`);
+    const raw = await res.text();
+    let metaCode: number | undefined;
+    try {
+      metaCode = (JSON.parse(raw) as { error?: { code?: number } }).error?.code;
+    } catch {
+      /* keep a generic code if Meta returned non-JSON */
+    }
+    console.error("whatsapp_send_failed", { status: res.status, metaCode });
+    if (metaCode === 131030) throw new WhatsAppApiError("RECIPIENT_NOT_ALLOWED", metaCode);
+    if (metaCode === 131047) throw new WhatsAppApiError("SERVICE_WINDOW_CLOSED", metaCode);
+    if (metaCode === 131026) throw new WhatsAppApiError("RECIPIENT_UNDELIVERABLE", metaCode);
+    throw new WhatsAppApiError("WHATSAPP_SEND_FAILED", metaCode);
   }
   const json = (await res.json()) as { messages?: Array<{ id: string }> };
   return { mocked: false, id: json.messages?.[0]?.id || crypto.randomUUID() };

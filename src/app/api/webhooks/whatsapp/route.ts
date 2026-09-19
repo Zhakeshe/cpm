@@ -1,48 +1,70 @@
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import {
+  logWhatsAppWebhook,
+  metaAppSecret,
+  type MetaWhatsAppPayload,
+  verifyMetaSignature,
+  verifyWhatsAppHub,
+} from "@/lib/meta-webhook";
 import { enqueueWebhook } from "@/lib/queue";
-import { verifyWhatsAppSignature } from "@/lib/whatsapp";
 
 export async function GET(req: NextRequest) {
-  const mode = req.nextUrl.searchParams.get("hub.mode");
-  const token = req.nextUrl.searchParams.get("hub.verify_token");
-  const challenge = req.nextUrl.searchParams.get("hub.challenge");
-  if (mode === "subscribe" && token === process.env.WHATSAPP_VERIFY_TOKEN) {
-    return new NextResponse(challenge || "", { status: 200 });
+  const verified = verifyWhatsAppHub({
+    mode: req.nextUrl.searchParams.get("hub.mode"),
+    token: req.nextUrl.searchParams.get("hub.verify_token"),
+    challenge: req.nextUrl.searchParams.get("hub.challenge"),
+  });
+  if (verified.ok) {
+    return new NextResponse(verified.challenge, {
+      status: 200,
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
   }
-  return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+  return new NextResponse("Forbidden", { status: 403 });
 }
 
 export async function POST(req: NextRequest) {
   const raw = await req.text();
-  const secret = process.env.WHATSAPP_APP_SECRET || "";
-  const sig = req.headers.get("x-hub-signature-256");
-  if (secret && !verifyWhatsAppSignature(raw, sig, secret)) {
-    return NextResponse.json({ error: "INVALID_SIGNATURE" }, { status: 401 });
+  const secret = metaAppSecret();
+  const signature = req.headers.get("x-hub-signature-256");
+
+  // GET verification never uses the app secret. POST is signed when a secret exists.
+  // Missing secret must not block first-time Meta setup; production still warns.
+  if (secret) {
+    if (!verifyMetaSignature(raw, signature, secret)) {
+      return NextResponse.json({ error: "INVALID_SIGNATURE" }, { status: 401 });
+    }
+  } else if (process.env.NODE_ENV === "production") {
+    console.warn("whatsapp_webhook_unsigned: set META_APP_SECRET or WHATSAPP_APP_SECRET");
   }
-  let payload: unknown;
+
+  let payload: MetaWhatsAppPayload;
   try {
-    payload = JSON.parse(raw);
+    payload = JSON.parse(raw) as MetaWhatsAppPayload;
   } catch {
     return NextResponse.json({ error: "INVALID_JSON" }, { status: 400 });
   }
+
+  logWhatsAppWebhook(payload);
+
   const eventId = crypto.createHash("sha256").update(raw).digest("hex");
   try {
     const saved = await prisma.webhookEvent.create({
       data: {
         provider: "whatsapp",
         eventId,
-        eventType: "whatsapp.webhook",
+        eventType: payload.object || "whatsapp.webhook",
         payload: payload as object,
       },
     });
     await enqueueWebhook({ webhookEventId: saved.id, provider: "whatsapp" });
   } catch (err) {
     if ((err as { code?: string }).code === "P2002") {
-      return NextResponse.json({ ok: true, duplicate: true });
+      return NextResponse.json({ success: true, duplicate: true });
     }
     throw err;
   }
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ success: true });
 }

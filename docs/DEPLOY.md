@@ -1,6 +1,8 @@
 # Production deploy
 
-Сервер поднимается Docker Compose: Postgres, Redis, MinIO (`quay.io/minio/*`), app, worker, Nginx на `:80`.
+Сервер поднимается Docker Compose: Postgres, Redis, MinIO (`quay.io/minio/*`), app, worker, Caddy (HTTPS `quantum.ushqn.com`).
+
+CRM открывать только как `https://quantum.ushqn.com`. Адрес `https://31.77.12.47` даёт ошибку SSL: сертификат Let's Encrypt выписан на домен, не на IP. `http://31.77.12.47` редиректит на домен.
 
 ```bash
 git clone <repo> /opt/crm && cd /opt/crm
@@ -29,8 +31,8 @@ docker compose up -d --build
 
 В Meta App укажите:
 
-- Callback: `http://YOUR_SERVER_IP/api/webhooks/whatsapp`
-- Verify token: значение `WHATSAPP_VERIFY_TOKEN`
+- Callback: `https://quantum.ushqn.com/api/webhooks/whatsapp`
+- Verify token: `quantum_waba_verify_2026` (`WHATSAPP_VERIFY_TOKEN`)
 - Подписка: `messages`
 
 Для Lead Ads:

@@ -127,6 +127,12 @@ function MessagesInbox() {
     ? new Date(thread.serviceWindowExpiresAt).getTime() > Date.now()
     : false;
   const approved = templates.filter((tpl) => tpl.isActive && tpl.status === "APPROVED");
+  const sendErrorText = (code: unknown) => {
+    if (code === "SERVICE_WINDOW_CLOSED") return t("messages.windowError");
+    if (code === "RECIPIENT_NOT_ALLOWED") return t("messages.recipientNotAllowed");
+    if (code === "RECIPIENT_UNDELIVERABLE") return t("messages.recipientUndeliverable");
+    return t("messages.sendFailed");
+  };
 
   async function send() {
     if (!thread || !text.trim()) return;
@@ -138,7 +144,7 @@ function MessagesInbox() {
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      setError(data.error === "SERVICE_WINDOW_CLOSED" ? t("messages.windowError") : t("messages.sendFailed"));
+      setError(sendErrorText(data.error));
       return;
     }
     setText("");
@@ -182,7 +188,7 @@ function MessagesInbox() {
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      setError(data.error === "SERVICE_WINDOW_CLOSED" ? t("messages.windowError") : t("messages.fileFailed"));
+      setError(sendErrorText(data.error));
       return;
     }
     setText("");

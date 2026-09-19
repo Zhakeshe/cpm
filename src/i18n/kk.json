@@ -110,6 +110,8 @@
     "stage": "Кезең: {name}",
     "amount": "Сома: {amount}",
     "sendFailed": "Жіберілмеді",
+    "recipientNotAllowed": "Нөмір Meta тест алушылар тізімінде жоқ. WhatsApp → API Setup → To ішіне қосып, WhatsApp-та шақыруды растаңыз.",
+    "recipientUndeliverable": "WhatsApp бұл нөмірге жеткізе алмады",
     "windowError": "24 сағаттық терезе жабық — үлгі жіберіңіз",
     "templateFailed": "Үлгі жіберілмеді",
     "uploadFailed": "Файл жүктелмеді",
