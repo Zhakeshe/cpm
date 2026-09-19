@@ -1,0 +1,13 @@
+{
+	email admin@quantum.ushqn.com
+}
+
+quantum.ushqn.com {
+	encode gzip
+	reverse_proxy app:3000 {
+		flush_interval -1
+		header_up Host {host}
+		header_up X-Forwarded-Proto https
+		header_up X-Forwarded-For {remote_host}
+	}
+}

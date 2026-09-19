@@ -38,7 +38,7 @@ APP_URL=http://YOUR_SERVER_IP bash scripts/bootstrap-env.sh .
 docker compose up -d --build
 ```
 
-Nginx слушает `:80`. Postgres, Redis и MinIO наружу не открываются. Для HTTPS поставьте TLS-терминацию перед Nginx и выставьте `COOKIE_SECURE=true`.
+Caddy слушает `:80`/`:443` для `quantum.ushqn.com` и ставит Let's Encrypt. Postgres, Redis и MinIO наружу не открываются. В production выставьте `COOKIE_SECURE=true`.
 
 Отдельные окружения: `development` / `staging` / `production` — разные `DATABASE_URL`, `REDIS_URL` и секреты. Реальные WABA/SIP credentials не использовать в local development.
 
