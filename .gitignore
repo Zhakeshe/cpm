@@ -11,3 +11,4 @@ uploads
 prisma/*.db
 tsconfig.tsbuildinfo
 dump.rdb
+tsconfig.server.tsbuildinfo
