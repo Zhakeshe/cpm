@@ -47,6 +47,20 @@ describe("клиенты и распределение лидов", () => {
     expect(contact.managerId).toBe(first.managerId);
   });
 
+  it("переназначает вернувшегося клиента, если аккаунт менеджера закрыт", async () => {
+    const first = await ingestContact(prisma, { phone: "77470000050", source: "WHATSAPP" });
+    expect(first.managerId).toBe("mgr-1");
+    await prisma.user.update({ where: { id: "mgr-1" }, data: { isActive: false, acceptsNewLeads: false, isOnline: false } });
+
+    const returning = await ingestContact(prisma, { phone: "77470000050", source: "WHATSAPP" });
+    expect(returning.duplicate).toBe(true);
+    expect(returning.managerId).not.toBe("mgr-1");
+    expect(["mgr-2", "mgr-3"]).toContain(returning.managerId);
+
+    const contact = await prisma.contact.findUniqueOrThrow({ where: { phoneNormalized: "77470000050" } });
+    expect(contact.managerId).toBe(returning.managerId);
+  });
+
   it("исключает менеджера с выключенным приёмом лидов и неактивного", async () => {
     await prisma.user.update({ where: { id: "mgr-2" }, data: { acceptsNewLeads: false } });
     await prisma.user.update({ where: { id: "mgr-3" }, data: { isActive: false } });

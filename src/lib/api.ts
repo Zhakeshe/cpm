@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { getSession, type SessionUser } from "./auth";
+import { prisma } from "./db";
 import { canManageSettings, type Role } from "./rbac";
 import { clientIp, rateLimit } from "./rate-limit";
 
@@ -19,11 +20,18 @@ export async function requireUser(): Promise<SessionUser> {
   if (!session) {
     throw Object.assign(new Error("UNAUTHORIZED"), { status: 401 });
   }
+  const live = await prisma.user.findUnique({
+    where: { id: session.id },
+    select: { isActive: true, email: true, name: true, role: true },
+  });
+  if (!live?.isActive) {
+    throw Object.assign(new Error("ACCOUNT_DISABLED"), { status: 403 });
+  }
   const limit = await rateLimit(`api:user:${session.id}`, API_LIMIT, API_WINDOW_SEC);
   if (!limit.ok) {
     throw new RateLimitError(limit.retryAfter);
   }
-  return session;
+  return { ...session, email: live.email, name: live.name, role: live.role };
 }
 
 export function jsonError(err: unknown) {

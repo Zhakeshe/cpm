@@ -14,8 +14,8 @@ docker compose up -d --build
 
 - CRM: `http://YOUR_SERVER_IP`
 - Health: `http://YOUR_SERVER_IP/api/health`
-- Admin: `admin@crm.local` / `Admin123!` — смените пароль сразу
-- Менеджеры: `manager1@crm.local` … `manager5@crm.local` / `Manager123!`
+- Локальный seed: `admin@crm.local` / `Admin123!` — на проде сразу смените
+- Менеджеры (seed): `manager1@crm.local` … `manager5@crm.local` / `Manager123!`
 
 Внутренние порты Postgres/Redis/MinIO наружу не публикуются.
 

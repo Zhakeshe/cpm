@@ -16,6 +16,7 @@ type Detail = {
     role: string;
     isActive: boolean;
     acceptsNewLeads: boolean;
+    isOnline: boolean;
     sipExtension?: string | null;
     lastSeenAt?: string | null;
   };

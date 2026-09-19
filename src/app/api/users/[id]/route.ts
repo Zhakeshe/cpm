@@ -21,6 +21,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
         role: true,
         isActive: true,
         acceptsNewLeads: true,
+        isOnline: true,
         sipExtension: true,
         lastSeenAt: true,
         createdAt: true,

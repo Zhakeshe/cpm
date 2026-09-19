@@ -53,13 +53,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [incoming, setIncoming] = useState<{ contactId?: string } | null>(null);
 
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((r) => (r.ok ? r.json() : null))
-      .then(setMe);
+    fetch("/api/auth/me").then(async (r) => {
+      if (r.status === 403) {
+        await fetch("/api/auth/logout", { method: "POST" });
+        router.push("/login");
+        return;
+      }
+      setMe(r.ok ? await r.json() : null);
+    });
     fetch("/api/notifications")
       .then((r) => (r.ok ? r.json() : []))
       .then(setNotes);
-  }, []);
+  }, [router]);
 
   usePresence();
   useRealtime({
