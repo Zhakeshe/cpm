@@ -1,6 +1,6 @@
 # Production deploy
 
-Сервер поднимается Docker Compose: Postgres, Redis, MinIO, app, worker, Nginx на `:80`.
+Сервер поднимается Docker Compose: Postgres, Redis, MinIO (`quay.io/minio/*`), app, worker, Nginx на `:80`.
 
 ```bash
 git clone <repo> /opt/crm && cd /opt/crm
