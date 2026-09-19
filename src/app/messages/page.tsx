@@ -1,7 +1,9 @@
 "use client";
 
 import { AppShell } from "@/components/AppShell";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { QuickActions } from "@/components/QuickActions";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useRealtime } from "@/lib/use-realtime";
 import { Check, CheckCheck, Clock, AlertTriangle, Paperclip, Lock } from "lucide-react";
 
@@ -76,7 +78,9 @@ function MediaBubble({ message }: { message: Message }) {
   );
 }
 
-export default function MessagesPage() {
+function MessagesInbox() {
+  const params = useSearchParams();
+  const requestedContact = params.get("contact");
   const [list, setList] = useState<Conv[]>([]);
   const [active, setActive] = useState<string | null>(null);
   const [thread, setThread] = useState<{ messages: Message[]; contact: Contact; serviceWindowExpiresAt: string | null } | null>(null);
@@ -101,6 +105,13 @@ export default function MessagesPage() {
     loadList();
     fetch("/api/templates").then((r) => (r.ok ? r.json() : [])).then(setTemplates);
   }, [loadList]);
+
+  // opening a chat straight from a contact card or quick action
+  useEffect(() => {
+    if (!requestedContact || active) return;
+    const match = list.find((c) => c.contact.id === requestedContact);
+    if (match) open(match.id);
+  }, [requestedContact, list, active, open]);
 
   useRealtime({
     "whatsapp:message": (payload: { conversationId?: string }) => {
@@ -305,10 +316,8 @@ export default function MessagesPage() {
               <div>Стадия: {thread.contact.pipelineStage?.name}</div>
               <div>Сумма: {Number(thread.contact.dealAmount || 0)}</div>
               <div className="muted">{thread.contact.comment}</div>
-              <div className="flex flex-wrap gap-2 pt-2">
-                <a className="chip" href={`/contacts/${thread.contact.id}`}>Карточка</a>
-                <a className="chip" href={`/tasks`}>Задача</a>
-                <a className="chip" href={`/meetings`}>Демо</a>
+              <div className="pt-2">
+                <QuickActions contactId={thread.contact.id} onDone={loadList} />
               </div>
             </div>
           ) : (
@@ -317,5 +326,19 @@ export default function MessagesPage() {
         </div>
       </div>
     </AppShell>
+  );
+}
+
+export default function MessagesPage() {
+  return (
+    <Suspense
+      fallback={
+        <AppShell>
+          <div className="muted">Загрузка диалогов…</div>
+        </AppShell>
+      }
+    >
+      <MessagesInbox />
+    </Suspense>
   );
 }

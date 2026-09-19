@@ -21,20 +21,21 @@ import {
 } from "lucide-react";
 import { useRealtime, usePresence } from "@/lib/use-realtime";
 import { Softphone } from "@/components/Softphone";
+import { LOCALES, useI18n, type Locale } from "@/components/I18nProvider";
 
 const NAV = [
-  { href: "/", label: "Главная", icon: LayoutDashboard },
-  { href: "/leads", label: "Лиды", icon: Target },
-  { href: "/pipeline", label: "Воронка", icon: Kanban },
-  { href: "/messages", label: "Сообщения", icon: MessageSquare },
-  { href: "/calls", label: "Звонки", icon: Phone },
-  { href: "/tasks", label: "Задачи", icon: Shield },
-  { href: "/meetings", label: "Демо", icon: Calendar },
-  { href: "/analytics", label: "Аналитика", icon: BarChart3, admin: true },
-  { href: "/managers", label: "Менеджеры", icon: UsersRound, admin: true },
-  { href: "/audit", label: "Журнал", icon: Shield, admin: true },
-  { href: "/monitoring", label: "Мониторинг", icon: Activity, admin: true },
-  { href: "/settings", label: "Настройки", icon: Settings, admin: true },
+  { href: "/", key: "nav.home", icon: LayoutDashboard },
+  { href: "/leads", key: "nav.leads", icon: Target },
+  { href: "/pipeline", key: "nav.pipeline", icon: Kanban },
+  { href: "/messages", key: "nav.messages", icon: MessageSquare },
+  { href: "/calls", key: "nav.calls", icon: Phone },
+  { href: "/tasks", key: "nav.tasks", icon: Shield },
+  { href: "/meetings", key: "nav.meetings", icon: Calendar },
+  { href: "/analytics", key: "nav.analytics", icon: BarChart3, admin: true },
+  { href: "/managers", key: "nav.managers", icon: UsersRound, admin: true },
+  { href: "/audit", key: "nav.audit", icon: Shield, admin: true },
+  { href: "/monitoring", key: "nav.monitoring", icon: Activity, admin: true },
+  { href: "/settings", key: "nav.settings", icon: Settings, admin: true },
 ];
 
 type Me = { id: string; name: string; email: string; role: string };
@@ -43,6 +44,7 @@ type Note = { id: string; title: string; body: string; readAt: string | null };
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { t, locale, setLocale } = useI18n();
   const [me, setMe] = useState<Me | null>(null);
   const [q, setQ] = useState("");
   const [notes, setNotes] = useState<Note[]>([]);
@@ -103,8 +105,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen">
       <aside className="w-60 shrink-0 border-r border-[#243049] bg-[#0e1626] p-4 hidden md:flex md:flex-col">
         <div className="mb-8 px-2">
-          <div className="text-lg font-semibold">Amanat CRM</div>
-          <div className="text-xs text-[#93a0bb]">Отдел продаж</div>
+          <div className="text-lg font-semibold">{t("appName")}</div>
+          <div className="text-xs text-[#93a0bb]">{t("appSubtitle")}</div>
         </div>
         <nav className="flex flex-col gap-1 flex-1">
           {items.map((item) => {
@@ -119,16 +121,30 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 }`}
               >
                 <Icon size={16} />
-                {item.label}
+                {t(item.key)}
               </Link>
             );
           })}
         </nav>
-        <div className="mt-4 text-sm text-[#93a0bb]">
-          <div className="font-medium text-white">{me?.name}</div>
-          <div>{me?.role}</div>
-          <button className="mt-3 text-xs text-[#93a0bb]" onClick={logout}>
-            Выйти
+        <div className="mt-4 text-sm text-[#93a0bb] space-y-2">
+          <div>
+            <div className="font-medium text-white">{me?.name}</div>
+            <div>{me?.role}</div>
+          </div>
+          <select
+            aria-label={t("common.language")}
+            className="text-xs"
+            value={locale}
+            onChange={(e) => setLocale(e.target.value as Locale)}
+          >
+            {LOCALES.map((l) => (
+              <option key={l.code} value={l.code}>
+                {l.label}
+              </option>
+            ))}
+          </select>
+          <button className="text-xs text-[#93a0bb]" onClick={logout}>
+            {t("common.logout")}
           </button>
         </div>
       </aside>
@@ -139,7 +155,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Search size={16} className="absolute left-3 top-3 text-[#93a0bb]" />
             <input
               className="pl-9"
-              placeholder="Поиск: имя, телефон, email, ID, комментарий"
+              placeholder={t("common.search")}
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
@@ -159,16 +175,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <div className="muted text-xs">{n.body}</div>
               </div>
             ))}
-            {notes.length === 0 && <div className="muted text-sm">Нет уведомлений</div>}
+            {notes.length === 0 && <div className="muted text-sm">{t("common.noNotifications")}</div>}
           </div>
         )}
         {incoming && (
           <div className="fixed bottom-4 right-4 z-30 card p-4 w-80">
-            <div className="font-medium">Входящий звонок</div>
-            <div className="muted text-sm">Клиент определён, карточка готова</div>
+            <div className="font-medium">{t("softphone.incomingToast")}</div>
+            <div className="muted text-sm">{t("softphone.incomingHint")}</div>
             {incoming.contactId && (
               <Link href={`/contacts/${incoming.contactId}`} className="mt-3 inline-block chip">
-                Открыть карточку
+                {t("softphone.openCard")}
               </Link>
             )}
           </div>

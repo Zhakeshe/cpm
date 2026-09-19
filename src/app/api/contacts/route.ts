@@ -4,6 +4,7 @@ import { jsonError, requireUser } from "@/lib/api";
 import { ingestContact, reassignContact } from "@/lib/contacts";
 import { searchContacts } from "@/lib/search";
 import { canReassignManager, scopeManagerId } from "@/lib/rbac";
+import { assertStageRequirements, MissingStageFieldsError } from "@/lib/pipeline-rules";
 import { z } from "zod";
 
 export async function GET(req: NextRequest) {
@@ -116,6 +117,19 @@ export async function PATCH(req: NextRequest) {
     if (!existing || (managerId && existing.managerId !== managerId)) {
       return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
     }
+    if (body.pipelineStageId && body.pipelineStageId !== existing.pipelineStageId) {
+      // validate against the values the contact will have after this update
+      await assertStageRequirements(prisma, body.pipelineStageId, {
+        ...existing,
+        ...(body.email !== undefined ? { email: body.email } : {}),
+        ...(body.comment !== undefined ? { comment: body.comment } : {}),
+        ...(body.dealAmount !== undefined ? { dealAmount: body.dealAmount } : {}),
+        ...(body.lastName !== undefined ? { lastName: body.lastName } : {}),
+        ...(body.whatsappNumber !== undefined ? { whatsappNumber: body.whatsappNumber } : {}),
+        ...(body.customFields !== undefined ? { customFields: body.customFields } : {}),
+      });
+    }
+
     const updated = await prisma.contact.update({
       where: { id },
       data: {
@@ -166,9 +180,14 @@ export async function PATCH(req: NextRequest) {
         where: { contactId: id, processedAt: null },
         data: { processedAt: new Date(), pipelineStageId: body.pipelineStageId },
       });
+      // won/lost stages rewrite the status, so re-read before answering
+      return NextResponse.json(await prisma.contact.findUnique({ where: { id } }));
     }
     return NextResponse.json(updated);
   } catch (err) {
+    if (err instanceof MissingStageFieldsError) {
+      return NextResponse.json({ error: err.message, fields: err.fields }, { status: 400 });
+    }
     return jsonError(err);
   }
 }

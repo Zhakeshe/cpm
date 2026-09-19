@@ -114,7 +114,9 @@ export default function SettingsPage() {
     sla: { enabled: boolean; minutes: number; action: string };
     routing: { existingContact: string; fallback: string };
   } | null>(null);
-  const [stages, setStages] = useState<Array<{ id?: string; name: string; slug: string; order: number; isActive: boolean }>>([]);
+  const [stages, setStages] = useState<
+    Array<{ id?: string; name: string; slug: string; order: number; isActive: boolean; requiredFields?: string[] }>
+  >([]);
   const [err, setErr] = useState("");
 
   useEffect(() => {
@@ -220,6 +222,22 @@ export default function SettingsPage() {
               }} />
               активна
             </label>
+            <input
+              className="col-span-4"
+              placeholder="Обязательные поля через запятую: dealAmount, email, comment"
+              value={(s.requiredFields || []).join(", ")}
+              onChange={(e) => {
+                const next = [...stages];
+                next[idx] = {
+                  ...s,
+                  requiredFields: e.target.value
+                    .split(",")
+                    .map((f) => f.trim())
+                    .filter(Boolean),
+                };
+                setStages(next);
+              }}
+            />
           </div>
         ))}
         <button className="chip" onClick={() => setStages([...stages, { name: "Новая", slug: `stage-${stages.length + 1}`, order: stages.length + 1, isActive: true }])}>+ стадия</button>

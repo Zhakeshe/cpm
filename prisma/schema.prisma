@@ -412,6 +412,8 @@ model Task {
   description String
   dueAt       DateTime
   reminderAt  DateTime?
+  reminderSentAt   DateTime?
+  overdueNotifiedAt DateTime?
   status      TaskStatus @default(OPEN)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
@@ -431,6 +433,7 @@ model Meeting {
   format      MeetingFormat  @default(ONLINE)
   comment     String         @default("")
   status      MeetingStatus  @default(SCHEDULED)
+  reminderSentAt DateTime?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 

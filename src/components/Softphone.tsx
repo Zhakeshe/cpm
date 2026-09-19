@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Phone, PhoneOff, PhoneIncoming } from "lucide-react";
+import { useI18n } from "@/components/I18nProvider";
 
 type SipConfig =
   | { enabled: false; reason: string }
@@ -43,6 +44,7 @@ type JsSipSession = {
  * headset is enough, with no desk phone or separate client.
  */
 export function Softphone() {
+  const { t } = useI18n();
   const [state, setState] = useState<CallState>("idle");
   const [peer, setPeer] = useState<string>("");
   const [disabledReason, setDisabledReason] = useState<string | null>(null);
@@ -126,28 +128,28 @@ export function Softphone() {
       <div className="flex items-center gap-2 text-sm">
         <Phone size={14} />
         <span className="muted">
-          {state === "ready" && "Софтфон готов"}
-          {state === "registering" && "Регистрация SIP…"}
-          {state === "incoming" && "Входящий звонок"}
-          {state === "in-call" && "Разговор"}
-          {state === "error" && "SIP недоступен"}
-          {state === "idle" && "Инициализация"}
+          {state === "ready" && t("softphone.ready")}
+          {state === "registering" && t("softphone.registering")}
+          {state === "incoming" && t("softphone.incoming")}
+          {state === "in-call" && t("softphone.inCall")}
+          {state === "error" && t("softphone.error")}
+          {state === "idle" && t("softphone.idle")}
         </span>
       </div>
       {(state === "incoming" || state === "in-call") && <div className="text-sm">{peer}</div>}
       {state === "incoming" && (
         <div className="flex gap-2">
           <button className="rounded-xl bg-[#16a34a] px-3 py-2 text-sm flex items-center gap-1" onClick={answer}>
-            <PhoneIncoming size={14} /> Ответить
+            <PhoneIncoming size={14} /> {t("softphone.answer")}
           </button>
           <button className="rounded-xl bg-[#dc2626] px-3 py-2 text-sm" onClick={hangup}>
-            Отклонить
+            {t("softphone.decline")}
           </button>
         </div>
       )}
       {state === "in-call" && (
         <button className="rounded-xl bg-[#dc2626] px-3 py-2 text-sm flex items-center gap-1" onClick={hangup}>
-          <PhoneOff size={14} /> Завершить
+          <PhoneOff size={14} /> {t("softphone.hangup")}
         </button>
       )}
     </div>

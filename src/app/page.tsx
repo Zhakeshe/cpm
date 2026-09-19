@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { BarChart, DonutChart, LineChart } from "@/components/Charts";
 import { dayLabel, sourceLabel } from "@/lib/chart-data";
 import { useRealtime } from "@/lib/use-realtime";
+import { useI18n } from "@/components/I18nProvider";
 
 type Stats = {
   newLeads: number;
@@ -32,6 +33,7 @@ export default function HomePage() {
   const [charts, setCharts] = useState<Charts>({});
   const [managers, setManagers] = useState<Array<Record<string, unknown>>>([]);
   const [role, setRole] = useState("MANAGER");
+  const { t } = useI18n();
 
   const load = useCallback(async () => {
     const [dash, week] = await Promise.all([
@@ -53,24 +55,24 @@ export default function HomePage() {
     "call:updated": () => load(),
   });
   const cards = [
-    ["Новые лиды", stats?.newLeads],
-    ["Необработанные", stats?.unprocessed],
-    ["Звонки сегодня", stats?.callsToday],
-    ["Новые сообщения", stats?.unreadWa],
-    ["Демо", stats?.demos],
-    ["Продажи", stats?.sales],
-    ["Просроченные задачи", stats?.overdue],
+    [t("dashboard.newLeads"), stats?.newLeads],
+    [t("dashboard.unprocessed"), stats?.unprocessed],
+    [t("dashboard.callsToday"), stats?.callsToday],
+    [t("dashboard.newMessages"), stats?.unreadWa],
+    [t("dashboard.demos"), stats?.demos],
+    [t("dashboard.sales"), stats?.sales],
+    [t("dashboard.overdue"), stats?.overdue],
   ];
   if (role === "ADMIN" || role === "SUPERVISOR") {
     cards.push(
-      ["Активные клиенты", stats?.activeClients],
-      ["Пропущенные", stats?.missed],
-      ["Менеджеры онлайн", stats?.onlineManagers],
+      [t("dashboard.activeClients"), stats?.activeClients],
+      [t("dashboard.missed"), stats?.missed],
+      [t("dashboard.online"), stats?.onlineManagers],
     );
   }
   return (
     <AppShell>
-      <h1 className="text-2xl font-semibold mb-6">Главная</h1>
+      <h1 className="text-2xl font-semibold mb-6">{t("dashboard.title")}</h1>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {cards.map(([label, value]) => (
           <div key={String(label)} className="card p-5">
@@ -82,31 +84,36 @@ export default function HomePage() {
       {(role === "ADMIN" || role === "SUPERVISOR") && (
         <div className="grid md:grid-cols-2 gap-4 mt-6">
           <div className="card p-5">
-            <div className="muted text-sm">Конверсия</div>
+            <div className="muted text-sm">{t("dashboard.conversion")}</div>
             <div className="text-3xl mt-2">{((stats?.conversion || 0) * 100).toFixed(1)}%</div>
           </div>
           <div className="card p-5">
-            <div className="muted text-sm">Сумма продаж</div>
+            <div className="muted text-sm">{t("dashboard.salesAmount")}</div>
             <div className="text-3xl mt-2">{stats?.salesAmount ?? 0}</div>
           </div>
         </div>
       )}
       <div className="grid lg:grid-cols-2 gap-4 mt-6">
         <div className="card p-5">
-          <div className="muted text-sm mb-3">Лиды за неделю</div>
+          <div className="muted text-sm mb-3">{t("dashboard.leadsWeek")}</div>
           <LineChart data={(charts.byDay || []).map((d) => ({ label: dayLabel(d.day), value: Number(d.count) }))} />
         </div>
         <div className="card p-5">
-          <div className="muted text-sm mb-3">Продажи за неделю</div>
+          <div className="muted text-sm mb-3">{t("dashboard.salesWeek")}</div>
           <BarChart data={(charts.salesByDay || []).map((d) => ({ label: dayLabel(d.day), value: Number(d.amount) }))} />
         </div>
         <div className="card p-5">
-          <div className="muted text-sm mb-3">Источники клиентов</div>
-          <DonutChart data={(charts.bySource || []).map((d) => ({ label: sourceLabel(d.source), value: Number(d._count) }))} />
+          <div className="muted text-sm mb-3">{t("dashboard.sources")}</div>
+          <DonutChart
+            data={(charts.bySource || []).map((d) => ({
+              label: t(`sources.${d.source}`, sourceLabel(d.source)),
+              value: Number(d._count),
+            }))}
+          />
         </div>
         {(role === "ADMIN" || role === "SUPERVISOR") && (
           <div className="card p-5">
-            <div className="muted text-sm mb-3">Эффективность менеджеров (лиды за неделю)</div>
+            <div className="muted text-sm mb-3">{t("dashboard.managerEfficiency")}</div>
             <BarChart
               color="#fbbf24"
               data={managers.map((m) => ({ label: String(m.name), value: Number(m.newLeads) || 0 }))}

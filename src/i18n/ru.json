@@ -1,5 +1,17 @@
 {
   "appName": "Amanat CRM",
+  "appSubtitle": "Отдел продаж",
+  "common": {
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "create": "Создать",
+    "loading": "Загрузка…",
+    "noData": "Нет данных за период",
+    "search": "Поиск: имя, телефон, email, ID, комментарий",
+    "noNotifications": "Нет уведомлений",
+    "logout": "Выйти",
+    "language": "Язык"
+  },
   "nav": {
     "home": "Главная",
     "leads": "Лиды",
@@ -10,45 +22,80 @@
     "meetings": "Демо",
     "analytics": "Аналитика",
     "managers": "Менеджеры",
-    "settings": "Настройки",
     "audit": "Журнал",
-    "logout": "Выйти"
+    "monitoring": "Мониторинг",
+    "settings": "Настройки"
   },
   "auth": {
-    "login": "Вход",
+    "title": "Вход для отдела продаж",
     "email": "Email / логин",
     "password": "Пароль",
     "submit": "Войти",
     "forgot": "Восстановить пароль",
-    "sendReset": "Отправить ссылку",
+    "invalid": "Неверный логин или пароль",
     "disabled": "Аккаунт отключён"
   },
   "dashboard": {
+    "title": "Главная",
     "newLeads": "Новые лиды",
-    "unprocessed": "Необработанные лиды",
+    "unprocessed": "Необработанные",
     "callsToday": "Звонки сегодня",
-    "missed": "Пропущенные",
-    "messages": "Новые сообщения",
+    "newMessages": "Новые сообщения",
     "demos": "Демо",
     "sales": "Продажи",
     "overdue": "Просроченные задачи",
     "activeClients": "Активные клиенты",
+    "missed": "Пропущенные",
+    "online": "Менеджеры онлайн",
     "conversion": "Конверсия",
     "salesAmount": "Сумма продаж",
-    "online": "Менеджеры онлайн"
+    "leadsWeek": "Лиды за неделю",
+    "salesWeek": "Продажи за неделю",
+    "sources": "Источники клиентов",
+    "managerEfficiency": "Эффективность менеджеров (лиды за неделю)"
   },
-  "contact": {
-    "title": "Клиент",
-    "phone": "Телефон",
-    "email": "Email",
-    "source": "Источник",
-    "manager": "Менеджер",
-    "stage": "Стадия",
-    "status": "Статус",
-    "amount": "Сумма сделки",
-    "comment": "Комментарий",
+  "tasks": {
+    "title": "Задачи",
+    "overdue": "Просрочено",
+    "today": "Сегодня",
+    "tomorrow": "Завтра",
+    "week": "Неделя",
+    "done": "Выполнено",
+    "markDone": "Готово",
+    "description": "Описание"
+  },
+  "quickActions": {
+    "whatsapp": "WhatsApp",
     "call": "Позвонить",
-    "timeline": "История"
+    "task": "Задача",
+    "demo": "Демо",
+    "card": "Карточка",
+    "createTask": "Создать задачу",
+    "scheduleDemo": "Назначить демо",
+    "what": "Что сделать",
+    "remind": "Напомнить за 10 минут",
+    "comment": "Комментарий",
+    "taskCreated": "Задача создана",
+    "demoCreated": "Демо назначено",
+    "calling": "Звонок инициирован",
+    "describeTask": "Опишите задачу",
+    "taskFailed": "Не удалось создать задачу",
+    "demoFailed": "Не удалось назначить демо",
+    "callFailed": "Не удалось позвонить"
+  },
+  "taskTypes": {
+    "CALL": "Позвонить",
+    "WHATSAPP": "WhatsApp",
+    "DEMO": "Демо",
+    "MEETING": "Встреча",
+    "SEND_PROPOSAL": "Отправить предложение",
+    "FOLLOW_UP": "Follow-up",
+    "OTHER": "Другое"
+  },
+  "meetingFormats": {
+    "ONLINE": "Онлайн",
+    "OFFLINE": "В офисе",
+    "PHONE": "По телефону"
   },
   "sources": {
     "WHATSAPP": "WhatsApp",
@@ -71,11 +118,18 @@
     "REJECTED": "Отказ",
     "SALE": "Продажа"
   },
-  "tasks": {
-    "overdue": "Просрочено",
-    "today": "Сегодня",
-    "tomorrow": "Завтра",
-    "week": "Неделя",
-    "done": "Выполнено"
+  "softphone": {
+    "ready": "Софтфон готов",
+    "registering": "Регистрация SIP…",
+    "incoming": "Входящий звонок",
+    "inCall": "Разговор",
+    "error": "SIP недоступен",
+    "idle": "Инициализация",
+    "answer": "Ответить",
+    "decline": "Отклонить",
+    "hangup": "Завершить",
+    "incomingToast": "Входящий звонок",
+    "incomingHint": "Клиент определён, карточка готова",
+    "openCard": "Открыть карточку"
   }
 }

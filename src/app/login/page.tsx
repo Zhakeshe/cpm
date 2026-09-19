@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { LOCALES, useI18n, type Locale } from "@/components/I18nProvider";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t, locale, setLocale } = useI18n();
   const [email, setEmail] = useState("admin@crm.local");
   const [password, setPassword] = useState("Admin123!");
   const [error, setError] = useState("");
@@ -20,7 +22,7 @@ export default function LoginPage() {
     });
     const data = await res.json();
     if (!res.ok) {
-      setError(data.error === "ACCOUNT_DISABLED" ? "Аккаунт отключён" : "Неверный логин или пароль");
+      setError(data.error === "ACCOUNT_DISABLED" ? t("auth.disabled") : t("auth.invalid"));
       return;
     }
     router.push("/");
@@ -29,22 +31,36 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen grid place-items-center p-6">
       <form onSubmit={onSubmit} className="card w-full max-w-md p-8 space-y-4">
-        <div>
-          <div className="text-2xl font-semibold">Amanat CRM</div>
-          <div className="muted text-sm mt-1">Вход для отдела продаж</div>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="text-2xl font-semibold">{t("appName")}</div>
+            <div className="muted text-sm mt-1">{t("auth.title")}</div>
+          </div>
+          <select
+            aria-label={t("common.language")}
+            className="w-auto text-xs"
+            value={locale}
+            onChange={(e) => setLocale(e.target.value as Locale)}
+          >
+            {LOCALES.map((l) => (
+              <option key={l.code} value={l.code}>
+                {l.label}
+              </option>
+            ))}
+          </select>
         </div>
         <label className="block text-sm">
-          Email / логин
+          {t("auth.email")}
           <input className="mt-1" value={email} onChange={(e) => setEmail(e.target.value)} />
         </label>
         <label className="block text-sm">
-          Пароль
+          {t("auth.password")}
           <input className="mt-1" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
         </label>
         {error && <div className="text-[#f87171] text-sm">{error}</div>}
-        <button className="w-full rounded-xl bg-[#2563eb] py-3 font-medium">Войти</button>
+        <button className="w-full rounded-xl bg-[#2563eb] py-3 font-medium">{t("auth.submit")}</button>
         <Link href="/forgot-password" className="block text-center text-sm muted">
-          Восстановить пароль
+          {t("auth.forgot")}
         </Link>
       </form>
     </div>
