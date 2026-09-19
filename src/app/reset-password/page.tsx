@@ -1,9 +1,11 @@
 "use client";
 
+import { useI18n } from "@/components/I18nProvider";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense, useState } from "react";
 
 function Inner() {
+  const { t } = useI18n();
   const params = useSearchParams();
   const router = useRouter();
   const [password, setPassword] = useState("");
@@ -18,9 +20,9 @@ function Inner() {
   }
   return (
     <form onSubmit={onSubmit} className="card w-full max-w-md p-8 space-y-4">
-      <div className="text-xl font-semibold">Новый пароль</div>
+      <div className="text-xl font-semibold">{t("auth.newPassword")}</div>
       <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-      <button className="w-full rounded-xl bg-[#2563eb] py-3">Сохранить</button>
+      <button className="w-full rounded-xl bg-[#2563eb] py-3">{t("common.save")}</button>
     </form>
   );
 }

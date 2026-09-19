@@ -14,12 +14,19 @@ export async function GET() {
       prisma.systemSetting.findUnique({ where: { key: "lead_sla" } }),
       prisma.systemSetting.findUnique({ where: { key: "call_routing" } }),
     ]);
+    const appUrl = (process.env.APP_URL || "").replace(/\/$/, "");
     return NextResponse.json({
       integrations,
       sla: sla?.value || { enabled: false, minutes: 10, action: "NOTIFY_MANAGER" },
       routing: routing?.value || {
         existingContact: "responsible",
         fallback: "queue",
+      },
+      webhooks: {
+        whatsappVerify: `${appUrl}/api/webhooks/whatsapp`,
+        whatsappInbound: `${appUrl}/api/webhooks/whatsapp`,
+        metaLeads: `${appUrl}/api/webhooks/meta-leads`,
+        telephony: `${appUrl}/api/webhooks/telephony`,
       },
     });
   } catch (err) {

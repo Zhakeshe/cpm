@@ -1,6 +1,8 @@
 "use client";
 
 import { AppShell } from "@/components/AppShell";
+import { ExportButton } from "@/components/ExportButton";
+import { useI18n } from "@/components/I18nProvider";
 import { useCallback, useEffect, useState } from "react";
 import { useRealtime } from "@/lib/use-realtime";
 
@@ -18,19 +20,10 @@ type Call = {
   manager?: { name: string };
 };
 
-const RESULTS = ["CONTACTED","NO_ANSWER","CALLBACK","INTERESTED","DEMO_BOOKED","THINKING","REJECTED","SALE"];
-const LABELS: Record<string, string> = {
-  CONTACTED: "Связались",
-  NO_ANSWER: "Не ответил",
-  CALLBACK: "Перезвонить",
-  INTERESTED: "Заинтересован",
-  DEMO_BOOKED: "Записан на демо",
-  THINKING: "Думает",
-  REJECTED: "Отказ",
-  SALE: "Продажа",
-};
+const RESULTS = ["CONTACTED", "NO_ANSWER", "CALLBACK", "INTERESTED", "DEMO_BOOKED", "THINKING", "REJECTED", "SALE"];
 
 export default function CallsPage() {
+  const { t, localeTag } = useI18n();
   const [calls, setCalls] = useState<Call[]>([]);
   const [modal, setModal] = useState<Call | null>(null);
   const [callbackAt, setCallbackAt] = useState("");
@@ -60,35 +53,40 @@ export default function CallsPage() {
 
   return (
     <AppShell>
-      <h1 className="text-2xl font-semibold mb-6">Звонки</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-semibold">{t("calls.title")}</h1>
+        <ExportButton href="/api/export/calls" />
+      </div>
       <div className="card overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-[#182235] text-[#93a0bb]">
             <tr>
-              <th className="text-left p-3">Клиент</th>
-              <th className="text-left p-3">Направление</th>
-              <th className="text-left p-3">Статус</th>
-              <th className="text-left p-3">Длительность</th>
-              <th className="text-left p-3">Менеджер</th>
-              <th className="text-left p-3">Запись</th>
-              <th className="text-left p-3">Результат</th>
+              <th className="text-left p-3">{t("common.client")}</th>
+              <th className="text-left p-3">{t("calls.direction")}</th>
+              <th className="text-left p-3">{t("common.status")}</th>
+              <th className="text-left p-3">{t("calls.duration")}</th>
+              <th className="text-left p-3">{t("common.manager")}</th>
+              <th className="text-left p-3">{t("calls.recording")}</th>
+              <th className="text-left p-3">{t("calls.result")}</th>
             </tr>
           </thead>
           <tbody>
             {calls.map((c) => (
               <tr key={c.id} className="border-t border-[#243049]">
                 <td className="p-3">{c.contact ? `${c.contact.firstName} ${c.contact.lastName}` : c.fromNumber}</td>
-                <td className="p-3">{c.direction}</td>
-                <td className="p-3">{c.status}</td>
-                <td className="p-3">{Math.floor(c.duration / 60)}:{String(c.duration % 60).padStart(2, "0")}</td>
+                <td className="p-3">{t(`callDirections.${c.direction}`, c.direction)}</td>
+                <td className="p-3">{t(`callStatuses.${c.status}`, c.status)}</td>
+                <td className="p-3">
+                  {Math.floor(c.duration / 60)}:{String(c.duration % 60).padStart(2, "0")}
+                </td>
                 <td className="p-3">{c.manager?.name}</td>
                 <td className="p-3">
-                  {c.recordingUrl ? (
-                    <audio controls src={c.recordingUrl} className="h-8" />
-                  ) : "—"}
+                  {c.recordingUrl ? <audio controls src={c.recordingUrl} className="h-8" /> : t("common.dash")}
                 </td>
                 <td className="p-3">
-                  <button className="chip" onClick={() => setModal(c)}>{c.result ? LABELS[c.result] : "Указать"}</button>
+                  <button className="chip" onClick={() => setModal(c)}>
+                    {c.result ? t(`callResults.${c.result}`) : t("calls.setResult")}
+                  </button>
                 </td>
               </tr>
             ))}
@@ -98,14 +96,17 @@ export default function CallsPage() {
       {modal && (
         <div className="fixed inset-0 bg-black/50 grid place-items-center p-4">
           <div className="card p-6 w-full max-w-md space-y-3">
-            <div className="font-medium">Результат звонка</div>
+            <div className="font-medium">{t("calls.resultTitle")}</div>
             {RESULTS.map((r) => (
               <button key={r} className="w-full text-left chip" onClick={() => setResult(r)}>
-                {LABELS[r]}
+                {t(`callResults.${r}`)}
               </button>
             ))}
             <input type="datetime-local" value={callbackAt} onChange={(e) => setCallbackAt(e.target.value)} />
-            <button className="text-sm muted" onClick={() => setModal(null)}>Закрыть</button>
+            <button className="text-sm muted" onClick={() => setModal(null)}>
+              {t("common.close")}
+            </button>
+            <div className="muted text-xs">{new Date(modal.startedAt).toLocaleString(localeTag)}</div>
           </div>
         </div>
       )}

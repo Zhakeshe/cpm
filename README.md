@@ -31,11 +31,14 @@ SIP-внутренние номера: 101–105.
 
 ## Production
 
+Пошаговая инструкция: [docs/DEPLOY.md](docs/DEPLOY.md).
+
 ```bash
+APP_URL=http://YOUR_SERVER_IP bash scripts/bootstrap-env.sh .
 docker compose up -d --build
 ```
 
-Nginx слушает `:8080`. Для HTTPS поставьте TLS-терминацию перед Nginx (Let's Encrypt / cloud load balancer).
+Nginx слушает `:80`. Postgres, Redis и MinIO наружу не открываются. Для HTTPS поставьте TLS-терминацию перед Nginx и выставьте `COOKIE_SECURE=true`.
 
 Отдельные окружения: `development` / `staging` / `production` — разные `DATABASE_URL`, `REDIS_URL` и секреты. Реальные WABA/SIP credentials не использовать в local development.
 
@@ -148,7 +151,7 @@ Meta присылает только `leadgen_id`, поэтому ответы �
 
 Тексты интерфейса живут в `src/i18n/ru.json` и `src/i18n/kk.json`, компонент читает их через `useI18n()`. Язык переключается в сайдбаре и на странице входа, выбор хранится в cookie `crm_locale`. Если ключа нет в казахском словаре, подставляется русский, поэтому перевод можно доливать частями.
 
-На словари уже переведены: сайдбар и шапка, вход, дашборд, задачи, быстрые действия, софтфон. Остальные экраны пока держат русские строки в разметке — переносятся тем же паттерном.
+Экраны CRM читают `src/i18n/ru.json` и `src/i18n/kk.json`. Экспорт CSV: кнопки на страницах лидов, звонков и аналитики, эндпоинты `/api/export/leads`, `/api/export/calls`, `/api/export/analytics`.
 
 ## Real-time
 

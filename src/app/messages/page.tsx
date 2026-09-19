@@ -2,6 +2,7 @@
 
 import { AppShell } from "@/components/AppShell";
 import { QuickActions } from "@/components/QuickActions";
+import { useI18n } from "@/components/I18nProvider";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRealtime } from "@/lib/use-realtime";
@@ -59,11 +60,11 @@ function StatusTicks({ status }: { status: string }) {
   return <Clock size={12} className="opacity-70" />;
 }
 
-function MediaBubble({ message }: { message: Message }) {
+function MediaBubble({ message, t }: { message: Message; t: (path: string, vars?: Record<string, string>) => string }) {
   const src = `/api/media/${message.id}`;
   const mime = message.mediaMimeType || "";
   if (!message.mediaUrl) {
-    return <div className="muted text-xs">Вложение ({message.type.toLowerCase()})</div>;
+    return <div className="muted text-xs">{t("messages.attachment", { type: message.type.toLowerCase() })}</div>;
   }
   if (mime.startsWith("image/")) {
     // eslint-disable-next-line @next/next/no-img-element
@@ -73,13 +74,14 @@ function MediaBubble({ message }: { message: Message }) {
   if (mime.startsWith("video/")) return <video controls src={src} className="rounded-lg max-w-[260px]" />;
   return (
     <a href={src} className="underline text-sm" target="_blank" rel="noreferrer">
-      {message.mediaFileName || "Документ"}
+      {message.mediaFileName || t("messages.document")}
     </a>
   );
 }
 
 function MessagesInbox() {
   const params = useSearchParams();
+  const { t, localeTag } = useI18n();
   const requestedContact = params.get("contact");
   const [list, setList] = useState<Conv[]>([]);
   const [active, setActive] = useState<string | null>(null);
@@ -103,10 +105,11 @@ function MessagesInbox() {
 
   useEffect(() => {
     loadList();
-    fetch("/api/templates").then((r) => (r.ok ? r.json() : [])).then(setTemplates);
+    fetch("/api/templates")
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setTemplates);
   }, [loadList]);
 
-  // opening a chat straight from a contact card or quick action
   useEffect(() => {
     if (!requestedContact || active) return;
     const match = list.find((c) => c.contact.id === requestedContact);
@@ -123,7 +126,7 @@ function MessagesInbox() {
   const windowOpen = thread?.serviceWindowExpiresAt
     ? new Date(thread.serviceWindowExpiresAt).getTime() > Date.now()
     : false;
-  const approved = templates.filter((t) => t.isActive && t.status === "APPROVED");
+  const approved = templates.filter((tpl) => tpl.isActive && tpl.status === "APPROVED");
 
   async function send() {
     if (!thread || !text.trim()) return;
@@ -135,7 +138,7 @@ function MessagesInbox() {
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      setError(data.error === "SERVICE_WINDOW_CLOSED" ? "Окно 24 часа закрыто — отправьте шаблон" : "Не удалось отправить");
+      setError(data.error === "SERVICE_WINDOW_CLOSED" ? t("messages.windowError") : t("messages.sendFailed"));
       return;
     }
     setText("");
@@ -152,7 +155,7 @@ function MessagesInbox() {
       body: JSON.stringify({ contactId: thread.contact.id, templateId: template.id, templateParameters: parameters }),
     });
     if (!res.ok) {
-      setError("Шаблон не отправлен");
+      setError(t("messages.templateFailed"));
       return;
     }
     setPickerOpen(false);
@@ -168,7 +171,7 @@ function MessagesInbox() {
     form.append("file", file);
     const uploaded = await fetch("/api/messages/upload", { method: "POST", body: form });
     if (!uploaded.ok) {
-      setError("Файл не загрузился");
+      setError(t("messages.uploadFailed"));
       return;
     }
     const { media } = await uploaded.json();
@@ -179,7 +182,7 @@ function MessagesInbox() {
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      setError(data.error === "SERVICE_WINDOW_CLOSED" ? "Окно 24 часа закрыто — отправьте шаблон" : "Файл не отправлен");
+      setError(data.error === "SERVICE_WINDOW_CLOSED" ? t("messages.windowError") : t("messages.fileFailed"));
       return;
     }
     setText("");
@@ -189,7 +192,7 @@ function MessagesInbox() {
 
   return (
     <AppShell>
-      <h1 className="text-2xl font-semibold mb-4">Сообщения</h1>
+      <h1 className="text-2xl font-semibold mb-4">{t("messages.title")}</h1>
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] gap-4 min-h-[70vh]">
         <div className="card overflow-y-auto">
           {list.map((c) => (
@@ -199,13 +202,17 @@ function MessagesInbox() {
               className={`w-full text-left p-3 border-b border-[#243049] ${active === c.id ? "bg-[#1d4ed8]/30" : ""}`}
             >
               <div className="flex justify-between">
-                <div className="font-medium">{c.contact.firstName} {c.contact.lastName}</div>
+                <div className="font-medium">
+                  {c.contact.firstName} {c.contact.lastName}
+                </div>
                 {c.unreadCount > 0 && <span className="chip">{c.unreadCount}</span>}
               </div>
               <div className="text-xs muted">{c.contact.phoneDisplay}</div>
               <div className="text-sm truncate mt-1">{c.lastMessage}</div>
               <div className="text-xs muted flex justify-between">
-                <span>{c.manager?.name} · {c.contact.pipelineStage?.name}</span>
+                <span>
+                  {c.manager?.name} · {c.contact.pipelineStage?.name}
+                </span>
                 <span>
                   {c.serviceWindowExpiresAt && new Date(c.serviceWindowExpiresAt).getTime() > Date.now() ? "🟢" : "🔒"}
                 </span>
@@ -221,27 +228,27 @@ function MessagesInbox() {
                 key={m.id}
                 className={`max-w-[80%] rounded-2xl px-3 py-2 ${m.direction === "OUTBOUND" ? "ml-auto bg-[#1d4ed8]" : "bg-[#182235]"}`}
               >
-                {m.type !== "TEXT" && m.type !== "TEMPLATE" && <MediaBubble message={m} />}
+                {m.type !== "TEXT" && m.type !== "TEMPLATE" && <MediaBubble message={m} t={t} />}
                 {m.text && <div className="mt-1">{m.text}</div>}
                 <div className="flex items-center gap-1 justify-end text-[10px] opacity-70 mt-1">
-                  {m.type === "TEMPLATE" && <span>шаблон</span>}
-                  <span>{new Date(m.sentAt).toLocaleTimeString("ru", { hour: "2-digit", minute: "2-digit" })}</span>
+                  {m.type === "TEMPLATE" && <span>{t("messages.templateTag")}</span>}
+                  <span>{new Date(m.sentAt).toLocaleTimeString(localeTag, { hour: "2-digit", minute: "2-digit" })}</span>
                   {m.direction === "OUTBOUND" && <StatusTicks status={m.status} />}
                 </div>
               </div>
             ))}
-            {!thread && <div className="muted">Выберите диалог</div>}
+            {!thread && <div className="muted">{t("messages.pickDialog")}</div>}
           </div>
 
           {thread && (
             <div className="border-t border-[#243049] p-3 space-y-2">
               {windowOpen ? (
                 <div className="text-xs text-[#34d399]">
-                  🟢 Окно 24 часа открыто до {new Date(thread.serviceWindowExpiresAt!).toLocaleString("ru")}
+                  🟢 {t("messages.windowOpen", { until: new Date(thread.serviceWindowExpiresAt!).toLocaleString(localeTag) })}
                 </div>
               ) : (
                 <div className="text-xs text-[#fbbf24] flex items-center gap-2">
-                  <Lock size={12} /> Окно обслуживания закрыто — доступны только шаблоны
+                  <Lock size={12} /> {t("messages.windowClosed")}
                 </div>
               )}
               {error && <div className="text-xs text-[#f87171]">{error}</div>}
@@ -253,7 +260,7 @@ function MessagesInbox() {
                     if (e.key === "Enter" && windowOpen) send();
                   }}
                   disabled={!windowOpen}
-                  placeholder={windowOpen ? "Сообщение" : "Недоступно вне окна 24 часа"}
+                  placeholder={windowOpen ? t("messages.placeholderOpen") : t("messages.placeholderClosed")}
                 />
                 <input
                   ref={fileRef}
@@ -265,38 +272,33 @@ function MessagesInbox() {
                     e.target.value = "";
                   }}
                 />
-                <button
-                  className="chip"
-                  disabled={!windowOpen}
-                  title="Прикрепить файл"
-                  onClick={() => fileRef.current?.click()}
-                >
+                <button className="chip" disabled={!windowOpen} title={t("messages.attach")} onClick={() => fileRef.current?.click()}>
                   <Paperclip size={14} />
                 </button>
                 <button className="rounded-xl bg-[#2563eb] px-4 disabled:opacity-40" disabled={!windowOpen} onClick={send}>
-                  Отправить
+                  {t("messages.send")}
                 </button>
                 <button className="chip" onClick={() => setPickerOpen((v) => !v)}>
-                  Шаблон
+                  {t("messages.template")}
                 </button>
               </div>
               {pickerOpen && (
                 <div className="space-y-2 pt-2">
-                  {approved.length === 0 && <div className="muted text-sm">Нет одобренных шаблонов Meta</div>}
-                  {approved.map((t) => (
-                    <div key={t.id} className="card p-3 space-y-2">
-                      <div className="text-sm font-medium">{t.name}</div>
-                      <div className="muted text-xs whitespace-pre-line">{t.body}</div>
-                      {t.placeholders.map((p) => (
+                  {approved.length === 0 && <div className="muted text-sm">{t("messages.noTemplates")}</div>}
+                  {approved.map((tpl) => (
+                    <div key={tpl.id} className="card p-3 space-y-2">
+                      <div className="text-sm font-medium">{tpl.name}</div>
+                      <div className="muted text-xs whitespace-pre-line">{tpl.body}</div>
+                      {tpl.placeholders.map((p) => (
                         <input
                           key={p}
-                          placeholder={`Значение ${p}`}
-                          value={templateParams[`${t.id}:${p}`] || ""}
-                          onChange={(e) => setTemplateParams({ ...templateParams, [`${t.id}:${p}`]: e.target.value })}
+                          placeholder={t("messages.param", { name: p })}
+                          value={templateParams[`${tpl.id}:${p}`] || ""}
+                          onChange={(e) => setTemplateParams({ ...templateParams, [`${tpl.id}:${p}`]: e.target.value })}
                         />
                       ))}
-                      <button className="rounded-xl bg-[#2563eb] px-3 py-2 text-sm" onClick={() => sendTemplate(t)}>
-                        Отправить шаблон
+                      <button className="rounded-xl bg-[#2563eb] px-3 py-2 text-sm" onClick={() => sendTemplate(tpl)}>
+                        {t("messages.sendTemplate")}
                       </button>
                     </div>
                   ))}
@@ -309,19 +311,21 @@ function MessagesInbox() {
         <div className="card p-4">
           {thread ? (
             <div className="space-y-2 text-sm">
-              <div className="text-lg font-medium">{thread.contact.firstName} {thread.contact.lastName}</div>
+              <div className="text-lg font-medium">
+                {thread.contact.firstName} {thread.contact.lastName}
+              </div>
               <div>{thread.contact.phoneDisplay}</div>
-              <div>Источник: {thread.contact.source}</div>
-              <div>Менеджер: {thread.contact.manager?.name}</div>
-              <div>Стадия: {thread.contact.pipelineStage?.name}</div>
-              <div>Сумма: {Number(thread.contact.dealAmount || 0)}</div>
+              <div>{t("messages.source", { source: t(`sources.${thread.contact.source}`, thread.contact.source || "") })}</div>
+              <div>{t("messages.manager", { name: thread.contact.manager?.name || t("common.dash") })}</div>
+              <div>{t("messages.stage", { name: thread.contact.pipelineStage?.name || t("common.dash") })}</div>
+              <div>{t("messages.amount", { amount: Number(thread.contact.dealAmount || 0) })}</div>
               <div className="muted">{thread.contact.comment}</div>
               <div className="pt-2">
                 <QuickActions contactId={thread.contact.id} onDone={loadList} />
               </div>
             </div>
           ) : (
-            <div className="muted">Выберите диалог</div>
+            <div className="muted">{t("messages.pickDialog")}</div>
           )}
         </div>
       </div>
@@ -330,11 +334,12 @@ function MessagesInbox() {
 }
 
 export default function MessagesPage() {
+  const { t } = useI18n();
   return (
     <Suspense
       fallback={
         <AppShell>
-          <div className="muted">Загрузка диалогов…</div>
+          <div className="muted">{t("messages.loading")}</div>
         </AppShell>
       }
     >
