@@ -6,7 +6,7 @@ import { useI18n } from "@/components/I18nProvider";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRealtime } from "@/lib/use-realtime";
-import { Check, CheckCheck, Clock, AlertTriangle, Paperclip, Lock } from "lucide-react";
+import { Check, CheckCheck, Clock, AlertTriangle, Paperclip, Lock, ImagePlus, Mic, Square } from "lucide-react";
 
 type Contact = {
   id: string;
@@ -63,15 +63,18 @@ function StatusTicks({ status }: { status: string }) {
 function MediaBubble({ message, t }: { message: Message; t: (path: string, vars?: Record<string, string>) => string }) {
   const src = `/api/media/${message.id}`;
   const mime = message.mediaMimeType || "";
+  const isImage = message.type === "IMAGE" || mime.startsWith("image/");
+  const isAudio = message.type === "AUDIO" || message.type === "VOICE" || mime.startsWith("audio/");
+  const isVideo = message.type === "VIDEO" || mime.startsWith("video/");
   if (!message.mediaUrl) {
     return <div className="muted text-xs">{t("messages.attachment", { type: message.type.toLowerCase() })}</div>;
   }
-  if (mime.startsWith("image/")) {
+  if (isImage) {
     // eslint-disable-next-line @next/next/no-img-element
     return <img src={src} alt={message.mediaFileName || "image"} className="rounded-lg max-w-[240px]" />;
   }
-  if (mime.startsWith("audio/")) return <audio controls src={src} className="h-8" />;
-  if (mime.startsWith("video/")) return <video controls src={src} className="rounded-lg max-w-[260px]" />;
+  if (isAudio) return <audio controls src={src} className="h-8 w-[220px]" />;
+  if (isVideo) return <video controls src={src} className="rounded-lg max-w-[260px]" />;
   return (
     <a href={src} className="underline text-sm" target="_blank" rel="noreferrer">
       {message.mediaFileName || t("messages.document")}
@@ -91,7 +94,12 @@ function MessagesInbox() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [templateParams, setTemplateParams] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
+  const [recording, setRecording] = useState(false);
+  const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const imageRef = useRef<HTMLInputElement>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
 
   const loadList = useCallback(async () => {
     setList(await fetch("/api/messages").then((r) => r.json()));
@@ -127,10 +135,14 @@ function MessagesInbox() {
     ? new Date(thread.serviceWindowExpiresAt).getTime() > Date.now()
     : false;
   const approved = templates.filter((tpl) => tpl.isActive && tpl.status === "APPROVED");
+  useEffect(() => {
+    if (thread && !windowOpen) setPickerOpen(true);
+  }, [thread, windowOpen]);
   const sendErrorText = (code: unknown) => {
     if (code === "SERVICE_WINDOW_CLOSED") return t("messages.windowError");
     if (code === "RECIPIENT_NOT_ALLOWED") return t("messages.recipientNotAllowed");
     if (code === "RECIPIENT_UNDELIVERABLE") return t("messages.recipientUndeliverable");
+    if (code === "TEMPLATE_UNAVAILABLE") return t("messages.templateFailed");
     return t("messages.sendFailed");
   };
 
@@ -161,7 +173,8 @@ function MessagesInbox() {
       body: JSON.stringify({ contactId: thread.contact.id, templateId: template.id, templateParameters: parameters }),
     });
     if (!res.ok) {
-      setError(t("messages.templateFailed"));
+      const data = await res.json().catch(() => ({}));
+      setError(sendErrorText(data.error));
       return;
     }
     setPickerOpen(false);
@@ -169,14 +182,17 @@ function MessagesInbox() {
     await loadList();
   }
 
-  async function sendFile(file: File) {
+  async function sendFile(file: File, voiceNote = false) {
     if (!thread) return;
     setError("");
+    setBusy(true);
     const form = new FormData();
     form.append("contactId", thread.contact.id);
     form.append("file", file);
+    if (voiceNote) form.append("voiceNote", "1");
     const uploaded = await fetch("/api/messages/upload", { method: "POST", body: form });
     if (!uploaded.ok) {
+      setBusy(false);
       setError(t("messages.uploadFailed"));
       return;
     }
@@ -186,6 +202,7 @@ function MessagesInbox() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ contactId: thread.contact.id, media, text: text || undefined }),
     });
+    setBusy(false);
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setError(sendErrorText(data.error));
@@ -194,6 +211,37 @@ function MessagesInbox() {
     setText("");
     if (active) await open(active);
     await loadList();
+  }
+
+  async function toggleVoice() {
+    if (!thread || !windowOpen || busy) return;
+    if (recording) {
+      recorderRef.current?.stop();
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mime = ["audio/ogg;codecs=opus", "audio/webm;codecs=opus", "audio/webm"].find((type) =>
+        MediaRecorder.isTypeSupported(type),
+      );
+      const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+      chunksRef.current = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size) chunksRef.current.push(e.data);
+      };
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((track) => track.stop());
+        setRecording(false);
+        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/ogg" });
+        const ext = recorder.mimeType.includes("webm") ? "webm" : "ogg";
+        await sendFile(new File([blob], `voice.${ext}`, { type: blob.type }), true);
+      };
+      recorderRef.current = recorder;
+      recorder.start();
+      setRecording(true);
+    } catch {
+      setError(t("messages.micDenied"));
+    }
   }
 
   return (
@@ -258,19 +306,20 @@ function MessagesInbox() {
                 </div>
               )}
               {error && <div className="text-xs text-[#f87171]">{error}</div>}
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
                 <input
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && windowOpen) send();
+                    if (e.key === "Enter" && windowOpen && !busy) send();
                   }}
-                  disabled={!windowOpen}
+                  disabled={!windowOpen || busy}
                   placeholder={windowOpen ? t("messages.placeholderOpen") : t("messages.placeholderClosed")}
                 />
                 <input
-                  ref={fileRef}
+                  ref={imageRef}
                   type="file"
+                  accept="image/*"
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
@@ -278,18 +327,47 @@ function MessagesInbox() {
                     e.target.value = "";
                   }}
                 />
-                <button className="chip" disabled={!windowOpen} title={t("messages.attach")} onClick={() => fileRef.current?.click()}>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*,audio/*,video/*,.pdf,.ogg,.webm"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) sendFile(file);
+                    e.target.value = "";
+                  }}
+                />
+                <button
+                  className="chip"
+                  disabled={!windowOpen || busy}
+                  title={t("messages.photo")}
+                  onClick={() => imageRef.current?.click()}
+                >
+                  <ImagePlus size={14} />
+                </button>
+                <button className="chip" disabled={!windowOpen || busy} title={t("messages.attach")} onClick={() => fileRef.current?.click()}>
                   <Paperclip size={14} />
                 </button>
-                <button className="rounded-xl bg-[#2563eb] px-4 disabled:opacity-40" disabled={!windowOpen} onClick={send}>
+                <button
+                  className={`chip ${recording ? "bg-[#7f1d1d] text-white" : ""}`}
+                  disabled={!windowOpen || busy}
+                  title={recording ? t("messages.stopVoice") : t("messages.voice")}
+                  onClick={toggleVoice}
+                >
+                  {recording ? <Square size={14} /> : <Mic size={14} />}
+                </button>
+                <button className="rounded-xl bg-[#2563eb] px-4 disabled:opacity-40" disabled={!windowOpen || busy} onClick={send}>
                   {t("messages.send")}
                 </button>
                 <button className="chip" onClick={() => setPickerOpen((v) => !v)}>
                   {t("messages.template")}
                 </button>
               </div>
+              {recording && <div className="text-xs text-[#fbbf24]">{t("messages.recording")}</div>}
               {pickerOpen && (
                 <div className="space-y-2 pt-2">
+                  <div className="muted text-xs">{t("messages.templatesAnytime")}</div>
                   {approved.length === 0 && <div className="muted text-sm">{t("messages.noTemplates")}</div>}
                   {approved.map((tpl) => (
                     <div key={tpl.id} className="card p-3 space-y-2">

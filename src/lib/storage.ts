@@ -59,6 +59,8 @@ export function extensionFor(mime?: string) {
     "image/webp": "webp",
     "video/mp4": "mp4",
     "audio/ogg": "ogg",
+    "audio/webm": "webm",
+    "audio/opus": "opus",
     "audio/mpeg": "mp3",
     "audio/mp4": "m4a",
     "application/pdf": "pdf",

@@ -8,10 +8,15 @@ import crypto from "crypto";
 
 const MAX_BYTES = 25 * 1024 * 1024;
 
-function mediaTypeFor(mime: string): "IMAGE" | "DOCUMENT" | "AUDIO" | "VIDEO" {
+function mediaTypeFor(mime: string, voiceNote?: boolean): "IMAGE" | "DOCUMENT" | "AUDIO" | "VIDEO" | "VOICE" {
+  if (voiceNote) return "VOICE";
   if (mime.startsWith("image/")) return "IMAGE";
   if (mime.startsWith("video/")) return "VIDEO";
-  if (mime.startsWith("audio/")) return "AUDIO";
+  const audio = mime.split(";")[0].trim();
+  if (audio.startsWith("audio/")) {
+    if (audio === "audio/ogg" || audio === "audio/webm" || audio === "audio/opus") return "VOICE";
+    return "AUDIO";
+  }
   return "DOCUMENT";
 }
 
@@ -34,8 +39,9 @@ export async function POST(req: NextRequest) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const mime = file.type || "application/octet-stream";
-    const uploaded = await uploadMediaToMeta({ buffer, mime, name: file.name });
+    const voiceNote = String(form.get("voiceNote") || "") === "1";
+    const mime = file.type || (voiceNote ? "audio/ogg" : "application/octet-stream");
+    const uploaded = await uploadMediaToMeta({ buffer, mime: mime.split(";")[0], name: file.name });
 
     let storageKey: string | undefined;
     if (storageConfigured()) {
@@ -45,12 +51,13 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       media: {
-        type: mediaTypeFor(mime),
+        type: mediaTypeFor(mime, voiceNote),
         metaMediaId: uploaded.id,
         storageKey,
-        mimeType: mime,
+        mimeType: mime.split(";")[0],
         fileName: file.name,
         size: buffer.length,
+        voiceNote: voiceNote || mediaTypeFor(mime, voiceNote) === "VOICE",
       },
       mocked: uploaded.mocked,
     });

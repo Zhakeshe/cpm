@@ -61,6 +61,7 @@ function extractText(msg: WhatsAppMessage) {
   if (msg.image?.caption) return msg.image.caption;
   if (msg.document?.caption || msg.document?.filename) return msg.document.caption || msg.document.filename;
   if (msg.video?.caption) return msg.video.caption;
+  if (msg.type === "audio" || msg.type === "voice") return "";
   if (msg.location) return `${msg.location.latitude},${msg.location.longitude}`;
   if (msg.contacts?.[0]?.name?.formatted_name) return msg.contacts[0].name!.formatted_name;
   return msg.type || "message";
@@ -329,7 +330,26 @@ export async function uploadMediaToMeta(file: { buffer: Buffer; mime: string; na
   return { mocked: false, id: json.id };
 }
 
-export type OutboundMediaType = "IMAGE" | "DOCUMENT" | "AUDIO" | "VIDEO";
+export type OutboundMediaType = "IMAGE" | "DOCUMENT" | "AUDIO" | "VIDEO" | "VOICE";
+
+export function whatsappMediaGraphBody(params: {
+  to: string;
+  type: OutboundMediaType;
+  mediaId: string;
+  caption?: string;
+  fileName?: string;
+  voiceNote?: boolean;
+}) {
+  const asVoice = params.voiceNote || params.type === "VOICE";
+  const graphType = asVoice || params.type === "AUDIO" ? "audio" : params.type.toLowerCase();
+  const payload: Record<string, unknown> = { id: params.mediaId };
+  if (params.caption && (params.type === "IMAGE" || params.type === "VIDEO" || params.type === "DOCUMENT")) {
+    payload.caption = params.caption;
+  }
+  if (params.type === "DOCUMENT" && params.fileName) payload.filename = params.fileName;
+  if (asVoice) payload.voice = true;
+  return { to: params.to, type: graphType, [graphType]: payload };
+}
 
 export async function sendWhatsAppMedia(params: {
   to: string;
@@ -337,12 +357,7 @@ export async function sendWhatsAppMedia(params: {
   mediaId: string;
   caption?: string;
   fileName?: string;
+  voiceNote?: boolean;
 }) {
-  const key = params.type.toLowerCase();
-  const payload: Record<string, unknown> = { id: params.mediaId };
-  if (params.caption && (params.type === "IMAGE" || params.type === "VIDEO" || params.type === "DOCUMENT")) {
-    payload.caption = params.caption;
-  }
-  if (params.type === "DOCUMENT" && params.fileName) payload.filename = params.fileName;
-  return postMessage({ to: params.to, type: key, [key]: payload });
+  return postMessage(whatsappMediaGraphBody(params));
 }

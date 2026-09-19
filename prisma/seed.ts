@@ -132,6 +132,20 @@ async function main() {
     },
   });
 
+  await prisma.messageTemplate.upsert({
+    where: { metaName_language: { metaName: "sale_now_discount", language: "ru" } },
+    update: {},
+    create: {
+      name: "Скидка сейчас",
+      metaName: "sale_now_discount",
+      language: "ru",
+      category: "MARKETING",
+      body: "{{1}}, сейчас действует скидка {{2}}. Напишите, если готовы оформить.",
+      placeholders: ["{{1}}", "{{2}}"],
+      status: "APPROVED",
+    },
+  });
+
   console.log("Seeded", { admin: admin.email, managers: managers.map((m) => m.email) });
 }
 
