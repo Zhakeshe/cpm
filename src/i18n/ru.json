@@ -110,6 +110,8 @@
     "stage": "Стадия: {name}",
     "amount": "Сумма: {amount}",
     "sendFailed": "Не удалось отправить",
+    "recipientNotAllowed": "Номер не в списке тестовых получателей Meta. Добавьте его в WhatsApp → API Setup → To и подтвердите приглашение в WhatsApp.",
+    "recipientUndeliverable": "WhatsApp не доставил сообщение на этот номер",
     "windowError": "Окно 24 часа закрыто — отправьте шаблон",
     "templateFailed": "Шаблон не отправлен",
     "uploadFailed": "Файл не загрузился",
