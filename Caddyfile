@@ -2,6 +2,12 @@
 	email admin@quantum.ushqn.com
 }
 
+# Let's Encrypt issues a cert only for the hostname, never for a raw IP.
+# https://31.77.12.47 will always fail TLS; send HTTP visitors to the domain.
+http://31.77.12.47 {
+	redir https://quantum.ushqn.com{uri} permanent
+}
+
 quantum.ushqn.com {
 	encode gzip
 	reverse_proxy app:3000 {
