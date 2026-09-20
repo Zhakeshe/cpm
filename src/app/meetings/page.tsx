@@ -89,13 +89,15 @@ export default function MeetingsPage() {
         <div className="space-y-4">
           {days.map(([day, list]) => (
             <div key={day} className="card p-4">
-              <div className="font-medium mb-3">{new Date(day).toLocaleDateString(localeTag, { weekday: "long", day: "numeric", month: "long" })}</div>
+              <div className="font-medium mb-3">
+                {new Date(`${day}T12:00:00.000Z`).toLocaleDateString("ru-RU", { timeZone: "Asia/Almaty", weekday: "long", day: "numeric", month: "long" })}
+              </div>
               <div className="space-y-3">
                 {list.map((m) => (
                   <div key={m.id} className="border-t border-[#243049] pt-3 text-sm">
                     <div className="flex justify-between gap-3">
                       <div>
-                        <div>{new Date(m.startsAt).toLocaleTimeString(localeTag, { hour: "2-digit", minute: "2-digit" })}</div>
+                        <div>{new Date(m.startsAt).toLocaleTimeString("ru-RU", { timeZone: "Asia/Almaty", hour: "2-digit", minute: "2-digit" })}</div>
                         <div>
                           {m.contact ? (
                             <Link href={`/contacts/${m.contact.id || m.contactId}`} className="text-[#93c5fd]">

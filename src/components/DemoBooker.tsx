@@ -14,7 +14,8 @@ function toLocalInput(value: string) {
 }
 
 export function DemoBooker({ contactId, onDone }: Props) {
-  const { t, localeTag } = useI18n();
+  const { t } = useI18n();
+  const timeOpts: Intl.DateTimeFormatOptions = { timeZone: "Asia/Almaty" };
   const [slots, setSlots] = useState<string[]>([]);
   const [next, setNext] = useState<string | null>(null);
   const [manual, setManual] = useState("");
@@ -65,13 +66,13 @@ export function DemoBooker({ contactId, onDone }: Props) {
       <div className="text-xs muted">{t("meetings.autoHint")}</div>
       {next && (
         <button type="button" className="rounded-xl bg-[#2563eb] px-3 py-2 text-sm w-full" onClick={() => book({ auto: true })}>
-          {t("meetings.autoBook", { time: new Date(next).toLocaleString(localeTag) })}
+          {t("meetings.autoBook", { time: new Date(next).toLocaleString("ru-RU", { ...timeOpts, day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) })}
         </button>
       )}
       <div className="flex flex-wrap gap-2">
         {slots.slice(0, 12).map((iso) => (
           <button key={iso} type="button" className="chip" onClick={() => book({ startsAt: iso })}>
-            {new Date(iso).toLocaleString(localeTag, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+            {new Date(iso).toLocaleString("ru-RU", { ...timeOpts, weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
           </button>
         ))}
         {slots.length === 0 && <div className="muted text-xs">{t("meetings.noSlots")}</div>}
