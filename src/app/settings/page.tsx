@@ -150,6 +150,93 @@ function QuickReplyRow({
   );
 }
 
+type WabaInfo = {
+  configured: boolean;
+  status: string;
+  lastSyncAt?: string | null;
+  lastError?: string | null;
+  account?: { name?: string; accountReviewStatus?: string; businessVerificationStatus?: string } | null;
+  phone?: { displayPhoneNumber?: string; verifiedName?: string; qualityRating?: string; codeVerificationStatus?: string } | null;
+  templatesFromMeta?: number;
+};
+
+function WabaSection({ onSynced }: { onSynced?: () => void }) {
+  const { t, localeTag } = useI18n();
+  const [info, setInfo] = useState<WabaInfo | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState("");
+  const [error, setError] = useState("");
+
+  async function load() {
+    const res = await fetch("/api/meta/waba");
+    if (res.ok) setInfo(await res.json());
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  async function sync() {
+    setBusy(true);
+    setNotice("");
+    setError("");
+    const res = await fetch("/api/meta/waba", { method: "POST" });
+    const data = await res.json().catch(() => ({}) as { error?: string; total?: number; created?: number; updated?: number });
+    setBusy(false);
+    if (!res.ok) {
+      setError(
+        data.error === "WHATSAPP_NOT_CONFIGURED"
+          ? t("settings.wabaNotConfigured")
+          : data.error === "META_TOKEN_EXPIRED"
+            ? t("settings.wabaTokenExpired")
+            : t("settings.wabaSyncFailed"),
+      );
+      await load();
+      return;
+    }
+    setNotice(t("settings.wabaSynced", { total: data.total || 0, created: data.created || 0, updated: data.updated || 0 }));
+    await load();
+    onSynced?.();
+  }
+
+  const row = (label: string, value?: string | null) => (
+    <div className="text-sm">
+      <div className="muted">{label}</div>
+      <div>{value || t("common.dash")}</div>
+    </div>
+  );
+
+  return (
+    <div className="card p-5 mb-6 space-y-3">
+      <div className="font-medium">{t("settings.wabaTitle")}</div>
+      <div className="muted text-sm">{t("settings.wabaHint")}</div>
+      <div className="grid md:grid-cols-3 gap-3">
+        {row(t("settings.wabaPhone"), info?.phone?.displayPhoneNumber)}
+        {row(t("settings.wabaName"), info?.phone?.verifiedName)}
+        {row(t("settings.wabaQuality"), info?.phone?.qualityRating)}
+        {row(t("settings.wabaCode"), info?.phone?.codeVerificationStatus)}
+        {row(t("settings.wabaReview"), info?.account?.accountReviewStatus)}
+        {row(t("settings.wabaBusiness"), info?.account?.businessVerificationStatus || info?.account?.name)}
+      </div>
+      <div className="text-xs muted">
+        {t("settings.lastSync", {
+          time: info?.lastSyncAt ? new Date(info.lastSyncAt).toLocaleString(localeTag) : t("common.dash"),
+        })}
+      </div>
+      {info?.lastError && (
+        <div className="text-sm text-[#f87171]">
+          {info.lastError === "META_TOKEN_EXPIRED" ? t("settings.wabaTokenExpired") : info.lastError}
+        </div>
+      )}
+      <button className="rounded-xl bg-[#2563eb] px-4 py-2" type="button" onClick={sync} disabled={busy}>
+        {busy ? t("settings.wabaSyncing") : t("settings.wabaSync")}
+      </button>
+      {notice && <div className="text-sm text-[#34d399]">{notice}</div>}
+      {error && <div className="text-sm text-[#f87171]">{error}</div>}
+    </div>
+  );
+}
+
 function TemplatesSection() {
   const { t } = useI18n();
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -391,6 +478,7 @@ export default function SettingsPage() {
           {t("common.save")}
         </button>
       </div>
+      <WabaSection />
       <QuickRepliesSection />
       <TemplatesSection />
       <div className="card p-5 space-y-3">
