@@ -1,6 +1,7 @@
 "use client";
 
 import { AppShell } from "@/components/AppShell";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { BarChart, DonutChart, LineChart } from "@/components/Charts";
 import { dayLabel, sourceLabel } from "@/lib/chart-data";
@@ -16,6 +17,7 @@ type Stats = {
   demos: number;
   sales: number;
   overdue: number;
+  needsFollowUp: number;
   activeClients: number;
   conversion: number;
   salesAmount: number;
@@ -62,6 +64,7 @@ export default function HomePage() {
     [t("dashboard.demos"), stats?.demos],
     [t("dashboard.sales"), stats?.sales],
     [t("dashboard.overdue"), stats?.overdue],
+    [t("dashboard.needsFollowUp"), stats?.needsFollowUp],
   ];
   if (role === "ADMIN" || role === "SUPERVISOR") {
     cards.push(
@@ -74,12 +77,24 @@ export default function HomePage() {
     <AppShell>
       <h1 className="text-2xl font-semibold mb-6">{t("dashboard.title")}</h1>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {cards.map(([label, value]) => (
-          <div key={String(label)} className="card p-5">
-            <div className="muted text-sm">{label}</div>
-            <div className="text-3xl font-semibold mt-2">{value ?? "—"}</div>
-          </div>
-        ))}
+        {cards.map(([label, value]) => {
+          const href = label === t("dashboard.needsFollowUp") ? "/follow-ups" : undefined;
+          const inner = (
+            <>
+              <div className="muted text-sm">{label}</div>
+              <div className="text-3xl font-semibold mt-2">{value ?? "—"}</div>
+            </>
+          );
+          return href ? (
+            <Link key={String(label)} href={href} className="card p-5 block">
+              {inner}
+            </Link>
+          ) : (
+            <div key={String(label)} className="card p-5">
+              {inner}
+            </div>
+          );
+        })}
       </div>
       {(role === "ADMIN" || role === "SUPERVISOR") && (
         <div className="grid md:grid-cols-2 gap-4 mt-6">

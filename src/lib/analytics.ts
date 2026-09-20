@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "./db";
+import { countFollowUpQueue } from "./follow-ups";
 import { canSeeAllRecords, type Role } from "./rbac";
 
 export type DateRange = { from: Date; to: Date };
@@ -45,6 +46,7 @@ export async function dashboardStats(user: { id: string; role: Role }) {
     unreadWa,
     activeClients,
     onlineManagers,
+    needsFollowUp,
   ] = await Promise.all([
     prisma.lead.count({ where: { ...managerFilter, createdAt: { gte: today.from } } }),
     prisma.lead.count({ where: { ...managerFilter, processedAt: null } }),
@@ -71,6 +73,7 @@ export async function dashboardStats(user: { id: string; role: Role }) {
         lastSeenAt: { gte: new Date(Date.now() - 5 * 60 * 1000) },
       },
     }),
+    countFollowUpQueue(prisma, canSeeAllRecords(user.role) ? undefined : user.id),
   ]);
 
   const won = await prisma.contact.aggregate({
@@ -88,6 +91,7 @@ export async function dashboardStats(user: { id: string; role: Role }) {
     missed,
     tasksOpen,
     overdue,
+    needsFollowUp,
     demos,
     sales,
     unreadWa: unreadWa._sum.unreadCount || 0,

@@ -4,6 +4,7 @@ import { eligibleManagers, pickRoundRobinManager, shouldReassignExistingContact 
 import { canSeeAllRecords, canManageSettings, scopeManagerId } from "../src/lib/rbac";
 import { placeholdersOf, renderTemplate } from "../src/lib/templates";
 import { whatsappMediaGraphBody } from "../src/lib/whatsapp";
+import { dueAtForPreset, followUpReason, isOnFollowUpQueue } from "../src/lib/follow-ups";
 
 describe("phone normalization", () => {
   it("treats formatted numbers as one identity", () => {
@@ -73,5 +74,60 @@ describe("whatsapp templates and media", () => {
       type: "audio",
       audio: { id: "mid-2", voice: true },
     });
+  });
+});
+
+describe("follow-up queue", () => {
+  const now = new Date("2026-09-20T12:00:00.000Z");
+
+  it("puts imported or website leads without a real touch on the list", () => {
+    expect(
+      isOnFollowUpQueue(
+        { status: "NEW", lastContactAt: now, hasOpenTask: false, hasMessages: false, hasCalls: false },
+        now,
+      ),
+    ).toBe(true);
+    expect(followUpReason({ hasMessages: false, hasCalls: false })).toBe("never");
+  });
+
+  it("skips won deals, open tasks, and recent WhatsApp conversations", () => {
+    expect(
+      isOnFollowUpQueue(
+        { status: "WON", lastContactAt: null, hasOpenTask: false, hasMessages: false, hasCalls: false },
+        now,
+      ),
+    ).toBe(false);
+    expect(
+      isOnFollowUpQueue(
+        { status: "NEW", lastContactAt: null, hasOpenTask: true, hasMessages: false, hasCalls: false },
+        now,
+      ),
+    ).toBe(false);
+    expect(
+      isOnFollowUpQueue(
+        { status: "IN_PROGRESS", lastContactAt: now, hasOpenTask: false, hasMessages: true, hasCalls: false },
+        now,
+      ),
+    ).toBe(false);
+  });
+
+  it("flags clients whose last touch is older than three days", () => {
+    const old = new Date("2026-09-10T12:00:00.000Z");
+    expect(
+      isOnFollowUpQueue(
+        { status: "IN_PROGRESS", lastContactAt: old, hasOpenTask: false, hasMessages: true, hasCalls: false },
+        now,
+      ),
+    ).toBe(true);
+    expect(followUpReason({ hasMessages: true, hasCalls: false })).toBe("stale");
+  });
+
+  it("schedules today in three hours and later presets at 10:00", () => {
+    const today = dueAtForPreset("today", now);
+    expect(today.getTime() - now.getTime()).toBe(3 * 60 * 60 * 1000);
+    const tomorrow = dueAtForPreset("tomorrow", now);
+    expect(tomorrow.getHours()).toBe(10);
+    expect(tomorrow.getDate()).toBe(now.getDate() + 1);
+    expect(dueAtForPreset("in3days", now).getDate()).toBe(now.getDate() + 3);
   });
 });

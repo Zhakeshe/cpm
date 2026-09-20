@@ -17,6 +17,7 @@ type Contact = {
   source: string;
   comment: string;
   dealAmount: string | number;
+  lastContactAt?: string | null;
   status: string;
   customFields: Record<string, unknown>;
   manager?: { id: string; name: string } | null;
@@ -115,6 +116,11 @@ export default function ContactPage() {
             <div className="grid md:grid-cols-2 gap-3 mt-4">
               <div>{t("contact.source", { source: t(`sources.${c.source}`, c.source) })}</div>
               <div>{t("contact.status", { status: c.status })}</div>
+              <div>
+                {c.lastContactAt
+                  ? t("contact.lastTouch", { time: new Date(c.lastContactAt).toLocaleString(localeTag) })
+                  : t("contact.noTouch")}
+              </div>
               <label>
                 {t("contact.stage")}
                 <select className="mt-1" value={c.pipelineStage?.id || ""} onChange={(e) => patch({ pipelineStageId: e.target.value })}>

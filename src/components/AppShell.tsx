@@ -8,6 +8,7 @@ import {
   BarChart3,
   Bell,
   Calendar,
+  Clock,
   LayoutDashboard,
   MessageSquare,
   Phone,
@@ -26,6 +27,7 @@ import { LOCALES, useI18n, type Locale } from "@/components/I18nProvider";
 const NAV = [
   { href: "/", key: "nav.home", icon: LayoutDashboard },
   { href: "/leads", key: "nav.leads", icon: Target },
+  { href: "/follow-ups", key: "nav.followUps", icon: Clock },
   { href: "/pipeline", key: "nav.pipeline", icon: Kanban },
   { href: "/messages", key: "nav.messages", icon: MessageSquare },
   { href: "/calls", key: "nav.calls", icon: Phone },

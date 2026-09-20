@@ -4,6 +4,7 @@ import { ingestContact, reassignContact } from "../../src/lib/contacts";
 import { capturePublicLead } from "../../src/lib/public-leads";
 import { mapLeadImportRows, parseCsv } from "../../src/lib/csv";
 import { importLeadRows } from "../../src/lib/import-leads";
+import { listFollowUpQueue, scheduleFollowUp } from "../../src/lib/follow-ups";
 
 describe("клиенты и распределение лидов", () => {
   beforeEach(async () => {
@@ -122,5 +123,30 @@ describe("клиенты и распределение лидов", () => {
       orderBy: { createdAt: "desc" },
     });
     expect(activity?.title).toContain("изменён");
+  });
+
+  it("ставит импортированных клиентов в очередь перезвона и снимает после задачи", async () => {
+    const csv = "first_name,phone\nСауле,+7 702 111 22 33\n";
+    const mapped = mapLeadImportRows(parseCsv(csv));
+    await importLeadRows(prisma, mapped.rows, { id: "admin-1", role: "ADMIN" });
+
+    const queue = await listFollowUpQueue(prisma, undefined);
+    expect(queue).toHaveLength(1);
+    expect(queue[0].reason).toBe("never");
+    expect(queue[0].firstName).toBe("Сауле");
+
+    const ownerId = queue[0].manager?.id;
+    expect(await listFollowUpQueue(prisma, ownerId)).toHaveLength(1);
+    expect(await listFollowUpQueue(prisma, "mgr-missing")).toHaveLength(0);
+
+    await scheduleFollowUp(prisma, {
+      contactId: queue[0].id,
+      managerId: queue[0].manager?.id || "mgr-1",
+      creatorId: "admin-1",
+      preset: "tomorrow",
+    });
+    expect(await listFollowUpQueue(prisma, undefined)).toHaveLength(0);
+    const task = await prisma.task.findFirst({ where: { contactId: queue[0].id } });
+    expect(task?.type).toBe("FOLLOW_UP");
   });
 });
