@@ -1,0 +1,9 @@
+{
+  "name": "Quantum CRM",
+  "short_name": "Quantum",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b1220",
+  "theme_color": "#1d4ed8",
+  "lang": "ru"
+}

@@ -16,6 +16,8 @@ type AnalyticsResponse = {
     byLostReason?: Array<{ outcomeReason: string | null; _count: number }>;
   };
   managers: Array<Record<string, unknown>>;
+  funnel?: Array<{ id: string; name: string; count: number; conversion: number }>;
+  plan?: { rows: Array<{ name: string; leads: number; leadTarget: number; leadPct: number; revenue: number; revenueTarget: number; revenuePct: number }> };
 };
 
 export default function AnalyticsPage() {
@@ -108,6 +110,28 @@ export default function AnalyticsPage() {
         <div className="card p-5">
           <div className="muted text-sm mb-3">{t("analytics.lostReasons")}</div>
           <DonutChart data={lostSeries} />
+        </div>
+        <div className="card p-5">
+          <div className="muted text-sm mb-3">{t("analytics.funnel")}</div>
+          {(data?.funnel || []).map((row) => (
+            <div key={row.id} className="flex justify-between text-sm border-t border-[#243049] py-2">
+              <span>{row.name}</span>
+              <span>
+                {row.count} · {row.conversion}%
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="card p-5">
+          <div className="muted text-sm mb-3">{t("analytics.planFact")}</div>
+          {(data?.plan?.rows || []).map((row) => (
+            <div key={row.name} className="text-sm border-t border-[#243049] py-2">
+              <div className="font-medium">{row.name}</div>
+              <div className="muted">
+                {row.leads}/{row.leadTarget} ({row.leadPct}%) · {row.revenue}/{row.revenueTarget} ({row.revenuePct}%)
+              </div>
+            </div>
+          ))}
         </div>
       </div>
       <div className="card overflow-hidden">

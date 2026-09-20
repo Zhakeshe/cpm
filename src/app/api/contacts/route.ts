@@ -2,25 +2,24 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { jsonError, requireUser } from "@/lib/api";
 import { ingestContact, reassignContact } from "@/lib/contacts";
-import { searchContacts } from "@/lib/search";
 import { canReassignManager, scopeManagerId } from "@/lib/rbac";
 import { MissingStageFieldsError } from "@/lib/pipeline-rules";
 import { applyContactStage, OutcomeReasonRequiredError } from "@/lib/outcomes";
+import { contactWhere, parseContactFilters } from "@/lib/contact-filters";
 import { z } from "zod";
 
 export async function GET(req: NextRequest) {
   try {
     const user = await requireUser();
-    const q = req.nextUrl.searchParams.get("q") || "";
+    const filters = parseContactFilters(req.nextUrl.searchParams);
     const managerId = scopeManagerId(user.role, user.id);
-    if (q) {
-      return NextResponse.json(await searchContacts(q, managerId));
-    }
     const contacts = await prisma.contact.findMany({
-      where: managerId ? { managerId } : {},
+      where: contactWhere(filters, managerId),
       include: {
         manager: { select: { id: true, email: true, name: true, role: true, sipExtension: true } },
         pipelineStage: true,
+        company: { select: { id: true, name: true } },
+        tags: { include: { tag: true } },
         tasks: { where: { status: "OPEN" }, take: 1, orderBy: { dueAt: "asc" } },
       },
       orderBy: { updatedAt: "desc" },
@@ -128,6 +127,11 @@ export async function PATCH(req: NextRequest) {
         dealAmount: body.dealAmount,
         customFields: body.customFields,
         whatsappNumber: body.whatsappNumber,
+        altPhone: body.altPhone,
+        address: body.address,
+        city: body.city,
+        companyId: body.companyId === "" ? null : body.companyId,
+        archivedAt: body.archived === true ? new Date() : body.archived === false ? null : undefined,
       },
     });
     if (body.pipelineStageId && body.pipelineStageId !== existing.pipelineStageId) {

@@ -10,6 +10,8 @@ export default function LoginPage() {
   const { t, locale, setLocale } = useI18n();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [totp, setTotp] = useState("");
+  const [needTotp, setNeedTotp] = useState(false);
   const [error, setError] = useState("");
 
   async function onSubmit(e: React.FormEvent) {
@@ -18,11 +20,16 @@ export default function LoginPage() {
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, totp: totp || undefined }),
     });
     const data = await res.json();
     if (!res.ok) {
-      setError(data.error === "ACCOUNT_DISABLED" ? t("auth.disabled") : t("auth.invalid"));
+      if (data.totpRequired) {
+        setNeedTotp(true);
+        setError(t("auth.totpNeeded"));
+        return;
+      }
+      setError(data.error === "ACCOUNT_DISABLED" ? t("auth.disabled") : data.error === "INVALID_TOTP" ? t("auth.totpBad") : t("auth.invalid"));
       return;
     }
     router.push("/");
@@ -57,6 +64,12 @@ export default function LoginPage() {
           {t("auth.password")}
           <input className="mt-1" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
         </label>
+        {needTotp && (
+          <label className="block text-sm">
+            {t("auth.totp")}
+            <input className="mt-1" value={totp} onChange={(e) => setTotp(e.target.value)} inputMode="numeric" />
+          </label>
+        )}
         {error && <div className="text-[#f87171] text-sm">{error}</div>}
         <button className="w-full rounded-xl bg-[#2563eb] py-3 font-medium">{t("auth.submit")}</button>
         <Link href="/forgot-password" className="block text-center text-sm muted">

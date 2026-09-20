@@ -20,6 +20,11 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
         tasks: { orderBy: { dueAt: "desc" } },
         meetings: { orderBy: { startsAt: "desc" } },
         activities: { orderBy: { createdAt: "desc" }, take: 200 },
+        company: true,
+        tags: { include: { tag: true } },
+        quotes: { include: { items: true }, orderBy: { createdAt: "desc" }, take: 20 },
+        payments: { orderBy: { paidAt: "desc" }, take: 20 },
+        files: { select: { id: true, fileName: true, mimeType: true, size: true, createdAt: true }, orderBy: { createdAt: "desc" } },
       },
     });
     if (!contact || (managerId && contact.managerId !== managerId)) {
@@ -46,6 +51,22 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     const body = z.object({ text: z.string().min(1).max(2000) }).parse(await req.json());
     const note = await addContactNote(prisma, { contactId: id, managerId: user.id, text: body.text });
     return NextResponse.json(note);
+  } catch (err) {
+    return jsonError(err);
+  }
+}
+
+export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  try {
+    const user = await requireUser();
+    const { id } = await ctx.params;
+    const managerId = scopeManagerId(user.role, user.id);
+    const contact = await prisma.contact.findUnique({ where: { id } });
+    if (!contact || (managerId && contact.managerId !== managerId)) {
+      return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+    }
+    await prisma.contact.update({ where: { id }, data: { archivedAt: new Date() } });
+    return NextResponse.json({ ok: true });
   } catch (err) {
     return jsonError(err);
   }
