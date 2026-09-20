@@ -13,6 +13,7 @@ type AnalyticsResponse = {
     byDay?: Series;
     salesByDay?: Array<{ day: string; amount: number }>;
     bySource?: Array<{ source: string; _count: number }>;
+    byLostReason?: Array<{ outcomeReason: string | null; _count: number }>;
   };
   managers: Array<Record<string, unknown>>;
 };
@@ -33,6 +34,10 @@ export default function AnalyticsPage() {
   const leadsSeries = (s.byDay || []).map((d) => ({ label: dayLabel(d.day), value: Number(d.count) }));
   const salesSeries = (s.salesByDay || []).map((d) => ({ label: dayLabel(d.day), value: Number(d.amount) }));
   const sourceSeries = (s.bySource || []).map((d) => ({ label: t(`sources.${d.source}`, sourceLabel(d.source)), value: Number(d._count) }));
+  const lostSeries = (s.byLostReason || []).map((d) => ({
+    label: d.outcomeReason ? t(`outcomes.${d.outcomeReason}`, d.outcomeReason) : t("common.dash"),
+    value: Number(d._count),
+  }));
   const managerSeries = (data?.managers || []).map((m) => ({
     label: String(m.name),
     value: Number(m.sales) || 0,
@@ -99,6 +104,10 @@ export default function AnalyticsPage() {
         <div className="card p-5">
           <div className="muted text-sm mb-3">{t("analytics.managerSales")}</div>
           <BarChart data={managerSeries} color="#fbbf24" />
+        </div>
+        <div className="card p-5">
+          <div className="muted text-sm mb-3">{t("analytics.lostReasons")}</div>
+          <DonutChart data={lostSeries} />
         </div>
       </div>
       <div className="card overflow-hidden">

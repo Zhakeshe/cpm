@@ -162,6 +162,11 @@ export async function analytics(range: DateRange, managerId?: string) {
     avgResponseSeconds: responseTime,
     byDay: byDay.map((d) => ({ day: d.day, count: Number(d.count) })),
     bySource,
+    byLostReason: await prisma.contact.groupBy({
+      by: ["outcomeReason"],
+      where: { ...filter, status: "LOST", closedAt: created },
+      _count: true,
+    }),
     salesByDay: salesByDay.map((d) => ({ day: d.day, amount: Number(d.amount) })),
   };
 }

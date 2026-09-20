@@ -24,6 +24,8 @@ export async function exportLeads(managerId?: string | null) {
     email: lead.contact.email || "",
     manager: lead.contact.manager?.name || lead.manager?.name || "",
     stage: lead.contact.pipelineStage?.name || "",
+    status: lead.contact.status,
+    outcomeReason: lead.contact.outcomeReason || "",
     dealAmount: Number(lead.contact.dealAmount || 0),
     comment: lead.contact.comment || "",
   }));

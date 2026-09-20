@@ -6,7 +6,10 @@ import { useI18n } from "@/components/I18nProvider";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
-type Stage = { id: string; name: string; requiredFields: string[] };
+type Stage = { id: string; name: string; requiredFields: string[]; isWon?: boolean; isLost?: boolean };
+
+const LOST_REASONS = ["price", "no_need", "competitor", "silent", "later", "other"];
+const WON_REASONS = ["paid_full", "installment", "repeat"];
 
 type Contact = {
   id: string;
@@ -18,6 +21,7 @@ type Contact = {
   comment: string;
   dealAmount: string | number;
   lastContactAt?: string | null;
+  outcomeReason?: string | null;
   status: string;
   customFields: Record<string, unknown>;
   manager?: { id: string; name: string } | null;
@@ -37,6 +41,9 @@ export default function ContactPage() {
   const [me, setMe] = useState<{ role: string } | null>(null);
   const [notice, setNotice] = useState("");
   const [problem, setProblem] = useState("");
+  const [pendingStage, setPendingStage] = useState<Stage | null>(null);
+  const [reason, setReason] = useState("");
+  const [note, setNote] = useState("");
 
   const load = useCallback(async () => {
     setC(await fetch(`/api/contacts/${params.id}`).then((r) => r.json()));
@@ -70,6 +77,8 @@ export default function ContactPage() {
       if (payload.error === "STAGE_FIELDS_REQUIRED") {
         const names = (payload.fields as string[]).map(fieldName).join(", ");
         setProblem(t("contact.missing", { fields: names }));
+      } else if (payload.error === "OUTCOME_REASON_REQUIRED") {
+        setProblem(t("contact.reasonNeeded"));
       } else {
         setProblem(t("contact.saveFailed"));
       }
@@ -87,6 +96,43 @@ export default function ContactPage() {
       body: JSON.stringify({ contactId: params.id, managerId }),
     });
     await load();
+  }
+
+  async function addNote(e: React.FormEvent) {
+    e.preventDefault();
+    if (!note.trim()) return;
+    const res = await fetch(`/api/contacts/${params.id}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: note }),
+    });
+    if (!res.ok) {
+      setProblem(t("contact.noteFailed"));
+      return;
+    }
+    setNote("");
+    await load();
+  }
+
+  function pickStage(stageId: string) {
+    const stage = stages.find((s) => s.id === stageId);
+    if (!stage) return;
+    if (stage.isWon || stage.isLost) {
+      setPendingStage(stage);
+      setReason("");
+      return;
+    }
+    setPendingStage(null);
+    patch({ pipelineStageId: stageId });
+  }
+
+  async function confirmOutcome() {
+    if (!pendingStage || !reason) {
+      setProblem(t("contact.reasonNeeded"));
+      return;
+    }
+    const ok = await patch({ pipelineStageId: pendingStage.id, outcomeReason: reason });
+    if (ok) setPendingStage(null);
   }
 
   if (!c) {
@@ -115,7 +161,10 @@ export default function ContactPage() {
 
             <div className="grid md:grid-cols-2 gap-3 mt-4">
               <div>{t("contact.source", { source: t(`sources.${c.source}`, c.source) })}</div>
-              <div>{t("contact.status", { status: c.status })}</div>
+              <div>
+                {t("contact.status", { status: c.status })}
+                {c.outcomeReason ? ` · ${t("contact.outcome", { reason: t(`outcomes.${c.outcomeReason}`, c.outcomeReason) })}` : ""}
+              </div>
               <div>
                 {c.lastContactAt
                   ? t("contact.lastTouch", { time: new Date(c.lastContactAt).toLocaleString(localeTag) })
@@ -123,7 +172,7 @@ export default function ContactPage() {
               </div>
               <label>
                 {t("contact.stage")}
-                <select className="mt-1" value={c.pipelineStage?.id || ""} onChange={(e) => patch({ pipelineStageId: e.target.value })}>
+                <select className="mt-1" value={c.pipelineStage?.id || ""} onChange={(e) => pickStage(e.target.value)}>
                   {stages.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name}
@@ -150,6 +199,26 @@ export default function ContactPage() {
             >
               {t("common.save")}
             </button>
+            {pendingStage && (
+              <div className="mt-4 card p-3 space-y-2">
+                <div className="text-sm">{t("pipeline.pickReason")}</div>
+                <div className="flex flex-wrap gap-2">
+                  {(pendingStage.isWon ? WON_REASONS : LOST_REASONS).map((key) => (
+                    <button
+                      key={key}
+                      type="button"
+                      className={`chip ${reason === key ? "bg-[#1d4ed8]" : ""}`}
+                      onClick={() => setReason(key)}
+                    >
+                      {t(`outcomes.${key}`)}
+                    </button>
+                  ))}
+                </div>
+                <button type="button" className="rounded-xl bg-[#2563eb] px-3 py-2 text-sm" onClick={confirmOutcome}>
+                  {t("pipeline.confirmClose")}
+                </button>
+              </div>
+            )}
             {problem && <div className="mt-2 text-sm text-[#fbbf24]">{problem}</div>}
             {notice && <div className="mt-2 text-sm text-[#34d399]">{notice}</div>}
 
@@ -212,6 +281,10 @@ export default function ContactPage() {
 
         <div className="card p-6">
           <div className="font-medium mb-4">{t("contact.timeline")}</div>
+          <form onSubmit={addNote} className="mb-4 space-y-2">
+            <textarea rows={3} placeholder={t("contact.notePlaceholder")} value={note} onChange={(e) => setNote(e.target.value)} />
+            <button className="rounded-xl bg-[#2563eb] px-3 py-2 text-sm">{t("contact.addNote")}</button>
+          </form>
           <div className="space-y-3">
             {c.activities.map((a) => (
               <div key={a.id} className="text-sm">

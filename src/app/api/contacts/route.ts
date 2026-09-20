@@ -4,7 +4,8 @@ import { jsonError, requireUser } from "@/lib/api";
 import { ingestContact, reassignContact } from "@/lib/contacts";
 import { searchContacts } from "@/lib/search";
 import { canReassignManager, scopeManagerId } from "@/lib/rbac";
-import { assertStageRequirements, MissingStageFieldsError } from "@/lib/pipeline-rules";
+import { MissingStageFieldsError } from "@/lib/pipeline-rules";
+import { applyContactStage, OutcomeReasonRequiredError } from "@/lib/outcomes";
 import { z } from "zod";
 
 export async function GET(req: NextRequest) {
@@ -117,19 +118,6 @@ export async function PATCH(req: NextRequest) {
     if (!existing || (managerId && existing.managerId !== managerId)) {
       return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
     }
-    if (body.pipelineStageId && body.pipelineStageId !== existing.pipelineStageId) {
-      // validate against the values the contact will have after this update
-      await assertStageRequirements(prisma, body.pipelineStageId, {
-        ...existing,
-        ...(body.email !== undefined ? { email: body.email } : {}),
-        ...(body.comment !== undefined ? { comment: body.comment } : {}),
-        ...(body.dealAmount !== undefined ? { dealAmount: body.dealAmount } : {}),
-        ...(body.lastName !== undefined ? { lastName: body.lastName } : {}),
-        ...(body.whatsappNumber !== undefined ? { whatsappNumber: body.whatsappNumber } : {}),
-        ...(body.customFields !== undefined ? { customFields: body.customFields } : {}),
-      });
-    }
-
     const updated = await prisma.contact.update({
       where: { id },
       data: {
@@ -138,55 +126,31 @@ export async function PATCH(req: NextRequest) {
         email: body.email,
         comment: body.comment,
         dealAmount: body.dealAmount,
-        status: body.status,
-        pipelineStageId: body.pipelineStageId,
         customFields: body.customFields,
         whatsappNumber: body.whatsappNumber,
       },
     });
     if (body.pipelineStageId && body.pipelineStageId !== existing.pipelineStageId) {
-      const [from, to] = await Promise.all([
-        existing.pipelineStageId
-          ? prisma.pipelineStage.findUnique({ where: { id: existing.pipelineStageId } })
-          : null,
-        prisma.pipelineStage.findUnique({ where: { id: body.pipelineStageId } }),
-      ]);
-      await prisma.activity.create({
-        data: {
-          contactId: id,
-          managerId: user.id,
-          type: "STAGE_CHANGED",
-          title: `Статус изменён: «${from?.name || "—"}» → «${to?.name || "—"}»`,
-          payload: { from: existing.pipelineStageId, to: body.pipelineStageId },
+      const afterStage = await applyContactStage(prisma, {
+        contactId: id,
+        fromStageId: existing.pipelineStageId,
+        toStageId: body.pipelineStageId,
+        actorId: user.id,
+        outcomeReason: body.outcomeReason,
+        contactForRules: {
+          ...existing,
+          ...updated,
         },
       });
-      await prisma.auditLog.create({
-        data: {
-          actorId: user.id,
-          action: "contact.stage",
-          entityType: "Contact",
-          entityId: id,
-          oldValue: { stage: existing.pipelineStageId },
-          newValue: { stage: body.pipelineStageId },
-        },
-      });
-      if (to?.isWon) {
-        await prisma.contact.update({ where: { id }, data: { status: "WON" } });
-      }
-      if (to?.isLost) {
-        await prisma.contact.update({ where: { id }, data: { status: "LOST" } });
-      }
-      await prisma.lead.updateMany({
-        where: { contactId: id, processedAt: null },
-        data: { processedAt: new Date(), pipelineStageId: body.pipelineStageId },
-      });
-      // won/lost stages rewrite the status, so re-read before answering
-      return NextResponse.json(await prisma.contact.findUnique({ where: { id } }));
+      return NextResponse.json(afterStage);
     }
     return NextResponse.json(updated);
   } catch (err) {
     if (err instanceof MissingStageFieldsError) {
       return NextResponse.json({ error: err.message, fields: err.fields }, { status: 400 });
+    }
+    if (err instanceof OutcomeReasonRequiredError) {
+      return NextResponse.json({ error: err.message }, { status: 400 });
     }
     return jsonError(err);
   }

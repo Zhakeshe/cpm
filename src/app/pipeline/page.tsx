@@ -17,12 +17,17 @@ type Card = {
   manager?: { name: string };
   tasks?: Array<{ dueAt: string; description: string }>;
 };
-type Stage = { id: string; name: string; contacts: Card[] };
+type Stage = { id: string; name: string; isWon?: boolean; isLost?: boolean; contacts: Card[] };
+
+const LOST_REASONS = ["price", "no_need", "competitor", "silent", "later", "other"];
+const WON_REASONS = ["paid_full", "installment", "repeat"];
 
 export default function PipelinePage() {
   const { t } = useI18n();
   const [stages, setStages] = useState<Stage[]>([]);
   const [error, setError] = useState("");
+  const [pending, setPending] = useState<{ contactId: string; stage: Stage } | null>(null);
+  const [reason, setReason] = useState("");
   const load = useCallback(async () => {
     setStages(await fetch("/api/pipeline").then((r) => r.json()));
   }, []);
@@ -33,24 +38,45 @@ export default function PipelinePage() {
 
   useRealtime({ "lead:new": () => load() });
 
-  async function move(contactId: string, pipelineStageId: string) {
+  async function move(contactId: string, pipelineStageId: string, outcomeReason?: string) {
     setError("");
     const res = await fetch("/api/contacts", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: contactId, pipelineStageId }),
+      body: JSON.stringify({ id: contactId, pipelineStageId, outcomeReason }),
     });
     if (!res.ok) {
       const payload = await res.json().catch(() => ({}));
       if (payload.error === "STAGE_FIELDS_REQUIRED") {
         const names = (payload.fields as string[]).map((f: string) => t(`fields.${f}`, f)).join(", ");
         setError(t("pipeline.missingFields", { fields: names }));
+      } else if (payload.error === "OUTCOME_REASON_REQUIRED") {
+        setError(t("pipeline.reasonRequired"));
       } else {
         setError(t("pipeline.moveFailed"));
       }
-      return;
+      return false;
     }
     await load();
+    return true;
+  }
+
+  function dropOn(contactId: string, stage: Stage) {
+    if (stage.isWon || stage.isLost) {
+      setPending({ contactId, stage });
+      setReason("");
+      return;
+    }
+    move(contactId, stage.id);
+  }
+
+  async function confirmClose() {
+    if (!pending || !reason) {
+      setError(t("pipeline.reasonRequired"));
+      return;
+    }
+    const ok = await move(pending.contactId, pending.stage.id, reason);
+    if (ok) setPending(null);
   }
 
   return (
@@ -65,7 +91,7 @@ export default function PipelinePage() {
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
               const id = e.dataTransfer.getData("id");
-              if (id) move(id, stage.id);
+              if (id) dropOn(id, stage);
             }}
           >
             <div className="muted text-sm mb-2">
@@ -96,6 +122,28 @@ export default function PipelinePage() {
           </div>
         ))}
       </div>
+      {pending && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-20">
+          <div className="card p-5 max-w-md w-full space-y-3">
+            <div className="font-medium">{t("pipeline.pickReason")}</div>
+            <div className="flex flex-wrap gap-2">
+              {(pending.stage.isWon ? WON_REASONS : LOST_REASONS).map((key) => (
+                <button key={key} type="button" className={`chip ${reason === key ? "bg-[#1d4ed8]" : ""}`} onClick={() => setReason(key)}>
+                  {t(`outcomes.${key}`)}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <button className="rounded-xl bg-[#2563eb] px-4 py-2" type="button" onClick={confirmClose}>
+                {t("pipeline.confirmClose")}
+              </button>
+              <button className="chip" type="button" onClick={() => setPending(null)}>
+                {t("common.cancel")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppShell>
   );
 }
