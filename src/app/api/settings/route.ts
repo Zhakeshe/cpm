@@ -30,6 +30,7 @@ export async function GET() {
         metaLeads: `${appUrl}/api/webhooks/meta-leads`,
         telephony: `${appUrl}/api/webhooks/telephony`,
         publicForm: `${appUrl}/go`,
+        wazzup: `${appUrl}/api/webhooks/wazzup`,
       },
     });
   } catch (err) {

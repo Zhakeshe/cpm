@@ -97,6 +97,7 @@ function MessagesInbox() {
   const [error, setError] = useState("");
   const [recording, setRecording] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [transport, setTransport] = useState("meta");
   const fileRef = useRef<HTMLInputElement>(null);
   const imageRef = useRef<HTMLInputElement>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -120,6 +121,9 @@ function MessagesInbox() {
     fetch("/api/quick-replies")
       .then((r) => (r.ok ? r.json() : []))
       .then(setQuickReplies);
+    fetch("/api/auth/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((me) => setTransport(me?.whatsappTransport || "meta"));
   }, [loadList]);
 
   useEffect(() => {
@@ -135,9 +139,10 @@ function MessagesInbox() {
     },
   });
 
-  const windowOpen = thread?.serviceWindowExpiresAt
-    ? new Date(thread.serviceWindowExpiresAt).getTime() > Date.now()
-    : false;
+  const freeform = transport === "wazzup" || transport === "mock";
+  const windowOpen =
+    freeform ||
+    (thread?.serviceWindowExpiresAt ? new Date(thread.serviceWindowExpiresAt).getTime() > Date.now() : false);
   const approved = templates.filter((tpl) => tpl.isActive && tpl.status === "APPROVED");
   useEffect(() => {
     if (thread && !windowOpen) setPickerOpen(true);
@@ -205,7 +210,7 @@ function MessagesInbox() {
     const res = await fetch("/api/messages/send", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contactId: thread.contact.id, media, text: text || undefined }),
+      body: JSON.stringify({ contactId: thread.contact.id, media }),
     });
     setBusy(false);
     if (!res.ok) {
@@ -273,7 +278,9 @@ function MessagesInbox() {
                   {c.manager?.name} · {c.contact.pipelineStage?.name}
                 </span>
                 <span>
-                  {c.serviceWindowExpiresAt && new Date(c.serviceWindowExpiresAt).getTime() > Date.now() ? "🟢" : "🔒"}
+                  {freeform || (c.serviceWindowExpiresAt && new Date(c.serviceWindowExpiresAt).getTime() > Date.now())
+                    ? "🟢"
+                    : "🔒"}
                 </span>
               </div>
             </button>
@@ -301,7 +308,9 @@ function MessagesInbox() {
 
           {thread && (
             <div className="border-t border-[#243049] p-3 space-y-2">
-              {windowOpen ? (
+              {freeform ? (
+                <div className="text-xs text-[#34d399]">🟢 {t("messages.wazzupOpen")}</div>
+              ) : windowOpen ? (
                 <div className="text-xs text-[#34d399]">
                   🟢 {t("messages.windowOpen", { until: new Date(thread.serviceWindowExpiresAt!).toLocaleString(localeTag) })}
                 </div>

@@ -1,3 +1,4 @@
+/** PARKED Meta Graph client. Do not delete — used again after Business verification. */
 export function graphVersion() {
   return process.env.WHATSAPP_GRAPH_VERSION || "v21.0";
 }

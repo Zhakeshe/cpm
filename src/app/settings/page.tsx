@@ -2,6 +2,7 @@
 
 import { AppShell } from "@/components/AppShell";
 import { SettingsSales } from "@/components/SettingsSales";
+import { WazzupSection } from "@/components/WazzupSection";
 import { useI18n } from "@/components/I18nProvider";
 import { useEffect, useState } from "react";
 
@@ -159,6 +160,8 @@ type WabaInfo = {
   account?: { name?: string; accountReviewStatus?: string; businessVerificationStatus?: string } | null;
   phone?: { displayPhoneNumber?: string; verifiedName?: string; qualityRating?: string; codeVerificationStatus?: string } | null;
   templatesFromMeta?: number;
+  parked?: boolean;
+  transport?: string;
 };
 
 function WabaSection({ onSynced }: { onSynced?: () => void }) {
@@ -210,6 +213,7 @@ function WabaSection({ onSynced }: { onSynced?: () => void }) {
   return (
     <div className="card p-5 mb-6 space-y-3">
       <div className="font-medium">{t("settings.wabaTitle")}</div>
+      {info?.parked && <div className="text-sm rounded-xl bg-[#1e3a5f] px-3 py-2">{t("settings.wabaParked")}</div>}
       <div className="muted text-sm">{t("settings.wabaHint")}</div>
       <div className="grid md:grid-cols-3 gap-3">
         {row(t("settings.wabaPhone"), info?.phone?.displayPhoneNumber)}
@@ -310,7 +314,7 @@ export default function SettingsPage() {
     integrations: Integration[];
     sla: { enabled: boolean; minutes: number; action: string };
     routing: { existingContact: string; fallback: string };
-    webhooks: { whatsappVerify: string; whatsappInbound: string; metaLeads: string; telephony: string; publicForm?: string };
+    webhooks: { whatsappVerify: string; whatsappInbound: string; metaLeads: string; telephony: string; publicForm?: string; wazzup?: string };
   } | null>(null);
   const [stages, setStages] = useState<
     Array<{ id?: string; name: string; slug: string; order: number; isActive: boolean; requiredFields?: string[] }>
@@ -399,6 +403,7 @@ export default function SettingsPage() {
           { type: "WHATSAPP_BUSINESS", status: "DISCONNECTED" },
           { type: "TELEPHONY", status: "DISCONNECTED" },
           { type: "META_LEADS", status: "DISCONNECTED" },
+          { type: "WAZZUP", status: "DISCONNECTED" },
         ]).map((i) => (
           <div key={i.type} className="card p-5">
             <div className="font-medium">{i.type.replaceAll("_", " ")}</div>
@@ -422,6 +427,7 @@ export default function SettingsPage() {
           [t("settings.metaLeads"), hooks?.metaLeads],
           [t("settings.sipWebhook"), hooks?.telephony],
           [t("settings.publicForm"), hooks?.publicForm],
+          [t("settings.wazzupWebhook"), hooks?.wazzup],
         ].map(([label, url]) => (
           <div key={String(label)} className="text-sm">
             <div className="muted">{label}</div>
@@ -479,6 +485,7 @@ export default function SettingsPage() {
           {t("common.save")}
         </button>
       </div>
+      <WazzupSection />
       <WabaSection />
       <QuickRepliesSection />
       <TemplatesSection />

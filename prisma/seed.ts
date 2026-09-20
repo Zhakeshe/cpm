@@ -91,6 +91,11 @@ async function main() {
     update: {},
     create: { type: "META_LEADS", status: "DISCONNECTED" },
   });
+  await prisma.integration.upsert({
+    where: { type: "WAZZUP" },
+    update: {},
+    create: { type: "WAZZUP", status: "DISCONNECTED" },
+  });
 
   await prisma.systemSetting.upsert({
     where: { key: "lead_sla" },

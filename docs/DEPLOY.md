@@ -19,6 +19,19 @@ docker compose up -d --build
 
 Внутренние порты Postgres/Redis/MinIO наружу не публикуются.
 
+## Wazzup (пока Meta не верифицирует)
+
+В `.env` на сервере:
+
+- `WAZZUP_API_KEY` — ключ из кабинета Wazzup → API
+- `WAZZUP_CHANNEL_ID` — UUID WhatsApp-канала (QR), либо выбрать в Настройки → Wazzup
+
+Webhook: `https://quantum.ushqn.com/api/webhooks/wazzup`
+
+В кабинете Wazzup нажмите «Подписать вебхук» в CRM или `PATCH /v3/webhooks`. Пока ключ задан, исходящие идут в Wazzup, не в Graph.
+
+Прямой Meta WABA **не удаляем** (см. `docs/META_WABA.md`). Код и `WHATSAPP_*` в `.env` остаются. Сейчас `WHATSAPP_TRANSPORT=wazzup`. После верификации: `WHATSAPP_TRANSPORT=meta`, ключ Wazzup убрать.
+
 ## WhatsApp Cloud API (WABA)
 
 В `.env` на сервере заполните:

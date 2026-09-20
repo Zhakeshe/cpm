@@ -1,3 +1,4 @@
+/** PARKED Meta Cloud API. Do not delete — restore with WHATSAPP_TRANSPORT=meta. */
 import crypto from "crypto";
 import type { PrismaClient } from "@prisma/client";
 import { ingestContact } from "./contacts";

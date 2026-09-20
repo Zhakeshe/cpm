@@ -1,3 +1,4 @@
+/** PARKED Meta hub.verify + HMAC. Webhook URL stays /api/webhooks/whatsapp. Do not delete. */
 import { verifyWhatsAppSignature } from "./whatsapp";
 
 /** Meta App Secret: new name plus the existing WABA env so current deploys keep working. */

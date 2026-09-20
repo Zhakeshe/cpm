@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { whatsappTransport } from "@/lib/whatsapp-transport";
 
 export async function GET() {
   const session = await getSession();
@@ -19,5 +20,5 @@ export async function GET() {
     },
   });
   if (!user?.isActive) return NextResponse.json({ error: "ACCOUNT_DISABLED" }, { status: 403 });
-  return NextResponse.json(user);
+  return NextResponse.json({ ...user, whatsappTransport: await whatsappTransport(prisma) });
 }
