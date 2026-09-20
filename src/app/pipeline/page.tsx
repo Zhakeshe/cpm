@@ -81,7 +81,8 @@ export default function PipelinePage() {
 
   return (
     <AppShell>
-      <h1 className="text-2xl font-semibold mb-6">{t("pipeline.title")}</h1>
+      <h1 className="text-2xl font-semibold mb-2">{t("pipeline.title")}</h1>
+      <p className="muted text-sm mb-6 max-w-3xl">{t("pipeline.howItWorks")}</p>
       {error && <div className="card px-4 py-2 mb-4 text-sm text-[#fbbf24]">{error}</div>}
       <div className="flex gap-4 overflow-x-auto pb-4">
         {stages.map((stage) => (

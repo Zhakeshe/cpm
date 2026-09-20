@@ -23,7 +23,6 @@ import {
   Package,
   FileText,
   Building2,
-  KeyRound,
 } from "lucide-react";
 import { useRealtime, usePresence } from "@/lib/use-realtime";
 import { Softphone } from "@/components/Softphone";
@@ -36,19 +35,18 @@ const NAV = [
   { href: "/follow-ups", key: "nav.followUps", icon: Clock },
   { href: "/pipeline", key: "nav.pipeline", icon: Kanban },
   { href: "/messages", key: "nav.messages", icon: MessageSquare },
-  { href: "/calls", key: "nav.calls", icon: Phone },
   { href: "/tasks", key: "nav.tasks", icon: Shield },
   { href: "/meetings", key: "nav.meetings", icon: Calendar },
-  { href: "/catalog", key: "nav.catalog", icon: Package },
   { href: "/quotes", key: "nav.quotes", icon: FileText },
-  { href: "/companies", key: "nav.companies", icon: Building2 },
+  { href: "/calls", key: "nav.calls", icon: Phone, admin: true },
+  { href: "/catalog", key: "nav.catalog", icon: Package, admin: true },
+  { href: "/companies", key: "nav.companies", icon: Building2, admin: true },
   { href: "/sla", key: "nav.sla", icon: Clock, admin: true },
   { href: "/analytics", key: "nav.analytics", icon: BarChart3, admin: true },
   { href: "/managers", key: "nav.managers", icon: UsersRound, admin: true },
   { href: "/audit", key: "nav.audit", icon: Shield, admin: true },
   { href: "/monitoring", key: "nav.monitoring", icon: Activity, admin: true },
   { href: "/settings", key: "nav.settings", icon: Settings, admin: true },
-  { href: "/security", key: "nav.security", icon: KeyRound },
 ];
 
 type Me = { id: string; name: string; email: string; role: string };

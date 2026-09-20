@@ -50,6 +50,8 @@ function LeadsInner() {
   const [bulkStage, setBulkStage] = useState("");
   const [bulkTag, setBulkTag] = useState("");
   const [viewName, setViewName] = useState("");
+  const [role, setRole] = useState("MANAGER");
+  const isAdmin = role === "ADMIN" || role === "SUPERVISOR";
 
   const query = useCallback(() => {
     const qs = new URLSearchParams();
@@ -69,6 +71,7 @@ function LeadsInner() {
   }, [load]);
 
   useEffect(() => {
+    fetch("/api/auth/me").then((r) => r.json()).then((u) => setRole(u.role || "MANAGER"));
     fetch("/api/pipeline").then((r) => r.json()).then(setStages);
     fetch("/api/users").then((r) => r.json()).then(setManagers);
     fetch("/api/tags").then((r) => r.json()).then(setTags);
@@ -123,6 +126,7 @@ function LeadsInner() {
     <AppShell>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold">{t("leads.title")}</h1>
+        {isAdmin && (
         <div className="flex gap-2">
           <label className="chip cursor-pointer">
             {t("leads.import")}
@@ -139,6 +143,7 @@ function LeadsInner() {
           </label>
           <ExportButton href="/api/export/leads" />
         </div>
+        )}
       </div>
       <form onSubmit={create} className="card p-4 mb-4 grid md:grid-cols-5 gap-3">
         <input placeholder={t("common.name")} value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
@@ -161,12 +166,14 @@ function LeadsInner() {
             <option key={s.id} value={s.id}>{s.name}</option>
           ))}
         </select>
+        {isAdmin && (
         <select value={filters.manager} onChange={(e) => setFilters({ ...filters, manager: e.target.value })}>
           <option value="">{t("common.manager")}</option>
           {managers.map((m) => (
             <option key={m.id} value={m.id}>{m.name}</option>
           ))}
         </select>
+        )}
         <select value={filters.source} onChange={(e) => setFilters({ ...filters, source: e.target.value })}>
           <option value="">{t("common.source")}</option>
           {SOURCES.map((s) => (
@@ -186,6 +193,7 @@ function LeadsInner() {
           <option value="1">{t("leads.archived")}</option>
         </select>
       </div>
+      {isAdmin && (
       <div className="flex flex-wrap gap-2 mb-4 items-center">
         <select value={bulkStage} onChange={(e) => setBulkStage(e.target.value)}>
           <option value="">{t("leads.bulkStage")}</option>
@@ -221,19 +229,22 @@ function LeadsInner() {
           </button>
         ))}
       </div>
+      )}
       {error && <div className="text-sm text-[#f87171] mb-3">{error}</div>}
       {importNotice && <div className="text-sm text-[#34d399] mb-3">{importNotice}</div>}
       <div className="card overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-[#182235] text-[#93a0bb]">
             <tr>
+              {isAdmin && (
               <th className="p-3 w-8">
                 <input type="checkbox" className="w-auto" checked={selected.length === rows.length && rows.length > 0} onChange={(e) => setSelected(e.target.checked ? rows.map((r) => r.id) : [])} />
               </th>
+              )}
               <th className="text-left p-3">{t("common.client")}</th>
               <th className="text-left p-3">{t("common.phone")}</th>
               <th className="text-left p-3">{t("common.source")}</th>
-              <th className="text-left p-3">{t("common.manager")}</th>
+              {isAdmin && <th className="text-left p-3">{t("common.manager")}</th>}
               <th className="text-left p-3">{t("common.stage")}</th>
               <th className="text-left p-3">{t("leads.tag")}</th>
               <th className="text-left p-3">{t("common.amount")}</th>
@@ -242,9 +253,11 @@ function LeadsInner() {
           <tbody>
             {rows.map((c) => (
               <tr key={c.id} className="border-t border-[#243049]">
+                {isAdmin && (
                 <td className="p-3">
                   <input type="checkbox" className="w-auto" checked={selected.includes(c.id)} onChange={(e) => setSelected((prev) => (e.target.checked ? [...prev, c.id] : prev.filter((id) => id !== c.id)))} />
                 </td>
+                )}
                 <td className="p-3">
                   <Link href={`/contacts/${c.id}`} className="text-[#93c5fd]">
                     {c.firstName} {c.lastName}
@@ -253,7 +266,7 @@ function LeadsInner() {
                 </td>
                 <td className="p-3">{c.phoneDisplay}</td>
                 <td className="p-3">{t(`sources.${c.source}`, c.source)}</td>
-                <td className="p-3">{c.manager?.name || t("common.dash")}</td>
+                {isAdmin && <td className="p-3">{c.manager?.name || t("common.dash")}</td>}
                 <td className="p-3">{c.pipelineStage?.name || t("common.dash")}</td>
                 <td className="p-3">{(c.tags || []).map((x) => x.tag.name).join(", ")}</td>
                 <td className="p-3">{Number(c.dealAmount || 0)}</td>

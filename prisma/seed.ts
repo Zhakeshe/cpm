@@ -1,6 +1,7 @@
 import { PrismaClient, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { seedVacuumCatalog } from "../src/lib/catalog";
+import { VACUUM_PIPELINE_STAGES } from "../src/lib/pipeline-defaults";
 
 const prisma = new PrismaClient();
 
@@ -41,31 +42,29 @@ async function main() {
 
   const pipeline = await prisma.pipeline.upsert({
     where: { id: "default" },
-    update: {},
-    create: { id: "default", name: "Основная воронка", isDefault: true },
+    update: { name: "Пылесосы Quantum" },
+    create: { id: "default", name: "Пылесосы Quantum", isDefault: true },
   });
 
-  const stages = [
-    { slug: "new", name: "Новый лид", order: 1 },
-    { slug: "contacted", name: "Связались", order: 2 },
-    { slug: "callback", name: "Перезвонить", order: 3 },
-    { slug: "demo", name: "Записан на демо", order: 4 },
-    { slug: "demo_done", name: "Демо проведено", order: 5 },
-    { slug: "thinking", name: "Думает", order: 6 },
-    { slug: "paid", name: "Оплатил", order: 7, isWon: true },
-    { slug: "lost", name: "Отказ", order: 8, isLost: true },
-  ];
-  for (const s of stages) {
+  for (const s of VACUUM_PIPELINE_STAGES) {
     await prisma.pipelineStage.upsert({
       where: { pipelineId_slug: { pipelineId: pipeline.id, slug: s.slug } },
-      update: { name: s.name, order: s.order },
+      update: {
+        name: s.name,
+        order: s.order,
+        isWon: Boolean(s.isWon),
+        isLost: Boolean(s.isLost),
+        requiredFields: s.requiredFields,
+        isActive: true,
+      },
       create: {
         pipelineId: pipeline.id,
         slug: s.slug,
         name: s.name,
         order: s.order,
-        isWon: "isWon" in s,
-        isLost: "isLost" in s,
+        isWon: Boolean(s.isWon),
+        isLost: Boolean(s.isLost),
+        requiredFields: s.requiredFields,
       },
     });
   }
