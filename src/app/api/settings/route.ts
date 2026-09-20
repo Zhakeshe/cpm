@@ -27,6 +27,7 @@ export async function GET() {
         whatsappInbound: `${appUrl}/api/webhooks/whatsapp`,
         metaLeads: `${appUrl}/api/webhooks/meta-leads`,
         telephony: `${appUrl}/api/webhooks/telephony`,
+        publicForm: `${appUrl}/go`,
       },
     });
   } catch (err) {

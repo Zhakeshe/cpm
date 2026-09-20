@@ -277,6 +277,7 @@
     "wabaInbound": "WhatsApp inbound",
     "metaLeads": "Meta Lead Ads",
     "sipWebhook": "SIP webhook",
+    "publicForm": "Ашық лид формасы",
     "sipTitle": "SIP / софтфон",
     "sipHint": "АТС WebSocket, домен және ішкі нөмір құпиясөздері. Кредтер тек кірген менеджерге беріледі.",
     "sipWs": "SIP WebSocket URL",
@@ -398,5 +399,11 @@
     "incomingToast": "Кіріс қоңырау",
     "incomingHint": "Клиент анықталды, карточка дайын",
     "openCard": "Карточканы ашу"
+  },
+  "publicForm": {
+    "title": "Өтінім қалдырыңыз — хабарласамыз",
+    "submit": "Жіберу",
+    "thanks": "Өтінім қабылданды. Менеджер хабарласады.",
+    "failed": "Жіберілмеді. Телефонды тексеріңіз."
   }
 }

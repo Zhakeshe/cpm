@@ -277,6 +277,7 @@
     "wabaInbound": "WhatsApp inbound",
     "metaLeads": "Meta Lead Ads",
     "sipWebhook": "SIP webhook",
+    "publicForm": "Публичная форма лида",
     "sipTitle": "SIP / софтфон",
     "sipHint": "WebSocket АТС, домен и пароли внутренних номеров. Креды отдаются только залогиненному менеджеру.",
     "sipWs": "SIP WebSocket URL",
@@ -398,5 +399,11 @@
     "incomingToast": "Входящий звонок",
     "incomingHint": "Клиент определён, карточка готова",
     "openCard": "Открыть карточку"
+  },
+  "publicForm": {
+    "title": "Оставьте заявку — перезвоним",
+    "submit": "Отправить",
+    "thanks": "Заявка принята. Менеджер свяжется с вами.",
+    "failed": "Не удалось отправить. Проверьте телефон."
   }
 }

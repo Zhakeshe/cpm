@@ -222,7 +222,7 @@ export default function SettingsPage() {
     integrations: Integration[];
     sla: { enabled: boolean; minutes: number; action: string };
     routing: { existingContact: string; fallback: string };
-    webhooks: { whatsappVerify: string; whatsappInbound: string; metaLeads: string; telephony: string };
+    webhooks: { whatsappVerify: string; whatsappInbound: string; metaLeads: string; telephony: string; publicForm?: string };
   } | null>(null);
   const [stages, setStages] = useState<
     Array<{ id?: string; name: string; slug: string; order: number; isActive: boolean; requiredFields?: string[] }>
@@ -333,6 +333,7 @@ export default function SettingsPage() {
           [t("settings.wabaInbound"), hooks?.whatsappInbound],
           [t("settings.metaLeads"), hooks?.metaLeads],
           [t("settings.sipWebhook"), hooks?.telephony],
+          [t("settings.publicForm"), hooks?.publicForm],
         ].map(([label, url]) => (
           <div key={String(label)} className="text-sm">
             <div className="muted">{label}</div>
