@@ -1,4 +1,4 @@
-# Amanat CRM
+# Quantum CRM
 
 Production CRM для отдела продаж: клиенты, лиды, WhatsApp Cloud API, SIP-телефония, воронка, задачи, демо, аналитика и аудит.
 
