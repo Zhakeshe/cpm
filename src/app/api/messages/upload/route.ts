@@ -5,6 +5,7 @@ import { scopeManagerId } from "@/lib/rbac";
 import { uploadMediaToMeta } from "@/lib/whatsapp";
 import { extensionFor, putObject, storageConfigured } from "@/lib/storage";
 import { whatsappTransport } from "@/lib/whatsapp-transport";
+import { toWazzupVoice } from "@/lib/transcode-voice";
 import crypto from "crypto";
 
 const MAX_BYTES = 25 * 1024 * 1024;
@@ -39,19 +40,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
+    let buffer = Buffer.from(await file.arrayBuffer());
     const voiceNote = String(form.get("voiceNote") || "") === "1";
-    const mime = file.type || (voiceNote ? "audio/ogg" : "application/octet-stream");
+    let mime = file.type || (voiceNote ? "audio/ogg" : "application/octet-stream");
+    let fileName = file.name;
     const transport = await whatsappTransport(prisma);
+    if (transport === "wazzup" && (voiceNote || mime.startsWith("audio/"))) {
+      const converted = await toWazzupVoice(buffer, mime);
+      buffer = Buffer.from(converted.buffer);
+      mime = converted.mime;
+      fileName = converted.fileName;
+    }
     const uploaded =
       transport === "wazzup"
         ? { mocked: false, id: `wazzup-media-${crypto.randomUUID()}` }
-        : await uploadMediaToMeta({ buffer, mime: mime.split(";")[0], name: file.name });
+        : await uploadMediaToMeta({ buffer, mime: mime.split(";")[0], name: fileName });
 
     let storageKey: string | undefined;
     if (storageConfigured()) {
       storageKey = `whatsapp/out/${crypto.randomUUID()}.${extensionFor(mime)}`;
-      await putObject(storageKey, buffer, mime);
+      await putObject(storageKey, buffer, mime.split(";")[0]);
     }
 
     return NextResponse.json({
@@ -60,7 +68,7 @@ export async function POST(req: NextRequest) {
         metaMediaId: uploaded.id,
         storageKey,
         mimeType: mime.split(";")[0],
-        fileName: file.name,
+        fileName,
         size: buffer.length,
         voiceNote: voiceNote || mediaTypeFor(mime, voiceNote) === "VOICE",
       },

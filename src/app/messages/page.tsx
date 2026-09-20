@@ -210,7 +210,7 @@ function MessagesInbox() {
     const res = await fetch("/api/messages/send", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contactId: thread.contact.id, media, text: text || undefined }),
+      body: JSON.stringify({ contactId: thread.contact.id, media }),
     });
     setBusy(false);
     if (!res.ok) {

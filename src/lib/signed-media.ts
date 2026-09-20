@@ -20,5 +20,11 @@ export function verifyMediaKey(key: string, sig: string) {
 export function publicMediaUrl(storageKey: string) {
   const app = (process.env.APP_URL || "").replace(/\/$/, "");
   const sig = signMediaKey(storageKey);
-  return `${app}/api/public/files?key=${encodeURIComponent(storageKey)}&sig=${sig}`;
+  const path = storageKey
+    .split("/")
+    .filter((part) => part && part !== "." && part !== "..")
+    .map(encodeURIComponent)
+    .join("/");
+  // Wazzup infers type from the URL path — keep the file extension at the end.
+  return `${app}/api/public/media/${sig}/${path}`;
 }

@@ -36,7 +36,8 @@ async function wazzupFetch(apiKey: string, path: string, init: RequestInit = {})
     json = { raw: text };
   }
   if (!res.ok) {
-    console.error("wazzup_api_failed", { path, status: res.status });
+    const snippet = text.replace(/\s+/g, " ").slice(0, 240);
+    console.error("wazzup_api_failed", { path, status: res.status, snippet });
     throw new WazzupApiError("WAZZUP_API_FAILED");
   }
   return json;

@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { isWazzupPayload } from "../src/lib/wazzup-inbound";
 import { isMetaWabaParked, META_WABA_PARKED_MODULES, restoreMetaWabaSteps } from "../src/lib/meta-waba-parked";
 import { allowsFreeform, getWazzupConfig, whatsappTransport } from "../src/lib/whatsapp-transport";
-import { signMediaKey, verifyMediaKey } from "../src/lib/signed-media";
+import { publicMediaUrl, signMediaKey, verifyMediaKey } from "../src/lib/signed-media";
 import { wazzupChatId } from "../src/lib/wazzup";
 
 describe("wazzup payload", () => {
@@ -74,5 +74,11 @@ describe("wazzup helpers", () => {
     const sig = signMediaKey("whatsapp/out/a.jpg");
     expect(verifyMediaKey("whatsapp/out/a.jpg", sig)).toBe(true);
     expect(verifyMediaKey("whatsapp/out/a.jpg", "nope")).toBe(false);
+    const prevUrl = process.env.APP_URL;
+    process.env.APP_URL = "https://quantum.ushqn.com";
+    const url = publicMediaUrl("whatsapp/out/a.jpg");
+    expect(url).toBe(`https://quantum.ushqn.com/api/public/media/${sig}/whatsapp/out/a.jpg`);
+    if (prevUrl == null) delete process.env.APP_URL;
+    else process.env.APP_URL = prevUrl;
   });
 });
