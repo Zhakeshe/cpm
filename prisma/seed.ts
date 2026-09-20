@@ -1,5 +1,6 @@
 import { PrismaClient, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { seedVacuumCatalog } from "../src/lib/catalog";
 
 const prisma = new PrismaClient();
 
@@ -158,6 +159,8 @@ async function main() {
       status: "APPROVED",
     },
   });
+
+  await seedVacuumCatalog(prisma);
 
   console.log("Seeded", { admin: admin.email, managers: managers.map((m) => m.email) });
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { AppShell } from "@/components/AppShell";
+import { SettingsSales } from "@/components/SettingsSales";
 import { useI18n } from "@/components/I18nProvider";
 import { useEffect, useState } from "react";
 
@@ -553,6 +554,7 @@ export default function SettingsPage() {
           {t("settings.savePipeline")}
         </button>
       </div>
+      <SettingsSales />
     </AppShell>
   );
 }

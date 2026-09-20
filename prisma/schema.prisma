@@ -174,6 +174,8 @@ model User {
   isOnline           Boolean  @default(true)
   sipExtension       String?
   sipUsername        String?
+  totpSecret         String?
+  totpEnabled        Boolean  @default(false)
   lastSeenAt         DateTime?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
@@ -192,6 +194,9 @@ model User {
   passwordResets     PasswordResetToken[]
   assignmentChangesFrom ManagerChange[]  @relation("FromManager")
   assignmentChangesTo   ManagerChange[]  @relation("ToManager")
+  quotes             Quote[]
+  quotas             SalesQuota[]
+  savedViews         SavedView[]
 }
 
 model PasswordResetToken {
@@ -240,10 +245,15 @@ model Contact {
   phoneNormalized  String         @unique
   phoneDisplay     String
   whatsappNumber   String?
+  altPhone         String?
   email            String?
+  address          String         @default("")
+  city             String         @default("")
   source           ContactSource
   managerId        String?
   manager          User?          @relation("ContactManager", fields: [managerId], references: [id])
+  companyId        String?
+  company          Company?       @relation(fields: [companyId], references: [id])
   pipelineStageId  String?
   pipelineStage    PipelineStage? @relation(fields: [pipelineStageId], references: [id])
   status           ContactStatus  @default(NEW)
@@ -251,6 +261,7 @@ model Contact {
   comment          String         @default("")
   outcomeReason    String?
   closedAt         DateTime?
+  archivedAt       DateTime?
   customFields     Json           @default("{}")
   lastContactAt    DateTime?
   createdAt        DateTime       @default(now())
@@ -264,10 +275,16 @@ model Contact {
   meetings         Meeting[]
   activities       Activity[]
   managerChanges   ManagerChange[]
+  tags             ContactTag[]
+  quotes           Quote[]
+  payments         Payment[]
+  files            ContactFile[]
 
   @@index([managerId])
   @@index([pipelineStageId])
   @@index([email])
+  @@index([companyId])
+  @@index([archivedAt])
 }
 
 model Lead {
@@ -552,4 +569,153 @@ model CustomFieldDef {
   fieldType String  @default("text")
   options   Json    @default("[]")
   required  Boolean @default(false)
+}
+
+model Company {
+  id        String    @id @default(cuid())
+  name      String
+  bin       String    @default("")
+  phone     String    @default("")
+  email     String    @default("")
+  address   String    @default("")
+  comment   String    @default("")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  contacts  Contact[]
+
+  @@index([name])
+}
+
+model Tag {
+  id       String       @id @default(cuid())
+  name     String       @unique
+  color    String       @default("#2563eb")
+  contacts ContactTag[]
+}
+
+model ContactTag {
+  contactId String
+  tagId     String
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([contactId, tagId])
+  @@index([tagId])
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+}
+
+model Product {
+  id          String      @id @default(cuid())
+  sku         String      @unique
+  name        String
+  category    String      @default("vacuum")
+  price       Decimal     @default(0) @db.Decimal(14, 2)
+  stock       Int         @default(0)
+  isActive    Boolean     @default(true)
+  description String      @default("")
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  quoteItems  QuoteItem[]
+}
+
+model Quote {
+  id        String      @id @default(cuid())
+  number    String      @unique
+  contactId String
+  contact   Contact     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  managerId String
+  manager   User        @relation(fields: [managerId], references: [id])
+  status    QuoteStatus @default(DRAFT)
+  total     Decimal     @default(0) @db.Decimal(14, 2)
+  note      String      @default("")
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  items     QuoteItem[]
+
+  @@index([contactId])
+  @@index([managerId, createdAt])
+}
+
+model QuoteItem {
+  id        String  @id @default(cuid())
+  quoteId   String
+  quote     Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id])
+  title     String
+  qty       Int     @default(1)
+  unitPrice Decimal @default(0) @db.Decimal(14, 2)
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  TRANSFER
+  INSTALLMENT
+}
+
+model Payment {
+  id        String        @id @default(cuid())
+  contactId String
+  contact   Contact       @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  amount    Decimal       @db.Decimal(14, 2)
+  method    PaymentMethod @default(CASH)
+  paidAt    DateTime      @default(now())
+  note      String        @default("")
+  createdAt DateTime      @default(now())
+
+  @@index([contactId, paidAt])
+}
+
+model ContactFile {
+  id          String   @id @default(cuid())
+  contactId   String
+  contact     Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  fileName    String
+  mimeType    String   @default("application/octet-stream")
+  size        Int      @default(0)
+  storageKey  String?
+  inlineData  Bytes?
+  createdAt   DateTime @default(now())
+
+  @@index([contactId])
+}
+
+model SalesQuota {
+  id            String @id @default(cuid())
+  managerId     String
+  manager       User   @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  year          Int
+  month         Int
+  leadTarget    Int    @default(0)
+  revenueTarget Decimal @default(0) @db.Decimal(14, 2)
+
+  @@unique([managerId, year, month])
+}
+
+model AutomationRule {
+  id        String  @id @default(cuid())
+  name      String
+  enabled   Boolean @default(true)
+  staleDays Int     @default(3)
+  action    String  @default("CREATE_TASK")
+  taskType  String  @default("FOLLOW_UP")
+  createdAt DateTime @default(now())
+}
+
+model SavedView {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  filters   Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }

@@ -2,9 +2,11 @@
 
 import { AppShell } from "@/components/AppShell";
 import { QuickActions } from "@/components/QuickActions";
+import { ContactSales } from "@/components/ContactSales";
 import { useI18n } from "@/components/I18nProvider";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 
 type Stage = { id: string; name: string; requiredFields: string[]; isWon?: boolean; isLost?: boolean };
 
@@ -24,8 +26,17 @@ type Contact = {
   outcomeReason?: string | null;
   status: string;
   customFields: Record<string, unknown>;
+  altPhone?: string | null;
+  address?: string;
+  city?: string;
+  archivedAt?: string | null;
   manager?: { id: string; name: string } | null;
+  company?: { id: string; name: string } | null;
   pipelineStage?: { id: string; name: string } | null;
+  tags?: Array<{ tag: { id: string; name: string; color: string } }>;
+  quotes?: Array<{ id: string; number: string; total: string | number; status: string }>;
+  payments?: Array<{ id: string; amount: string | number; method: string }>;
+  files?: Array<{ id: string; fileName: string; size: number }>;
   activities: Array<{ id: string; title: string; createdAt: string }>;
   calls: Array<{ id: string; direction: string; duration: number; recordingUrl?: string | null; status: string }>;
   tasks: Array<{ id: string; description: string; dueAt: string; status: string; type: string }>;
@@ -190,15 +201,41 @@ export default function ContactPage() {
                 {t("common.email")}
                 <input value={c.email || ""} onChange={(e) => setC({ ...c, email: e.target.value })} />
               </label>
+              <label>
+                {t("contact.altPhone")}
+                <input value={c.altPhone || ""} onChange={(e) => setC({ ...c, altPhone: e.target.value })} />
+              </label>
+              <label>
+                {t("contact.city")}
+                <input value={c.city || ""} onChange={(e) => setC({ ...c, city: e.target.value })} />
+              </label>
+              <label className="md:col-span-2">
+                {t("contact.address")}
+                <input value={c.address || ""} onChange={(e) => setC({ ...c, address: e.target.value })} />
+              </label>
             </div>
 
             <textarea className="mt-3" rows={3} value={c.comment} onChange={(e) => setC({ ...c, comment: e.target.value })} />
-            <button
-              className="mt-3 rounded-xl bg-[#1d4ed8] px-4 py-2"
-              onClick={() => patch({ comment: c.comment, dealAmount: Number(c.dealAmount), email: c.email })}
-            >
-              {t("common.save")}
-            </button>
+            <div className="flex gap-2 mt-3">
+              <button
+                className="rounded-xl bg-[#1d4ed8] px-4 py-2"
+                onClick={() =>
+                  patch({
+                    comment: c.comment,
+                    dealAmount: Number(c.dealAmount),
+                    email: c.email,
+                    altPhone: c.altPhone,
+                    city: c.city,
+                    address: c.address,
+                  })
+                }
+              >
+                {t("common.save")}
+              </button>
+              <button type="button" className="chip" onClick={() => patch({ archived: !c.archivedAt })}>
+                {c.archivedAt ? t("leads.activeOnly") : t("leads.archive")}
+              </button>
+            </div>
             {pendingStage && (
               <div className="mt-4 card p-3 space-y-2">
                 <div className="text-sm">{t("pipeline.pickReason")}</div>
@@ -265,6 +302,25 @@ export default function ContactPage() {
             </div>
           </div>
 
+          <div className="card p-5">
+            <div className="font-medium mb-2">{t("quotes.title")}</div>
+            {(c.quotes || []).map((q) => (
+              <Link key={q.id} href={`/quotes/${q.id}`} className="block text-sm border-t border-[#243049] py-2 text-[#93c5fd]">
+                {q.number} · {Number(q.total)} ₸ · {t(`quoteStatus.${q.status}`, q.status)}
+              </Link>
+            ))}
+            {(c.payments || []).map((p) => (
+              <div key={p.id} className="text-sm border-t border-[#243049] py-2">
+                {Number(p.amount)} ₸ · {t(`payments.${p.method}`, p.method)}
+              </div>
+            ))}
+            {(c.files || []).map((f) => (
+              <a key={f.id} className="block text-sm text-[#93c5fd] border-t border-[#243049] py-2" href={`/api/contacts/${c.id}/files/${f.id}`}>
+                {f.fileName}
+              </a>
+            ))}
+          </div>
+
           <div className="card p-6">
             <div className="font-medium mb-3">{t("contact.recordings")}</div>
             {c.calls.length === 0 && <div className="muted text-sm">{t("contact.noCalls")}</div>}
@@ -279,6 +335,8 @@ export default function ContactPage() {
           </div>
         </div>
 
+        <div className="space-y-4">
+        <ContactSales contactId={c.id} customFields={c.customFields || {}} tags={c.tags || []} companyId={c.company?.id} onChange={load} />
         <div className="card p-6">
           <div className="font-medium mb-4">{t("contact.timeline")}</div>
           <form onSubmit={addNote} className="mb-4 space-y-2">
@@ -293,6 +351,7 @@ export default function ContactPage() {
               </div>
             ))}
           </div>
+        </div>
         </div>
       </div>
     </AppShell>

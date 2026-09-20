@@ -36,6 +36,7 @@ export default function ManagersPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [sipExtension, setSipExtension] = useState("");
+  const [role, setRole] = useState("MANAGER");
   const [notice, setNotice] = useState("");
   const [resetFor, setResetFor] = useState<string | null>(null);
   const [resetPassword, setResetPassword] = useState("");
@@ -71,7 +72,7 @@ export default function ManagersPage() {
     const res = await fetch("/api/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password: pwd, sipExtension: sipExtension || undefined, role: "MANAGER" }),
+      body: JSON.stringify({ name, email, password: pwd, sipExtension: sipExtension || undefined, role }),
     });
     const body = await res.json();
     if (!res.ok) {
@@ -112,6 +113,11 @@ export default function ManagersPage() {
           minLength={8}
         />
         <input placeholder={t("managers.sip")} value={sipExtension} onChange={(e) => setSipExtension(e.target.value)} />
+        <select value={role} onChange={(e) => setRole(e.target.value)}>
+          <option value="MANAGER">MANAGER</option>
+          <option value="SUPERVISOR">SUPERVISOR</option>
+          <option value="OPERATOR">OPERATOR</option>
+        </select>
         <button className="rounded-xl bg-[#2563eb] py-2 font-medium">{t("common.create")}</button>
         </form>
       )}

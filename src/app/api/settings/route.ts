@@ -9,15 +9,17 @@ export async function GET() {
     if (!canManageSettings(user.role)) {
       return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
     }
-    const [integrations, sla, routing] = await Promise.all([
+    const [integrations, sla, routing, hours] = await Promise.all([
       prisma.integration.findMany(),
       prisma.systemSetting.findUnique({ where: { key: "lead_sla" } }),
       prisma.systemSetting.findUnique({ where: { key: "call_routing" } }),
+      prisma.systemSetting.findUnique({ where: { key: "working_hours" } }),
     ]);
     const appUrl = (process.env.APP_URL || "").replace(/\/$/, "");
     return NextResponse.json({
       integrations,
       sla: sla?.value || { enabled: false, minutes: 10, action: "NOTIFY_MANAGER" },
+      hours: hours?.value || { timezone: "Asia/Almaty", start: "10:00", end: "19:00", offDays: [0] },
       routing: routing?.value || {
         existingContact: "responsible",
         fallback: "queue",
@@ -44,6 +46,13 @@ export async function PUT(req: NextRequest) {
         where: { key: "lead_sla" },
         create: { key: "lead_sla", value: body.sla },
         update: { value: body.sla },
+      });
+    }
+    if (body.hours) {
+      await prisma.systemSetting.upsert({
+        where: { key: "working_hours" },
+        create: { key: "working_hours", value: body.hours },
+        update: { value: body.hours },
       });
     }
     if (body.routing) {

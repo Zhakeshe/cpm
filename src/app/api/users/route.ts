@@ -8,7 +8,7 @@ import { z } from "zod";
 export async function GET() {
   try {
     const user = await requireUser();
-    if (user.role === "MANAGER") {
+    if (user.role === "MANAGER" || user.role === "OPERATOR") {
       return NextResponse.json(
         await prisma.user.findMany({
           where: { id: user.id },

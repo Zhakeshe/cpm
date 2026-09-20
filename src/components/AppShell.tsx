@@ -19,6 +19,11 @@ import {
   UsersRound,
   Kanban,
   Search,
+  Sun,
+  Package,
+  FileText,
+  Building2,
+  KeyRound,
 } from "lucide-react";
 import { useRealtime, usePresence } from "@/lib/use-realtime";
 import { Softphone } from "@/components/Softphone";
@@ -26,6 +31,7 @@ import { LOCALES, useI18n, type Locale } from "@/components/I18nProvider";
 
 const NAV = [
   { href: "/", key: "nav.home", icon: LayoutDashboard },
+  { href: "/today", key: "nav.today", icon: Sun },
   { href: "/leads", key: "nav.leads", icon: Target },
   { href: "/follow-ups", key: "nav.followUps", icon: Clock },
   { href: "/pipeline", key: "nav.pipeline", icon: Kanban },
@@ -33,11 +39,16 @@ const NAV = [
   { href: "/calls", key: "nav.calls", icon: Phone },
   { href: "/tasks", key: "nav.tasks", icon: Shield },
   { href: "/meetings", key: "nav.meetings", icon: Calendar },
+  { href: "/catalog", key: "nav.catalog", icon: Package },
+  { href: "/quotes", key: "nav.quotes", icon: FileText },
+  { href: "/companies", key: "nav.companies", icon: Building2 },
+  { href: "/sla", key: "nav.sla", icon: Clock, admin: true },
   { href: "/analytics", key: "nav.analytics", icon: BarChart3, admin: true },
   { href: "/managers", key: "nav.managers", icon: UsersRound, admin: true },
   { href: "/audit", key: "nav.audit", icon: Shield, admin: true },
   { href: "/monitoring", key: "nav.monitoring", icon: Activity, admin: true },
   { href: "/settings", key: "nav.settings", icon: Settings, admin: true },
+  { href: "/security", key: "nav.security", icon: KeyRound },
 ];
 
 type Me = { id: string; name: string; email: string; role: string };
@@ -167,12 +178,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               onChange={(e) => setQ(e.target.value)}
             />
           </form>
-          <button className="relative p-2" onClick={markNotesRead}>
+          <Link href="/notifications" className="relative p-2" onClick={markNotesRead}>
             <Bell size={18} />
             {unread > 0 && (
               <span className="absolute -top-1 -right-1 bg-[#ef4444] text-[10px] px-1.5 rounded-full">{unread}</span>
             )}
-          </button>
+          </Link>
         </header>
         {openNotes && (
           <div className="absolute right-4 top-16 z-20 w-80 card p-3 space-y-2">

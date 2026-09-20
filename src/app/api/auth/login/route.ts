@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { setSessionCookie, verifyPassword } from "@/lib/auth";
 import { clientIp, rateLimit, tooManyRequests } from "@/lib/rate-limit";
+import { verifyTotp } from "@/lib/totp";
 import { z } from "zod";
 
 const schema = z.object({
   email: z.string().min(1),
   password: z.string().min(1),
+  totp: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -27,6 +29,14 @@ export async function POST(req: NextRequest) {
   const ok = await verifyPassword(body.password, user.passwordHash);
   if (!ok) {
     return NextResponse.json({ error: "INVALID_CREDENTIALS" }, { status: 401 });
+  }
+  if (user.totpEnabled) {
+    if (!body.totp) {
+      return NextResponse.json({ totpRequired: true }, { status: 401 });
+    }
+    if (!user.totpSecret || !verifyTotp(user.totpSecret, body.totp)) {
+      return NextResponse.json({ error: "INVALID_TOTP" }, { status: 401 });
+    }
   }
   await setSessionCookie({
     id: user.id,
