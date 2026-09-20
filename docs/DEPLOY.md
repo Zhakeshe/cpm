@@ -28,7 +28,9 @@ docker compose up -d --build
 
 Webhook: `https://quantum.ushqn.com/api/webhooks/wazzup`
 
-В кабинете Wazzup нажмите «Подписать вебхук» в CRM или `PATCH /v3/webhooks`. Пока ключ задан, исходящие идут в Wazzup, не в Graph. Прямой WABA код не удаляем — после верификации уберите ключ Wazzup.
+В кабинете Wazzup нажмите «Подписать вебхук» в CRM или `PATCH /v3/webhooks`. Пока ключ задан, исходящие идут в Wazzup, не в Graph.
+
+Прямой Meta WABA **не удаляем** (см. `docs/META_WABA.md`). Код и `WHATSAPP_*` в `.env` остаются. Сейчас `WHATSAPP_TRANSPORT=wazzup`. После верификации: `WHATSAPP_TRANSPORT=meta`, ключ Wazzup убрать.
 
 ## WhatsApp Cloud API (WABA)
 

@@ -1,3 +1,4 @@
+/** PARKED Meta webhook. Route stays live for later restore. Do not delete. */
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";

@@ -314,6 +314,7 @@
     "nextAvailable": "Келесі қолжетімді",
     "group": "Менеджерлер тобы",
     "wabaTitle": "WhatsApp Business (Meta)",
+    "wabaParked": "Тікелей Meta WABA кодта және .env-те сақталған, қазір өшірулі. Тірі арна — Wazzup. Қайтару: WHATSAPP_TRANSPORT=meta. Токендерді жоймаңыз.",
     "wabaHint": "Business верификациясы жүріп жатқанда Graph-тан нөмір, сапа және үлгі күйлерін тартамыз. Клиентке шығыс үлгілер Meta мақұлдаған соң ашылады.",
     "wabaSync": "Meta-мен синхрондау",
     "wabaSyncing": "Meta-ға сұраныс…",

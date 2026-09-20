@@ -314,6 +314,7 @@
     "nextAvailable": "Следующий доступный",
     "group": "Группа менеджеров",
     "wabaTitle": "WhatsApp Business (Meta)",
+    "wabaParked": "Прямой Meta WABA сохранён в коде и .env, сейчас выключен. Живой канал — Wazzup. Вернуть: WHATSAPP_TRANSPORT=meta. Токены не удалять.",
     "wabaHint": "Пока идёт верификация Business, подтягиваем номер, качество и статусы шаблонов из Graph. Исходящие шаблоны клиентам откроются, когда Meta одобрит аккаунт и шаблоны.",
     "wabaSync": "Синхронизировать с Meta",
     "wabaSyncing": "Запрос в Meta…",

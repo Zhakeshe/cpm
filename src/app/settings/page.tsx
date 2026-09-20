@@ -160,6 +160,8 @@ type WabaInfo = {
   account?: { name?: string; accountReviewStatus?: string; businessVerificationStatus?: string } | null;
   phone?: { displayPhoneNumber?: string; verifiedName?: string; qualityRating?: string; codeVerificationStatus?: string } | null;
   templatesFromMeta?: number;
+  parked?: boolean;
+  transport?: string;
 };
 
 function WabaSection({ onSynced }: { onSynced?: () => void }) {
@@ -211,6 +213,7 @@ function WabaSection({ onSynced }: { onSynced?: () => void }) {
   return (
     <div className="card p-5 mb-6 space-y-3">
       <div className="font-medium">{t("settings.wabaTitle")}</div>
+      {info?.parked && <div className="text-sm rounded-xl bg-[#1e3a5f] px-3 py-2">{t("settings.wabaParked")}</div>}
       <div className="muted text-sm">{t("settings.wabaHint")}</div>
       <div className="grid md:grid-cols-3 gap-3">
         {row(t("settings.wabaPhone"), info?.phone?.displayPhoneNumber)}

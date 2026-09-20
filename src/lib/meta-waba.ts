@@ -1,3 +1,4 @@
+/** PARKED WABA sync (phone, quality, templates). Do not delete — restore with WHATSAPP_TRANSPORT=meta. */
 import type { PrismaClient, TemplateStatus } from "@prisma/client";
 import { placeholdersOf } from "./templates";
 import { graphGet, whatsappCredentials } from "./meta-graph";

@@ -23,9 +23,13 @@ export async function getWazzupConfig(db?: PrismaClient): Promise<WazzupConfig> 
 }
 
 export async function whatsappTransport(db?: PrismaClient): Promise<WhatsAppTransport> {
+  const forced = (process.env.WHATSAPP_TRANSPORT || "").toLowerCase();
   const wazzup = await getWazzupConfig(db);
-  if (wazzup.configured) return "wazzup";
-  if (process.env.WHATSAPP_ACCESS_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID) return "meta";
+  const metaReady = Boolean(process.env.WHATSAPP_ACCESS_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID);
+  // Meta WABA stays in the repo and .env; live traffic uses Wazzup until we flip this.
+  if (forced === "meta") return metaReady ? "meta" : "mock";
+  if (forced === "wazzup" || wazzup.configured) return wazzup.configured ? "wazzup" : metaReady ? "meta" : "mock";
+  if (metaReady) return "meta";
   return "mock";
 }
 
