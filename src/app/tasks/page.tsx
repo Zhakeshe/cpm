@@ -30,7 +30,12 @@ export default function TasksPage() {
       overdue: tasks.filter((t) => t.status === "OPEN" && isBefore(new Date(t.dueAt), today)),
       today: tasks.filter((t) => t.status === "OPEN" && isSameDay(new Date(t.dueAt), today)),
       tomorrow: tasks.filter((t) => t.status === "OPEN" && isSameDay(new Date(t.dueAt), tom)),
-      week: tasks.filter((t) => t.status === "OPEN" && new Date(t.dueAt) > tom && new Date(t.dueAt) <= week),
+      week: tasks.filter(
+        (t) =>
+          t.status === "OPEN" &&
+          new Date(t.dueAt) >= addDays(today, 2) &&
+          new Date(t.dueAt) <= week,
+      ),
       done: tasks.filter((t) => t.status === "DONE"),
     };
   }, [tasks]);
