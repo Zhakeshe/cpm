@@ -28,6 +28,7 @@ function LeadsInner() {
   const [rows, setRows] = useState<Contact[]>([]);
   const [form, setForm] = useState({ firstName: "", phone: "", source: "MANUAL", comment: "" });
   const [error, setError] = useState("");
+  const [importNotice, setImportNotice] = useState("");
   const load = useCallback(async () => {
     const q = params.get("q");
     const data = await fetch(q ? `/api/contacts?q=${encodeURIComponent(q)}` : "/api/leads").then((r) => r.json());
@@ -58,11 +59,41 @@ function LeadsInner() {
     await load();
   }
 
+  async function importCsv(file: File) {
+    setError("");
+    setImportNotice("");
+    const body = new FormData();
+    body.append("file", file);
+    const res = await fetch("/api/import/leads", { method: "POST", body });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setError(t("leads.importFailed"));
+      return;
+    }
+    setImportNotice(t("leads.importResult", { created: data.created, duplicates: data.duplicates, errors: data.errors?.length || 0 }));
+    await load();
+  }
+
   return (
     <AppShell>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold">{t("leads.title")}</h1>
-        <ExportButton href="/api/export/leads" />
+        <div className="flex gap-2">
+          <label className="chip cursor-pointer">
+            {t("leads.import")}
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) importCsv(file);
+                e.target.value = "";
+              }}
+            />
+          </label>
+          <ExportButton href="/api/export/leads" />
+        </div>
       </div>
       <form onSubmit={create} className="card p-4 mb-6 grid md:grid-cols-5 gap-3">
         <input placeholder={t("common.name")} value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
@@ -78,6 +109,7 @@ function LeadsInner() {
         <button className="rounded-xl bg-[#2563eb]">{t("common.create")}</button>
       </form>
       {error && <div className="text-sm text-[#f87171] mb-3">{error}</div>}
+      {importNotice && <div className="text-sm text-[#34d399] mb-3">{importNotice}</div>}
       <div className="card overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-[#182235] text-[#93a0bb]">

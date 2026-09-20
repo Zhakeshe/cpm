@@ -78,7 +78,10 @@
   },
   "leads": {
     "title": "Лиды и клиенты",
-    "createFailed": "Не удалось создать клиента"
+    "createFailed": "Не удалось создать клиента",
+    "import": "Импорт CSV",
+    "importFailed": "Не удалось импортировать CSV. Нужны колонки first_name и phone.",
+    "importResult": "Создано: {created} · уже были: {duplicates} · ошибок: {errors}"
   },
   "pipeline": {
     "title": "Воронка",

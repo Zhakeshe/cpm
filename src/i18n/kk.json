@@ -78,7 +78,10 @@
   },
   "leads": {
     "title": "Лидтер мен клиенттер",
-    "createFailed": "Клиент құрылмады"
+    "createFailed": "Клиент құрылмады",
+    "import": "CSV импорт",
+    "importFailed": "CSV импортталмады. first_name және phone бағандары керек.",
+    "importResult": "Құрылды: {created} · бар еді: {duplicates} · қате: {errors}"
   },
   "pipeline": {
     "title": "Воронка",

@@ -2,6 +2,8 @@ import { beforeEach, afterAll, describe, expect, it } from "vitest";
 import { prisma, resetDatabase, seedBaseline } from "./helpers";
 import { ingestContact, reassignContact } from "../../src/lib/contacts";
 import { capturePublicLead } from "../../src/lib/public-leads";
+import { mapLeadImportRows, parseCsv } from "../../src/lib/csv";
+import { importLeadRows } from "../../src/lib/import-leads";
 
 describe("клиенты и распределение лидов", () => {
   beforeEach(async () => {
@@ -11,6 +13,15 @@ describe("клиенты и распределение лидов", () => {
 
   afterAll(async () => {
     await prisma.$disconnect();
+  });
+
+  it("импортирует клиентов из CSV и пропускает дубликаты телефона", async () => {
+    const csv = "first_name,phone,source\nАйгуль,+7 747 555 00 01,WEBSITE\nАйгуль,87475550001,WEBSITE\nДамир,77475550002,MANUAL\n";
+    const mapped = mapLeadImportRows(parseCsv(csv));
+    const result = await importLeadRows(prisma, mapped.rows, { id: "admin-1", role: "ADMIN" });
+    expect(result.created).toBe(2);
+    expect(result.duplicates).toBe(1);
+    expect(await prisma.contact.count()).toBe(2);
   });
 
   it("принимает заявку с публичной формы и ставит в очередь менеджеру", async () => {
