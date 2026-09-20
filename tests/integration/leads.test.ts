@@ -1,6 +1,7 @@
 import { beforeEach, afterAll, describe, expect, it } from "vitest";
 import { prisma, resetDatabase, seedBaseline } from "./helpers";
 import { ingestContact, reassignContact } from "../../src/lib/contacts";
+import { capturePublicLead } from "../../src/lib/public-leads";
 
 describe("клиенты и распределение лидов", () => {
   beforeEach(async () => {
@@ -10,6 +11,22 @@ describe("клиенты и распределение лидов", () => {
 
   afterAll(async () => {
     await prisma.$disconnect();
+  });
+
+  it("принимает заявку с публичной формы и ставит в очередь менеджеру", async () => {
+    const ingest = await capturePublicLead(prisma, {
+      firstName: "Аружан",
+      phone: "+7 747 900 11 22",
+      comment: "Хочу консультацию",
+      campaign: "instagram",
+    });
+    expect(ingest.createdContact).toBe(true);
+    expect(ingest.managerId).toBe("mgr-1");
+    const contact = await prisma.contact.findUniqueOrThrow({ where: { id: ingest.contactId } });
+    expect(contact.source).toBe("WEBSITE");
+    expect(contact.firstName).toBe("Аружан");
+    const note = await prisma.notification.findFirst({ where: { userId: "mgr-1", type: "NEW_LEAD" } });
+    expect(note?.title).toContain("форм");
   });
 
   it("создаёт клиента, лид и назначает менеджера по round-robin", async () => {

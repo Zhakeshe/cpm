@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
-const PUBLIC = ["/login", "/forgot-password", "/reset-password"];
+const PUBLIC = ["/login", "/forgot-password", "/reset-password", "/go"];
 const WEBHOOKS = ["/api/webhooks/", "/api/health"];
 const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
@@ -48,7 +48,8 @@ export async function middleware(req: NextRequest) {
   if (
     pathname.startsWith("/api/auth/login") ||
     pathname.startsWith("/api/auth/forgot") ||
-    pathname.startsWith("/api/auth/reset")
+    pathname.startsWith("/api/auth/reset") ||
+    pathname.startsWith("/api/public/")
   ) {
     return NextResponse.next();
   }
@@ -66,7 +67,7 @@ export async function middleware(req: NextRequest) {
   try {
     const secret = new TextEncoder().encode(process.env.SESSION_SECRET || "dev-secret-change-me-please-32chars!!");
     await jwtVerify(token, secret);
-    if (isPublic) return NextResponse.redirect(new URL("/", req.url));
+    if (isPublic && pathname !== "/go") return NextResponse.redirect(new URL("/", req.url));
     return NextResponse.next();
   } catch {
     if (pathname.startsWith("/api/")) {
