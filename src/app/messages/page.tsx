@@ -436,7 +436,13 @@ function MessagesInbox() {
               <div>{t("messages.amount", { amount: Number(thread.contact.dealAmount || 0) })}</div>
               <div className="muted">{thread.contact.comment}</div>
               <div className="pt-2">
-                <QuickActions contactId={thread.contact.id} onDone={loadList} />
+                <QuickActions
+                  contactId={thread.contact.id}
+                  onDone={() => {
+                    loadList();
+                    if (active) open(active);
+                  }}
+                />
               </div>
             </div>
           ) : (

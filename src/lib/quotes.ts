@@ -1,4 +1,5 @@
 import type { Prisma, PrismaClient, QuoteStatus } from "@prisma/client";
+import { advanceOpenStage } from "./outcomes";
 
 type Db = PrismaClient | Prisma.TransactionClient;
 
@@ -53,6 +54,19 @@ export async function createQuote(
       payload: { quoteId: quote.id, total },
     },
   });
+  await db.contact.update({
+    where: { id: params.contactId },
+    data: { dealAmount: total },
+  });
+  const refreshed = await db.contact.findUnique({ where: { id: params.contactId } });
+  if (refreshed) {
+    await advanceOpenStage(db, {
+      contactId: params.contactId,
+      slug: "thinking",
+      actorId: params.managerId,
+      contactForRules: refreshed,
+    });
+  }
   return quote;
 }
 

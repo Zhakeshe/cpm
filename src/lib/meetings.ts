@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
-import { applyContactStage } from "./outcomes";
+import { advanceOpenStage } from "./outcomes";
 import { notifyUser } from "./notifications";
 import { generateOpenSlots, nextAutoSlot, overlaps, SLOT_MINUTES, type TimeInterval } from "./demo-slots";
 
@@ -48,28 +48,6 @@ async function assertFree(db: PrismaClient, managerId: string, start: Date, end:
   }
 }
 
-async function moveToDemoStage(db: PrismaClient, contactId: string, actorId: string) {
-  const contact = await db.contact.findUnique({
-    where: { id: contactId },
-    include: { pipelineStage: true },
-  });
-  if (!contact) return;
-  const demo = await db.pipelineStage.findFirst({
-    where: { slug: "demo", isActive: true, pipeline: { isDefault: true } },
-  });
-  if (!demo || contact.pipelineStageId === demo.id) return;
-  const currentOrder = contact.pipelineStage?.order ?? 0;
-  if (contact.pipelineStage?.isWon || contact.pipelineStage?.isLost) return;
-  if (currentOrder > demo.order) return;
-  await applyContactStage(db, {
-    contactId,
-    fromStageId: contact.pipelineStageId,
-    toStageId: demo.id,
-    actorId,
-    contactForRules: contact,
-  });
-}
-
 export async function bookDemo(
   db: PrismaClient,
   params: {
@@ -110,7 +88,7 @@ export async function bookDemo(
         payload: { meetingId: meeting.id, auto: Boolean(params.auto || !params.startsAt) },
       },
     });
-    await moveToDemoStage(db, params.contactId, params.creatorId);
+    await advanceOpenStage(db, { contactId: params.contactId, slug: "demo", actorId: params.creatorId });
   }
 
   await notifyUser(db, {
