@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { jsonError, requireUser } from "@/lib/api";
 import { scopeManagerId } from "@/lib/rbac";
-import { notifyUser } from "@/lib/notifications";
 import { z } from "zod";
+import { bookDemo, SlotTakenError, SlotUnavailableError, updateMeeting } from "@/lib/meetings";
 
 export async function GET() {
   try {
@@ -21,11 +21,11 @@ export async function GET() {
   }
 }
 
-const schema = z.object({
+const createSchema = z.object({
   contactId: z.string().optional(),
   managerId: z.string().optional(),
-  startsAt: z.string(),
-  endsAt: z.string().optional(),
+  startsAt: z.string().optional(),
+  auto: z.boolean().optional(),
   format: z.enum(["ONLINE", "OFFLINE", "PHONE"]).optional(),
   comment: z.string().optional(),
 });
@@ -33,52 +33,54 @@ const schema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const user = await requireUser();
-    const body = schema.parse(await req.json());
-    const managerId = body.managerId || user.id;
-    const meeting = await prisma.meeting.create({
-      data: {
-        contactId: body.contactId,
-        managerId,
-        startsAt: new Date(body.startsAt),
-        endsAt: body.endsAt ? new Date(body.endsAt) : undefined,
-        format: body.format || "ONLINE",
-        comment: body.comment || "",
-      },
-    });
-    if (body.contactId) {
-      await prisma.activity.create({
-        data: {
-          contactId: body.contactId,
-          managerId,
-          type: "MEETING_CREATED",
-          title: "Назначена встреча / демо",
-          payload: { meetingId: meeting.id },
-        },
-      });
+    const body = createSchema.parse(await req.json());
+    if (!body.auto && !body.startsAt) {
+      return NextResponse.json({ error: "STARTS_AT_REQUIRED" }, { status: 400 });
     }
-    await notifyUser(prisma, {
-      userId: managerId,
-      type: "MEETING_ASSIGNED",
-      title: "Назначена встреча",
-      body: body.comment || "",
-      data: { meetingId: meeting.id },
+    const managerId = body.managerId || user.id;
+    const scoped = scopeManagerId(user.role, user.id);
+    if (scoped && managerId !== user.id) {
+      return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+    }
+    const meeting = await bookDemo(prisma, {
+      managerId,
+      creatorId: user.id,
+      contactId: body.contactId,
+      startsAt: body.startsAt ? new Date(body.startsAt) : undefined,
+      auto: body.auto,
+      format: body.format,
+      comment: body.comment,
     });
     return NextResponse.json(meeting);
   } catch (err) {
+    if (err instanceof SlotTakenError || err instanceof SlotUnavailableError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     return jsonError(err);
   }
 }
 
+const patchSchema = z.object({
+  id: z.string(),
+  status: z.enum(["SCHEDULED", "COMPLETED", "CANCELLED", "NO_SHOW"]).optional(),
+  startsAt: z.string().optional(),
+});
+
 export async function PATCH(req: NextRequest) {
   try {
-    await requireUser();
-    const body = await req.json();
-    const meeting = await prisma.meeting.update({
-      where: { id: body.id },
-      data: { status: body.status },
+    const user = await requireUser();
+    const body = patchSchema.parse(await req.json());
+    const meeting = await updateMeeting(prisma, {
+      id: body.id,
+      managerScope: scopeManagerId(user.role, user.id),
+      status: body.status,
+      startsAt: body.startsAt ? new Date(body.startsAt) : undefined,
     });
     return NextResponse.json(meeting);
   } catch (err) {
+    if (err instanceof SlotTakenError) {
+      return NextResponse.json({ error: err.message }, { status: 409 });
+    }
     return jsonError(err);
   }
 }

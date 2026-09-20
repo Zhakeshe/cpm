@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CalendarPlus, ListPlus, MessageSquare, Phone } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
+import { DemoBooker } from "@/components/DemoBooker";
 
 type Props = {
   contactId: string;
@@ -11,8 +12,6 @@ type Props = {
 };
 
 const TASK_TYPES = ["CALL", "WHATSAPP", "DEMO", "MEETING", "SEND_PROPOSAL", "FOLLOW_UP", "OTHER"];
-const MEETING_FORMATS = ["ONLINE", "OFFLINE", "PHONE"];
-
 function defaultDateTime(hoursAhead: number) {
   const d = new Date(Date.now() + hoursAhead * 3600 * 1000);
   d.setMinutes(0, 0, 0);
@@ -28,7 +27,6 @@ export function QuickActions({ contactId, onDone, compact }: Props) {
   const [panel, setPanel] = useState<"task" | "meeting" | null>(null);
   const [message, setMessage] = useState("");
   const [task, setTask] = useState({ type: "CALL", description: "", dueAt: defaultDateTime(24), reminder: true });
-  const [meeting, setMeeting] = useState({ startsAt: defaultDateTime(48), format: "ONLINE", comment: "" });
 
   async function createTask() {
     if (!task.description.trim()) {
@@ -53,24 +51,6 @@ export function QuickActions({ contactId, onDone, compact }: Props) {
     if (res.ok) {
       setPanel(null);
       setTask({ ...task, description: "" });
-      onDone?.();
-    }
-  }
-
-  async function createMeeting() {
-    const res = await fetch("/api/meetings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contactId,
-        startsAt: new Date(meeting.startsAt).toISOString(),
-        format: meeting.format,
-        comment: meeting.comment,
-      }),
-    });
-    setMessage(res.ok ? t("quickActions.demoCreated") : t("quickActions.demoFailed"));
-    if (res.ok) {
-      setPanel(null);
       onDone?.();
     }
   }
@@ -140,27 +120,14 @@ export function QuickActions({ contactId, onDone, compact }: Props) {
       )}
 
       {panel === "meeting" && (
-        <div className="card p-3 space-y-2">
-          <input
-            type="datetime-local"
-            value={meeting.startsAt}
-            onChange={(e) => setMeeting({ ...meeting, startsAt: e.target.value })}
+        <div className="card p-3">
+          <DemoBooker
+            contactId={contactId}
+            onDone={() => {
+              setPanel(null);
+              onDone?.();
+            }}
           />
-          <select value={meeting.format} onChange={(e) => setMeeting({ ...meeting, format: e.target.value })}>
-            {MEETING_FORMATS.map((f) => (
-              <option key={f} value={f}>
-                {t(`meetingFormats.${f}`)}
-              </option>
-            ))}
-          </select>
-          <input
-            placeholder={t("quickActions.comment")}
-            value={meeting.comment}
-            onChange={(e) => setMeeting({ ...meeting, comment: e.target.value })}
-          />
-          <button className="rounded-xl bg-[#2563eb] px-3 py-2 text-sm w-full" onClick={createMeeting}>
-            {t("quickActions.scheduleDemo")}
-          </button>
         </div>
       )}
     </div>

@@ -17,9 +17,13 @@ type Task = {
 export default function TasksPage() {
   const { t, localeTag } = useI18n();
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [form, setForm] = useState({ type: "CALL", description: "", dueAt: "" });
+  const [contacts, setContacts] = useState<Array<{ id: string; firstName: string; lastName: string }>>([]);
+  const [form, setForm] = useState({ type: "CALL", description: "", dueAt: "", contactId: "" });
   useEffect(() => {
     fetch("/api/tasks").then((r) => r.json()).then(setTasks);
+    fetch("/api/contacts")
+      .then((r) => r.json())
+      .then((rows) => setContacts(Array.isArray(rows) ? rows : []));
   }, []);
   const groups = useMemo(() => {
     const now = new Date();
@@ -45,7 +49,7 @@ export default function TasksPage() {
     await fetch("/api/tasks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, contactId: form.contactId || undefined }),
     });
     setTasks(await fetch("/api/tasks").then((r) => r.json()));
   }
@@ -69,7 +73,15 @@ export default function TasksPage() {
   return (
     <AppShell>
       <h1 className="text-2xl font-semibold mb-4">{t("tasks.title")}</h1>
-      <form onSubmit={create} className="card p-4 mb-6 grid md:grid-cols-4 gap-3">
+      <form onSubmit={create} className="card p-4 mb-6 grid md:grid-cols-5 gap-3">
+        <select value={form.contactId} onChange={(e) => setForm({ ...form, contactId: e.target.value })}>
+          <option value="">{t("meetings.pickClient")}</option>
+          {contacts.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.firstName} {c.lastName}
+            </option>
+          ))}
+        </select>
         <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
           {["CALL", "WHATSAPP", "DEMO", "MEETING", "SEND_PROPOSAL", "FOLLOW_UP", "OTHER"].map((type) => (
             <option key={type} value={type}>
