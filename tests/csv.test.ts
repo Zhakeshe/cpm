@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { interpolate } from "../src/lib/i18n";
-import { csvFilename, toCsv } from "../src/lib/csv";
+import { csvFilename, mapLeadImportRows, parseCsv, toCsv } from "../src/lib/csv";
 
 describe("csv", () => {
   it("escapes quotes commas and newlines", () => {
@@ -20,6 +20,18 @@ describe("csv", () => {
     expect(csv).toContain('"one, two"');
     expect(csv).toContain('"line1\nline2"');
     expect(csv).toContain("B,,10");
+  });
+
+  it("parses quoted cells and maps lead columns", () => {
+    const table = parseCsv('first_name,phone,comment\r\n"A ""lead""","+7 747 111 22 33","one, two"\n');
+    expect(table[1][0]).toBe('A "lead"');
+    const mapped = mapLeadImportRows(table);
+    expect(mapped.rows[0]).toMatchObject({ firstName: 'A "lead"', phone: "+7 747 111 22 33", comment: "one, two" });
+  });
+
+  it("accepts Russian headers", () => {
+    const mapped = mapLeadImportRows(parseCsv("имя,телефон\nАлия,87011234567\n"));
+    expect(mapped.rows[0]).toMatchObject({ firstName: "Алия", phone: "87011234567" });
   });
 
   it("builds a stable filename", () => {
