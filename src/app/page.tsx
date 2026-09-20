@@ -118,6 +118,7 @@ export default function HomePage() {
           </div>
         </div>
       )}
+      {(role === "ADMIN" || role === "SUPERVISOR") && (
       <div className="grid lg:grid-cols-2 gap-4 mt-6">
         <div className="card p-5">
           <div className="muted text-sm mb-3">{t("dashboard.leadsWeek")}</div>
@@ -136,16 +137,15 @@ export default function HomePage() {
             }))}
           />
         </div>
-        {(role === "ADMIN" || role === "SUPERVISOR") && (
-          <div className="card p-5">
-            <div className="muted text-sm mb-3">{t("dashboard.managerEfficiency")}</div>
-            <BarChart
-              color="#fbbf24"
-              data={managers.map((m) => ({ label: String(m.name), value: Number(m.newLeads) || 0 }))}
-            />
-          </div>
-        )}
+        <div className="card p-5">
+          <div className="muted text-sm mb-3">{t("dashboard.managerEfficiency")}</div>
+          <BarChart
+            color="#fbbf24"
+            data={managers.map((m) => ({ label: String(m.name), value: Number(m.newLeads) || 0 }))}
+          />
+        </div>
       </div>
+      )}
     </AppShell>
   );
 }

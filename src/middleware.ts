@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
+import { isManagerBlockedPath } from "./lib/pipeline-defaults";
 
 const PUBLIC = ["/login", "/forgot-password", "/reset-password", "/go"];
 const WEBHOOKS = ["/api/webhooks/", "/api/health"];
@@ -66,8 +67,12 @@ export async function middleware(req: NextRequest) {
 
   try {
     const secret = new TextEncoder().encode(process.env.SESSION_SECRET || "dev-secret-change-me-please-32chars!!");
-    await jwtVerify(token, secret);
+    const { payload } = await jwtVerify(token, secret);
     if (isPublic && pathname !== "/go") return NextResponse.redirect(new URL("/", req.url));
+    const role = String(payload.role || "");
+    if (role !== "ADMIN" && role !== "SUPERVISOR" && isManagerBlockedPath(pathname)) {
+      return NextResponse.redirect(new URL("/leads", req.url));
+    }
     return NextResponse.next();
   } catch {
     if (pathname.startsWith("/api/")) {
