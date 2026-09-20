@@ -91,6 +91,7 @@ function MessagesInbox() {
   const [thread, setThread] = useState<{ messages: Message[]; contact: Contact; serviceWindowExpiresAt: string | null } | null>(null);
   const [text, setText] = useState("");
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [quickReplies, setQuickReplies] = useState<Array<{ id: string; title: string; body: string }>>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [templateParams, setTemplateParams] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
@@ -116,6 +117,9 @@ function MessagesInbox() {
     fetch("/api/templates")
       .then((r) => (r.ok ? r.json() : []))
       .then(setTemplates);
+    fetch("/api/quick-replies")
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setQuickReplies);
   }, [loadList]);
 
   useEffect(() => {
@@ -146,13 +150,14 @@ function MessagesInbox() {
     return t("messages.sendFailed");
   };
 
-  async function send() {
-    if (!thread || !text.trim()) return;
+  async function send(override?: string) {
+    const payload = (override ?? text).trim();
+    if (!thread || !payload) return;
     setError("");
     const res = await fetch("/api/messages/send", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contactId: thread.contact.id, text }),
+      body: JSON.stringify({ contactId: thread.contact.id, text: payload }),
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
@@ -306,6 +311,23 @@ function MessagesInbox() {
                 </div>
               )}
               {error && <div className="text-xs text-[#f87171]">{error}</div>}
+              <div className="space-y-1">
+                <div className="muted text-xs">{t("messages.quickRepliesHint")}</div>
+                <div className="flex flex-wrap gap-2">
+                  {quickReplies.map((qr) => (
+                    <button
+                      key={qr.id}
+                      className="chip disabled:opacity-40"
+                      disabled={!windowOpen || busy}
+                      title={qr.body}
+                      onClick={() => send(qr.body)}
+                    >
+                      {qr.title}
+                    </button>
+                  ))}
+                  {quickReplies.length === 0 && <span className="muted text-xs">{t("messages.noQuickReplies")}</span>}
+                </div>
+              </div>
               <div className="flex gap-2 items-center">
                 <input
                   value={text}
@@ -357,7 +379,7 @@ function MessagesInbox() {
                 >
                   {recording ? <Square size={14} /> : <Mic size={14} />}
                 </button>
-                <button className="rounded-xl bg-[#2563eb] px-4 disabled:opacity-40" disabled={!windowOpen || busy} onClick={send}>
+                <button className="rounded-xl bg-[#2563eb] px-4 disabled:opacity-40" disabled={!windowOpen || busy} onClick={() => send()}>
                   {t("messages.send")}
                 </button>
                 <button className="chip" onClick={() => setPickerOpen((v) => !v)}>

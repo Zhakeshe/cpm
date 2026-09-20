@@ -39,6 +39,21 @@ describe("24-часовое окно и шаблоны", () => {
     expect(delta).toBe(SERVICE_WINDOW_MS);
   });
 
+  it("отправляет быстрый ответ как обычный текст внутри окна", async () => {
+    await handleWhatsAppInbound(prisma, whatsappPayload({ messageId: "wa.qr1", from: "77470000109", text: "цена?" }));
+    const contact = await prisma.contact.findUniqueOrThrow({ where: { phoneNormalized: "77470000109" } });
+    const reply = await prisma.quickReply.create({
+      data: { title: "Скидка", body: "Сейчас скидка 20%. Готовы оформить?" },
+    });
+    const result = await sendOutboundMessage(prisma, {
+      contactId: contact.id,
+      senderId: contact.managerId!,
+      text: reply.body,
+    });
+    expect(result.message.type).toBe("TEXT");
+    expect(result.message.text).toBe("Сейчас скидка 20%. Готовы оформить?");
+  });
+
   it("разрешает свободный текст внутри окна", async () => {
     await handleWhatsAppInbound(prisma, whatsappPayload({ messageId: "wa.w2", from: "77470000102", text: "Вопрос" }));
     const contact = await prisma.contact.findUniqueOrThrow({ where: { phoneNormalized: "77470000102" } });

@@ -366,6 +366,16 @@ model MessageTemplate {
   @@unique([metaName, language])
 }
 
+model QuickReply {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Call {
   id               String         @id @default(cuid())
   externalCallId   String?        @unique

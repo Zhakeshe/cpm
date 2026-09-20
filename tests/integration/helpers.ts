@@ -12,6 +12,7 @@ export async function resetDatabase() {
     prisma.call.deleteMany(),
     prisma.message.deleteMany(),
     prisma.messageTemplate.deleteMany(),
+    prisma.quickReply.deleteMany(),
     prisma.conversation.deleteMany(),
     prisma.task.deleteMany(),
     prisma.meeting.deleteMany(),

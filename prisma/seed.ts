@@ -132,6 +132,19 @@ async function main() {
     },
   });
 
+  const quickReplies = [
+    { id: "qr-discount", title: "Скидка сейчас", body: "Сейчас действует скидка. Напишите, если готовы оформить — подскажу условия.", sortOrder: 1 },
+    { id: "qr-consult", title: "Консультация", body: "Могу кратко рассказать по продукту и ответить на вопросы. Вам удобно сейчас?", sortOrder: 2 },
+    { id: "qr-callback", title: "Перезвоним", body: "Хорошо, перезвоним в удобное время. Напишите, когда вам удобно.", sortOrder: 3 },
+  ];
+  for (const qr of quickReplies) {
+    await prisma.quickReply.upsert({
+      where: { id: qr.id },
+      update: {},
+      create: qr,
+    });
+  }
+
   await prisma.messageTemplate.upsert({
     where: { metaName_language: { metaName: "sale_now_discount", language: "ru" } },
     update: {},
