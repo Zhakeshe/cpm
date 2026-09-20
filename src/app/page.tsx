@@ -78,7 +78,14 @@ export default function HomePage() {
       <h1 className="text-2xl font-semibold mb-6">{t("dashboard.title")}</h1>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {cards.map(([label, value]) => {
-          const href = label === t("dashboard.needsFollowUp") ? "/follow-ups" : undefined;
+          const href =
+            label === t("dashboard.needsFollowUp")
+              ? "/follow-ups"
+              : label === t("dashboard.demos")
+                ? "/meetings"
+                : label === t("dashboard.overdue")
+                  ? "/tasks"
+                  : undefined;
           const inner = (
             <>
               <div className="muted text-sm">{label}</div>

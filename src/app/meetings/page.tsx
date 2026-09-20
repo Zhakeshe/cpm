@@ -1,8 +1,10 @@
 "use client";
 
 import { AppShell } from "@/components/AppShell";
+import { DemoBooker } from "@/components/DemoBooker";
 import { useI18n } from "@/components/I18nProvider";
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type Meeting = {
   id: string;
@@ -10,83 +12,130 @@ type Meeting = {
   format: string;
   status: string;
   comment: string;
-  contact?: { firstName: string; lastName: string };
+  contactId?: string | null;
+  contact?: { id?: string; firstName: string; lastName: string } | null;
   manager?: { name: string };
 };
 
-const FORMATS = ["ONLINE", "OFFLINE", "PHONE"];
+type Contact = { id: string; firstName: string; lastName: string; phoneDisplay: string };
+
 const STATUSES = ["COMPLETED", "CANCELLED", "NO_SHOW"];
 
 export default function MeetingsPage() {
   const { t, localeTag } = useI18n();
   const [items, setItems] = useState<Meeting[]>([]);
-  const [form, setForm] = useState({ startsAt: "", format: "ONLINE", comment: "" });
-  useEffect(() => {
-    fetch("/api/meetings")
-      .then((r) => r.json())
-      .then(setItems);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [contactId, setContactId] = useState("");
+  const [reschedule, setReschedule] = useState<Record<string, string>>({});
+
+  const load = useCallback(async () => {
+    const [meetings, people] = await Promise.all([
+      fetch("/api/meetings").then((r) => r.json()),
+      fetch("/api/contacts").then((r) => r.json()),
+    ]);
+    setItems(Array.isArray(meetings) ? meetings : []);
+    setContacts(Array.isArray(people) ? people : []);
   }, []);
-  async function create(e: React.FormEvent) {
-    e.preventDefault();
-    await fetch("/api/meetings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    setItems(await fetch("/api/meetings").then((r) => r.json()));
-  }
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const days = useMemo(() => {
+    const groups = new Map<string, Meeting[]>();
+    for (const m of items.filter((row) => row.status === "SCHEDULED")) {
+      const key = new Date(m.startsAt).toISOString().slice(0, 10);
+      groups.set(key, [...(groups.get(key) || []), m]);
+    }
+    return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b));
+  }, [items]);
+
   async function setStatus(id: string, status: string) {
     await fetch("/api/meetings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, status }),
     });
-    setItems(await fetch("/api/meetings").then((r) => r.json()));
+    await load();
   }
+
+  async function move(id: string) {
+    const startsAt = reschedule[id];
+    if (!startsAt) return;
+    await fetch("/api/meetings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, startsAt: new Date(startsAt).toISOString() }),
+    });
+    await load();
+  }
+
   return (
     <AppShell>
-      <h1 className="text-2xl font-semibold mb-4">{t("meetings.title")}</h1>
-      <form onSubmit={create} className="card p-4 mb-6 grid md:grid-cols-4 gap-3">
-        <input type="datetime-local" value={form.startsAt} onChange={(e) => setForm({ ...form, startsAt: e.target.value })} />
-        <select value={form.format} onChange={(e) => setForm({ ...form, format: e.target.value })}>
-          {FORMATS.map((f) => (
-            <option key={f} value={f}>
-              {t(`meetingFormats.${f}`)}
-            </option>
-          ))}
-        </select>
-        <input placeholder={t("common.comment")} value={form.comment} onChange={(e) => setForm({ ...form, comment: e.target.value })} />
-        <button className="rounded-xl bg-[#2563eb]">{t("common.create")}</button>
-      </form>
-      <div className="card overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-[#182235] text-[#93a0bb]">
-            <tr>
-              <th className="text-left p-3">{t("common.date")}</th>
-              <th className="text-left p-3">{t("common.client")}</th>
-              <th className="text-left p-3">{t("meetings.format")}</th>
-              <th className="text-left p-3">{t("common.status")}</th>
-              <th className="text-left p-3"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((m) => (
-              <tr key={m.id} className="border-t border-[#243049]">
-                <td className="p-3">{new Date(m.startsAt).toLocaleString(localeTag)}</td>
-                <td className="p-3">{m.contact ? `${m.contact.firstName} ${m.contact.lastName}` : t("common.dash")}</td>
-                <td className="p-3">{t(`meetingFormats.${m.format}`, m.format)}</td>
-                <td className="p-3">{t(`meetingStatuses.${m.status}`, m.status)}</td>
-                <td className="p-3 space-x-2">
-                  {STATUSES.map((s) => (
-                    <button key={s} className="chip" onClick={() => setStatus(m.id, s)}>
-                      {t(`meetingStatuses.${s}`)}
-                    </button>
-                  ))}
-                </td>
-              </tr>
+      <h1 className="text-2xl font-semibold mb-2">{t("meetings.title")}</h1>
+      <p className="muted text-sm mb-4">{t("meetings.pageHint")}</p>
+      <div className="grid lg:grid-cols-[360px_1fr] gap-6">
+        <div className="card p-4 space-y-3">
+          <select value={contactId} onChange={(e) => setContactId(e.target.value)}>
+            <option value="">{t("meetings.pickClient")}</option>
+            {contacts.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.firstName} {c.lastName} · {c.phoneDisplay}
+              </option>
             ))}
-          </tbody>
-        </table>
+          </select>
+          <DemoBooker contactId={contactId || undefined} onDone={load} />
+        </div>
+        <div className="space-y-4">
+          {days.map(([day, list]) => (
+            <div key={day} className="card p-4">
+              <div className="font-medium mb-3">
+                {new Date(`${day}T12:00:00.000Z`).toLocaleDateString("ru-RU", { timeZone: "Asia/Almaty", weekday: "long", day: "numeric", month: "long" })}
+              </div>
+              <div className="space-y-3">
+                {list.map((m) => (
+                  <div key={m.id} className="border-t border-[#243049] pt-3 text-sm">
+                    <div className="flex justify-between gap-3">
+                      <div>
+                        <div>{new Date(m.startsAt).toLocaleTimeString("ru-RU", { timeZone: "Asia/Almaty", hour: "2-digit", minute: "2-digit" })}</div>
+                        <div>
+                          {m.contact ? (
+                            <Link href={`/contacts/${m.contact.id || m.contactId}`} className="text-[#93c5fd]">
+                              {m.contact.firstName} {m.contact.lastName}
+                            </Link>
+                          ) : (
+                            t("common.dash")
+                          )}
+                        </div>
+                        <div className="muted text-xs">
+                          {t(`meetingFormats.${m.format}`, m.format)} · {m.manager?.name || t("common.dash")}
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2 justify-end">
+                        {STATUSES.map((s) => (
+                          <button key={s} className="chip" onClick={() => setStatus(m.id, s)}>
+                            {t(`meetingStatuses.${s}`)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="mt-2 flex gap-2">
+                      <input
+                        type="datetime-local"
+                        value={reschedule[m.id] || ""}
+                        onChange={(e) => setReschedule({ ...reschedule, [m.id]: e.target.value })}
+                      />
+                      <button className="chip" onClick={() => move(m.id)}>
+                        {t("meetings.reschedule")}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+          {days.length === 0 && <div className="card p-6 muted">{t("meetings.empty")}</div>}
+        </div>
       </div>
     </AppShell>
   );
