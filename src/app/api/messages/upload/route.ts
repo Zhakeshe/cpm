@@ -4,6 +4,7 @@ import { jsonError, requireUser } from "@/lib/api";
 import { scopeManagerId } from "@/lib/rbac";
 import { uploadMediaToMeta } from "@/lib/whatsapp";
 import { extensionFor, putObject, storageConfigured } from "@/lib/storage";
+import { whatsappTransport } from "@/lib/whatsapp-transport";
 import crypto from "crypto";
 
 const MAX_BYTES = 25 * 1024 * 1024;
@@ -41,7 +42,11 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const voiceNote = String(form.get("voiceNote") || "") === "1";
     const mime = file.type || (voiceNote ? "audio/ogg" : "application/octet-stream");
-    const uploaded = await uploadMediaToMeta({ buffer, mime: mime.split(";")[0], name: file.name });
+    const transport = await whatsappTransport(prisma);
+    const uploaded =
+      transport === "wazzup"
+        ? { mocked: false, id: `wazzup-media-${crypto.randomUUID()}` }
+        : await uploadMediaToMeta({ buffer, mime: mime.split(";")[0], name: file.name });
 
     let storageKey: string | undefined;
     if (storageConfigured()) {

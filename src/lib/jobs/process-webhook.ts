@@ -1,6 +1,7 @@
 import { handleWhatsAppInbound } from "../whatsapp";
 import { handleTelephonyEvent, type TelephonyWebhook } from "../telephony";
 import { handleMetaLead } from "../meta-leads";
+import { handleWazzupInbound } from "../wazzup-inbound";
 
 export async function processWebhookJob(data: { webhookEventId: string; provider: string }) {
   const { prisma } = await import("../db");
@@ -13,6 +14,8 @@ export async function processWebhookJob(data: { webhookEventId: string; provider
   try {
     if (event.provider === "whatsapp") {
       await handleWhatsAppInbound(prisma, event.payload);
+    } else if (event.provider === "wazzup") {
+      await handleWazzupInbound(prisma, event.payload);
     } else if (event.provider === "telephony") {
       await handleTelephonyEvent(prisma, event.payload as TelephonyWebhook);
     } else if (event.provider === "meta-leads") {

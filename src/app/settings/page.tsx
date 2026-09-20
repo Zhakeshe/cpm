@@ -2,6 +2,7 @@
 
 import { AppShell } from "@/components/AppShell";
 import { SettingsSales } from "@/components/SettingsSales";
+import { WazzupSection } from "@/components/WazzupSection";
 import { useI18n } from "@/components/I18nProvider";
 import { useEffect, useState } from "react";
 
@@ -310,7 +311,7 @@ export default function SettingsPage() {
     integrations: Integration[];
     sla: { enabled: boolean; minutes: number; action: string };
     routing: { existingContact: string; fallback: string };
-    webhooks: { whatsappVerify: string; whatsappInbound: string; metaLeads: string; telephony: string; publicForm?: string };
+    webhooks: { whatsappVerify: string; whatsappInbound: string; metaLeads: string; telephony: string; publicForm?: string; wazzup?: string };
   } | null>(null);
   const [stages, setStages] = useState<
     Array<{ id?: string; name: string; slug: string; order: number; isActive: boolean; requiredFields?: string[] }>
@@ -399,6 +400,7 @@ export default function SettingsPage() {
           { type: "WHATSAPP_BUSINESS", status: "DISCONNECTED" },
           { type: "TELEPHONY", status: "DISCONNECTED" },
           { type: "META_LEADS", status: "DISCONNECTED" },
+          { type: "WAZZUP", status: "DISCONNECTED" },
         ]).map((i) => (
           <div key={i.type} className="card p-5">
             <div className="font-medium">{i.type.replaceAll("_", " ")}</div>
@@ -422,6 +424,7 @@ export default function SettingsPage() {
           [t("settings.metaLeads"), hooks?.metaLeads],
           [t("settings.sipWebhook"), hooks?.telephony],
           [t("settings.publicForm"), hooks?.publicForm],
+          [t("settings.wazzupWebhook"), hooks?.wazzup],
         ].map(([label, url]) => (
           <div key={String(label)} className="text-sm">
             <div className="muted">{label}</div>
@@ -479,6 +482,7 @@ export default function SettingsPage() {
           {t("common.save")}
         </button>
       </div>
+      <WazzupSection />
       <WabaSection />
       <QuickRepliesSection />
       <TemplatesSection />
