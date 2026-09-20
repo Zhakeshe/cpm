@@ -3,7 +3,7 @@ import "./globals.css";
 import { I18nProvider } from "@/components/I18nProvider";
 
 export const metadata: Metadata = {
-  title: "Amanat CRM",
+  title: "Quantum CRM",
   description: "CRM для отдела продаж: клиенты, WhatsApp, звонки, воронка",
 };
 
