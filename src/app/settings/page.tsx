@@ -73,6 +73,83 @@ function TemplateRow({
   );
 }
 
+function QuickRepliesSection() {
+  const { t } = useI18n();
+  const [replies, setReplies] = useState<Array<{ id: string; title: string; body: string; isActive: boolean }>>([]);
+  const [draft, setDraft] = useState({ title: "", body: "" });
+
+  async function load() {
+    setReplies(await fetch("/api/quick-replies").then((r) => (r.ok ? r.json() : [])));
+  }
+  useEffect(() => {
+    load();
+  }, []);
+
+  async function create(e: React.FormEvent) {
+    e.preventDefault();
+    await fetch("/api/quick-replies", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(draft),
+    });
+    setDraft({ title: "", body: "" });
+    load();
+  }
+
+  async function save(reply: { id: string; title: string; body: string; isActive: boolean }) {
+    await fetch("/api/quick-replies", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(reply),
+    });
+    load();
+  }
+
+  return (
+    <div className="card p-5 mb-6 space-y-3">
+      <div className="font-medium">{t("settings.quickReplies")}</div>
+      <div className="muted text-sm">{t("settings.quickRepliesHint")}</div>
+      <form onSubmit={create} className="grid md:grid-cols-3 gap-2">
+        <input required placeholder={t("settings.quickTitle")} value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} />
+        <input required placeholder={t("settings.quickBody")} value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })} />
+        <button className="rounded-xl bg-[#2563eb]">{t("common.add")}</button>
+      </form>
+      {replies.map((r) => (
+        <QuickReplyRow key={r.id} reply={r} onSave={save} t={t} />
+      ))}
+      {replies.length === 0 && <div className="muted text-sm">{t("settings.noQuickReplies")}</div>}
+    </div>
+  );
+}
+
+function QuickReplyRow({
+  reply,
+  onSave,
+  t,
+}: {
+  reply: { id: string; title: string; body: string; isActive: boolean };
+  onSave: (reply: { id: string; title: string; body: string; isActive: boolean }) => void;
+  t: (path: string) => string;
+}) {
+  const [edit, setEdit] = useState(reply);
+  useEffect(() => {
+    setEdit(reply);
+  }, [reply]);
+  return (
+    <div className="border-t border-[#243049] pt-3 grid md:grid-cols-[1fr_2fr_auto_auto] gap-2 items-center">
+      <input value={edit.title} onChange={(e) => setEdit({ ...edit, title: e.target.value })} />
+      <input value={edit.body} onChange={(e) => setEdit({ ...edit, body: e.target.value })} />
+      <label className="text-xs flex items-center gap-1">
+        <input type="checkbox" className="w-auto" checked={edit.isActive} onChange={(e) => setEdit({ ...edit, isActive: e.target.checked })} />
+        {t("settings.active")}
+      </label>
+      <button type="button" className="rounded-xl bg-[#2563eb] px-3 py-2 text-sm" onClick={() => onSave(edit)}>
+        {t("settings.saveQuick")}
+      </button>
+    </div>
+  );
+}
+
 function TemplatesSection() {
   const { t } = useI18n();
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -313,6 +390,7 @@ export default function SettingsPage() {
           {t("common.save")}
         </button>
       </div>
+      <QuickRepliesSection />
       <TemplatesSection />
       <div className="card p-5 space-y-3">
         <div className="font-medium">{t("settings.stages")}</div>
