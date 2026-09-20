@@ -273,6 +273,7 @@
     "wabaSyncing": "Meta-ға сұраныс…",
     "wabaSynced": "Синхрондалды: үлгі {total} (жаңа {created}, жаңартылған {updated})",
     "wabaSyncFailed": "Meta жауап бермеді. Сервердегі .env токенін тексеріңіз.",
+    "wabaTokenExpired": "Meta токені өлді (Facebook-тен шыққан). System user permanent token керек: Business Settings → System users → Generate token → WHATSAPP_ACCESS_TOKEN-ді /opt/crm/.env-ке жазып, app/worker-ді қайта қосыңыз.",
     "wabaNotConfigured": ".env ішінде WHATSAPP_ACCESS_TOKEN / WABA id жоқ — синхрондау жоқ.",
     "wabaPhone": "Нөмір",
     "wabaName": "WhatsApp атауы",

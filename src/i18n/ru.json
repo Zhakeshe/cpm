@@ -273,6 +273,7 @@
     "wabaSyncing": "Запрос в Meta…",
     "wabaSynced": "Синхронизировано: шаблонов {total} (новых {created}, обновлено {updated})",
     "wabaSyncFailed": "Meta не ответила. Проверьте токен в .env на сервере.",
+    "wabaTokenExpired": "Токен Meta истёк (пользователь вышел из Facebook). Нужен permanent token системного пользователя: Business Settings → System users → Generate token → вписать WHATSAPP_ACCESS_TOKEN в /opt/crm/.env и перезапустить app/worker.",
     "wabaNotConfigured": "В .env нет WHATSAPP_ACCESS_TOKEN / WABA id — синхронизация недоступна.",
     "wabaPhone": "Номер",
     "wabaName": "Имя в WhatsApp",

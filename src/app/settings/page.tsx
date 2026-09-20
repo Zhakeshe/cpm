@@ -184,7 +184,13 @@ function WabaSection({ onSynced }: { onSynced?: () => void }) {
     const data = await res.json().catch(() => ({}) as { error?: string; total?: number; created?: number; updated?: number });
     setBusy(false);
     if (!res.ok) {
-      setError(data.error === "WHATSAPP_NOT_CONFIGURED" ? t("settings.wabaNotConfigured") : t("settings.wabaSyncFailed"));
+      setError(
+        data.error === "WHATSAPP_NOT_CONFIGURED"
+          ? t("settings.wabaNotConfigured")
+          : data.error === "META_TOKEN_EXPIRED"
+            ? t("settings.wabaTokenExpired")
+            : t("settings.wabaSyncFailed"),
+      );
       await load();
       return;
     }
@@ -217,7 +223,11 @@ function WabaSection({ onSynced }: { onSynced?: () => void }) {
           time: info?.lastSyncAt ? new Date(info.lastSyncAt).toLocaleString(localeTag) : t("common.dash"),
         })}
       </div>
-      {info?.lastError && <div className="text-sm text-[#f87171]">{info.lastError}</div>}
+      {info?.lastError && (
+        <div className="text-sm text-[#f87171]">
+          {info.lastError === "META_TOKEN_EXPIRED" ? t("settings.wabaTokenExpired") : info.lastError}
+        </div>
+      )}
       <button className="rounded-xl bg-[#2563eb] px-4 py-2" type="button" onClick={sync} disabled={busy}>
         {busy ? t("settings.wabaSyncing") : t("settings.wabaSync")}
       </button>

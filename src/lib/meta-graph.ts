@@ -38,8 +38,12 @@ export async function graphGet<T>(path: string, query?: Record<string, string>):
     throw Object.assign(new Error(`META_GRAPH_INVALID_JSON:${res.status}`), { status: 502 });
   }
   if (!res.ok) {
+    const code = json.error?.code;
+    if (code === 190) {
+      throw Object.assign(new Error("META_TOKEN_EXPIRED"), { status: 401, metaCode: code });
+    }
     const message = json.error?.message || `META_GRAPH_${res.status}`;
-    throw Object.assign(new Error(message), { status: 502, metaCode: json.error?.code });
+    throw Object.assign(new Error(message), { status: 502, metaCode: code });
   }
   return json;
 }

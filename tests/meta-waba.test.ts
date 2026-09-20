@@ -1,10 +1,19 @@
 import { describe, expect, it } from "vitest";
+import { graphUrl } from "../src/lib/meta-graph";
 import {
   extractTemplateBody,
   humanizeTemplateName,
   mapMetaTemplateStatus,
   mappedTemplateFromMeta,
 } from "../src/lib/meta-waba";
+
+describe("Meta Graph URL", () => {
+  it("builds a versioned Graph path without putting the token in the query", () => {
+    expect(graphUrl("123/message_templates", { limit: "100" })).toBe(
+      "https://graph.facebook.com/v21.0/123/message_templates?limit=100",
+    );
+  });
+});
 
 describe("Meta WABA template mapping", () => {
   it("maps Graph statuses onto CRM template states", () => {
