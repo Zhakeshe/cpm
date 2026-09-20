@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { notifyUser } from "./notifications";
+import { advanceOpenStage } from "./outcomes";
 
 export const DEFAULT_STALE_DAYS = 3;
 export const FOLLOW_UP_PRESETS = ["today", "tomorrow", "in3days"] as const;
@@ -154,5 +155,6 @@ export async function scheduleFollowUp(
     body: description,
     data: { taskId: task.id, contactId: params.contactId },
   });
+  await advanceOpenStage(db, { contactId: params.contactId, slug: "callback", actorId: params.creatorId });
   return task;
 }

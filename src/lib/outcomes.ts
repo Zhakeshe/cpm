@@ -27,6 +27,32 @@ export function normalizeOutcomeReason(kind: OutcomeKind, reason?: string | null
  * Closing a deal always records why. Reopening clears the outcome so the
  * contact returns to the live follow-up queue.
  */
+/** Moves an open deal forward to a named column (демо, қайта қоңырау, КП). Never closes won/lost. */
+export async function advanceOpenStage(
+  db: Db,
+  params: { contactId: string; slug: string; actorId: string; contactForRules?: Parameters<typeof assertStageRequirements>[2] },
+) {
+  const contact = await db.contact.findUnique({
+    where: { id: params.contactId },
+    include: { pipelineStage: true },
+  });
+  if (!contact) return null;
+  const target = await db.pipelineStage.findFirst({
+    where: { slug: params.slug, isActive: true, pipeline: { isDefault: true } },
+  });
+  if (!target || contact.pipelineStageId === target.id) return contact;
+  if (contact.pipelineStage?.isWon || contact.pipelineStage?.isLost) return contact;
+  if ((contact.pipelineStage?.order ?? 0) > target.order) return contact;
+  await applyContactStage(db, {
+    contactId: params.contactId,
+    fromStageId: contact.pipelineStageId,
+    toStageId: target.id,
+    actorId: params.actorId,
+    contactForRules: params.contactForRules || contact,
+  });
+  return contact;
+}
+
 export async function applyContactStage(
   db: Db,
   params: {
