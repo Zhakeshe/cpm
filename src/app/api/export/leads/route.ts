@@ -18,6 +18,8 @@ export async function GET() {
       { key: "source", label: "source" },
       { key: "manager", label: "manager" },
       { key: "stage", label: "stage" },
+      { key: "status", label: "status" },
+      { key: "outcomeReason", label: "outcome_reason" },
       { key: "dealAmount", label: "deal_amount" },
       { key: "comment", label: "comment" },
     ]);

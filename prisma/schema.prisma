@@ -249,6 +249,8 @@ model Contact {
   status           ContactStatus  @default(NEW)
   dealAmount       Decimal        @default(0) @db.Decimal(14, 2)
   comment          String         @default("")
+  outcomeReason    String?
+  closedAt         DateTime?
   customFields     Json           @default("{}")
   lastContactAt    DateTime?
   createdAt        DateTime       @default(now())
