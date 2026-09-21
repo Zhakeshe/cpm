@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db";
 import { analytics, managerTable, type DateRange } from "@/lib/analytics";
-import { canListenAllRecordings } from "@/lib/rbac";
-import type { Role } from "@/lib/rbac";
+import { trackingFunnel } from "@/lib/tracking-analytics";
+import { canListenAllRecordings, type Role } from "@/lib/rbac";
 
 export async function exportLeads(managerId?: string | null) {
   const leads = await prisma.lead.findMany({
@@ -71,5 +71,6 @@ export async function exportAnalytics(range: DateRange, managerId?: string, incl
     { metric: "avgResponseSeconds", value: stats.avgResponseSeconds },
   ];
   const managers = includeManagers ? await managerTable(range) : [];
-  return { summary, managers };
+  const tracking = await trackingFunnel(prisma, range, managerId);
+  return { summary, managers, tracking };
 }

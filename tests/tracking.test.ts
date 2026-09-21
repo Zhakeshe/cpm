@@ -6,6 +6,7 @@ import {
   publicWhatsAppNumber,
   whatsappClickUrl,
 } from "../src/lib/tracking";
+import { ratioPct } from "../src/lib/tracking-analytics";
 
 describe("tracking tokens", () => {
   it("extracts qc: token from WhatsApp prefill", () => {
@@ -37,5 +38,11 @@ describe("tracking tokens", () => {
     }
     const slugs = DEFAULT_TRACKING_CHANNELS.map((c) => c.slug);
     expect(slugs).toEqual(["instagram", "tiktok", "facebook", "youtube", "site", "ads"]);
+  });
+
+  it("rounds funnel percentages to one decimal", () => {
+    expect(ratioPct(1, 4)).toBe(25);
+    expect(ratioPct(1, 3)).toBe(33.3);
+    expect(ratioPct(2, 0)).toBe(0);
   });
 });
