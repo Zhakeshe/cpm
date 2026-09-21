@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     const to = req.nextUrl.searchParams.get("to") || undefined;
     const range = rangeFromPreset(preset, from, to);
     const scoped = canSeeAllRecords(user.role) ? undefined : user.id;
-    const { summary, managers } = await exportAnalytics(range, scoped, canSeeAllRecords(user.role));
+    const { summary, managers, tracking } = await exportAnalytics(range, scoped, canSeeAllRecords(user.role));
 
     const summaryCsv = toCsv(summary, [
       { key: "metric", label: "metric" },
@@ -50,7 +50,22 @@ export async function GET(req: NextRequest) {
         )}`
       : "";
 
-    return new NextResponse(`\uFEFF${summaryCsv}${managersCsv}`, {
+    const trackingCsv = tracking.length
+      ? `\r\n\r\n${toCsv(tracking, [
+          { key: "title", label: "channel" },
+          { key: "slug", label: "slug" },
+          { key: "clicks", label: "clicks" },
+          { key: "wrote", label: "wrote" },
+          { key: "demos", label: "demos" },
+          { key: "sales", label: "sales" },
+          { key: "revenue", label: "revenue" },
+          { key: "clickToWrite", label: "click_to_write_pct" },
+          { key: "writeToDemo", label: "write_to_demo_pct" },
+          { key: "writeToSale", label: "write_to_sale_pct" },
+        ])}`
+      : "";
+
+    return new NextResponse(`\uFEFF${summaryCsv}${managersCsv}${trackingCsv}`, {
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
         "Content-Disposition": `attachment; filename="${csvFilename("analytics")}"`,

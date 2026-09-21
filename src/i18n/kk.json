@@ -239,7 +239,17 @@
     "managerSales": "Менеджерлер тиімділігі (сатылым)",
     "manager": "Менеджер",
     "leads": "Лидтер",
-    "reply": "Жауап, с"
+    "reply": "Жауап, с",
+    "tracking": "Әлеуметтік желі: басу → жазды → демо → төлем",
+    "trackingHint": "/w/instagram және басқа сілтемелер. «Жазды» — адам qc:токенмен WhatsApp ашты. Демо мен төлем сол желінің карточкаларынан.",
+    "trackingChannel": "Арна",
+    "trackingClicks": "Басу",
+    "trackingWrote": "Жазды",
+    "trackingDemos": "Демо",
+    "trackingSales": "Төлем",
+    "trackingClickWrite": "Басу → чат",
+    "trackingWriteDemo": "Чат → демо",
+    "trackingWriteSale": "Чат → төлем"
   },
   "managers": {
     "title": "Менеджерлер",

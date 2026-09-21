@@ -239,7 +239,17 @@
     "managerSales": "Эффективность менеджеров (продажи)",
     "manager": "Менеджер",
     "leads": "Лиды",
-    "reply": "Ответ, с"
+    "reply": "Ответ, с",
+    "tracking": "Соцсети: клик → написал → демо → оплата",
+    "trackingHint": "Клик по /w/instagram и другим ссылкам. «Написал» — человек открыл WhatsApp с токеном. Демо и оплаты считаются по карточкам этой сети.",
+    "trackingChannel": "Канал",
+    "trackingClicks": "Клики",
+    "trackingWrote": "Написали",
+    "trackingDemos": "Демо",
+    "trackingSales": "Оплаты",
+    "trackingClickWrite": "Клик → чат",
+    "trackingWriteDemo": "Чат → демо",
+    "trackingWriteSale": "Чат → оплата"
   },
   "managers": {
     "title": "Менеджеры",

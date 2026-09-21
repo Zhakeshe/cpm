@@ -8,6 +8,19 @@ import Link from "next/link";
 import { BarChart, DonutChart, LineChart } from "@/components/Charts";
 import { dayLabel, sourceLabel, type Series } from "@/lib/chart-data";
 
+type ChannelFunnel = {
+  slug: string;
+  title: string;
+  clicks: number;
+  wrote: number;
+  demos: number;
+  sales: number;
+  revenue: number;
+  clickToWrite: number;
+  writeToDemo: number;
+  writeToSale: number;
+};
+
 type AnalyticsResponse = {
   stats: Record<string, number> & {
     byDay?: Series;
@@ -17,6 +30,7 @@ type AnalyticsResponse = {
   };
   managers: Array<Record<string, unknown>>;
   funnel?: Array<{ id: string; name: string; count: number; conversion: number }>;
+  tracking?: ChannelFunnel[];
   plan?: { rows: Array<{ name: string; leads: number; leadTarget: number; leadPct: number; revenue: number; revenueTarget: number; revenuePct: number }> };
 };
 
@@ -110,6 +124,52 @@ export default function AnalyticsPage() {
         <div className="card p-5">
           <div className="muted text-sm mb-3">{t("analytics.lostReasons")}</div>
           <DonutChart data={lostSeries} />
+        </div>
+        <div className="card p-5 lg:col-span-2">
+          <div className="muted text-sm mb-1">{t("analytics.tracking")}</div>
+          <div className="text-xs muted mb-3">{t("analytics.trackingHint")}</div>
+          <BarChart
+            data={(data?.tracking || []).map((row) => ({ label: row.title, value: row.wrote || row.clicks }))}
+            color="#34d399"
+          />
+          <div className="overflow-x-auto mt-4">
+            <table className="w-full text-sm">
+              <thead className="text-[#93a0bb]">
+                <tr>
+                  {[
+                    t("analytics.trackingChannel"),
+                    t("analytics.trackingClicks"),
+                    t("analytics.trackingWrote"),
+                    t("analytics.trackingClickWrite"),
+                    t("analytics.trackingDemos"),
+                    t("analytics.trackingWriteDemo"),
+                    t("analytics.trackingSales"),
+                    t("analytics.trackingWriteSale"),
+                    t("analytics.amount"),
+                  ].map((h) => (
+                    <th key={h} className="text-left py-2 pr-3 font-normal">
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(data?.tracking || []).map((row) => (
+                  <tr key={row.slug} className="border-t border-[#243049]">
+                    <td className="py-2 pr-3">{row.title}</td>
+                    <td className="py-2 pr-3">{row.clicks}</td>
+                    <td className="py-2 pr-3">{row.wrote}</td>
+                    <td className="py-2 pr-3">{row.clickToWrite}%</td>
+                    <td className="py-2 pr-3">{row.demos}</td>
+                    <td className="py-2 pr-3">{row.writeToDemo}%</td>
+                    <td className="py-2 pr-3">{row.sales}</td>
+                    <td className="py-2 pr-3">{row.writeToSale}%</td>
+                    <td className="py-2 pr-3">{row.revenue}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
         <div className="card p-5">
           <div className="muted text-sm mb-3">{t("analytics.funnel")}</div>

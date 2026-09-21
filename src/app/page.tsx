@@ -30,10 +30,20 @@ type Charts = {
   bySource?: Array<{ source: string; _count: number }>;
 };
 
+type ChannelFunnel = {
+  slug: string;
+  title: string;
+  clicks: number;
+  wrote: number;
+  demos: number;
+  sales: number;
+  clickToWrite: number;
+};
+
 export default function HomePage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [charts, setCharts] = useState<Charts>({});
-  const [managers, setManagers] = useState<Array<Record<string, unknown>>>([]);
+  const [tracking, setTracking] = useState<ChannelFunnel[]>([]);
   const [role, setRole] = useState("MANAGER");
   const { t } = useI18n();
 
@@ -45,6 +55,7 @@ export default function HomePage() {
     setStats(dash);
     setCharts(week.stats || {});
     setManagers(week.managers || []);
+    setTracking(week.tracking || []);
   }, []);
 
   useEffect(() => {
@@ -143,6 +154,33 @@ export default function HomePage() {
             color="#fbbf24"
             data={managers.map((m) => ({ label: String(m.name), value: Number(m.newLeads) || 0 }))}
           />
+        </div>
+        <div className="card p-5 lg:col-span-2">
+          <div className="muted text-sm mb-3">{t("analytics.tracking")}</div>
+          <table className="w-full text-sm">
+            <thead className="text-[#93a0bb]">
+              <tr>
+                <th className="text-left py-2">{t("analytics.trackingChannel")}</th>
+                <th className="text-left py-2">{t("analytics.trackingClicks")}</th>
+                <th className="text-left py-2">{t("analytics.trackingWrote")}</th>
+                <th className="text-left py-2">{t("analytics.trackingClickWrite")}</th>
+                <th className="text-left py-2">{t("analytics.trackingDemos")}</th>
+                <th className="text-left py-2">{t("analytics.trackingSales")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tracking.map((row) => (
+                <tr key={row.slug} className="border-t border-[#243049]">
+                  <td className="py-2">{row.title}</td>
+                  <td className="py-2">{row.clicks}</td>
+                  <td className="py-2">{row.wrote}</td>
+                  <td className="py-2">{row.clickToWrite}%</td>
+                  <td className="py-2">{row.demos}</td>
+                  <td className="py-2">{row.sales}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
       )}
