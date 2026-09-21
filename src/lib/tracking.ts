@@ -163,13 +163,24 @@ export async function trackingStats(db: PrismaClient) {
     where: { convertedAt: { not: null } },
     _count: { _all: true },
   });
+  const order = DEFAULT_TRACKING_CHANNELS.map((ch) => ch.slug);
   const clickMap = Object.fromEntries(clicks.map((row) => [row.slug, row._count._all]));
   const convMap = Object.fromEntries(converted.map((row) => [row.slug, row._count._all]));
   const app = (process.env.APP_URL || "").replace(/\/$/, "");
-  return channels.map((ch) => ({
-    ...ch,
-    clicks: clickMap[ch.slug] || 0,
-    converted: convMap[ch.slug] || 0,
-    url: `${app}/w/${ch.slug}`,
-  }));
+  return channels
+    .slice()
+    .sort((a, b) => {
+      const ia = order.indexOf(a.slug);
+      const ib = order.indexOf(b.slug);
+      if (ia === -1 && ib === -1) return a.slug.localeCompare(b.slug);
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    })
+    .map((ch) => ({
+      ...ch,
+      clicks: clickMap[ch.slug] || 0,
+      converted: convMap[ch.slug] || 0,
+      url: `${app}/w/${ch.slug}`,
+    }));
 }
