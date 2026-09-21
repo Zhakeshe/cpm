@@ -28,6 +28,8 @@ docker compose up -d --build
 
 Webhook: `https://quantum.ushqn.com/api/webhooks/wazzup`
 
+Публичный номер для ссылок соцсетей: `WHATSAPP_PUBLIC_NUMBER=77765079188` (цифры без +). Ссылки: `https://quantum.ushqn.com/w/instagram`, `/w/tiktok`, `/w/facebook`, `/w/youtube`, `/w/site`, `/w/ads`. Клик пишет уникальный `qc:токен` в WhatsApp; когда клиент пишет, источник карточки = сеть, не WhatsApp, и уходит авто-приветствие канала.
+
 В кабинете Wazzup нажмите «Подписать вебхук» в CRM или `PATCH /v3/webhooks`. Пока ключ задан, исходящие идут в Wazzup, не в Graph.
 
 Прямой Meta WABA **не удаляем** (см. `docs/META_WABA.md`). Код и `WHATSAPP_*` в `.env` остаются. Сейчас `WHATSAPP_TRANSPORT=wazzup`. После верификации: `WHATSAPP_TRANSPORT=meta`, ключ Wazzup убрать.

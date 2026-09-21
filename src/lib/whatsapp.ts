@@ -2,6 +2,7 @@
 import crypto from "crypto";
 import type { PrismaClient } from "@prisma/client";
 import { ingestContact } from "./contacts";
+import { attachTrackingAndGreet, inboundSourceFromText } from "./inbound-tracking";
 import { notifyUser } from "./notifications";
 import { emitToUser, emitToAdmins } from "./realtime";
 import { extensionFor, putObject, storageConfigured } from "./storage";
@@ -123,11 +124,14 @@ export async function handleWhatsAppInbound(db: PrismaClient, payload: unknown) 
           continue;
         }
         const names = (profileName || "").split(" ");
+        const inboundText = extractText(msg);
+        const tracked = await inboundSourceFromText(db, inboundText);
         const ingest = await ingestContact(db, {
           phone: msg.from,
           firstName: names[0] || "WhatsApp",
           lastName: names.slice(1).join(" "),
-          source: "WHATSAPP",
+          source: tracked.source,
+          campaign: tracked.campaign,
         });
         const receivedAt = msg.timestamp ? new Date(Number(msg.timestamp) * 1000) : new Date();
         const windowExpiresAt = new Date(receivedAt.getTime() + SERVICE_WINDOW_MS);
@@ -170,6 +174,12 @@ export async function handleWhatsAppInbound(db: PrismaClient, payload: unknown) 
           },
         });
         await storeInboundMedia(db, saved.id, saved.mediaId, msg.document?.filename);
+        await attachTrackingAndGreet(db, {
+          text: inboundText,
+          contactId: ingest.contactId,
+          managerId: ingest.managerId,
+          inbound: true,
+        });
         await db.activity.create({
           data: {
             contactId: ingest.contactId,

@@ -18,6 +18,8 @@ export async function resetDatabase() {
     prisma.meeting.deleteMany(),
     prisma.managerChange.deleteMany(),
     prisma.lead.deleteMany(),
+    prisma.trackingClick.deleteMany(),
+    prisma.trackingChannel.deleteMany(),
     prisma.contact.deleteMany(),
     prisma.webhookEvent.deleteMany(),
     prisma.passwordResetToken.deleteMany(),

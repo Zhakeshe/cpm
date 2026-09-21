@@ -3,7 +3,9 @@ export type Series = Array<{ day: string; count: number }>;
 const SOURCE_LABELS: Record<string, string> = {
   WHATSAPP: "WhatsApp",
   INSTAGRAM: "Instagram",
+  TIKTOK: "TikTok",
   FACEBOOK: "Facebook",
+  YOUTUBE: "YouTube",
   PHONE_CALL: "Звонок",
   MANUAL: "Вручную",
   WEBSITE: "Сайт",

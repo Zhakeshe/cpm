@@ -2,6 +2,7 @@ import { PrismaClient, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { seedVacuumCatalog } from "../src/lib/catalog";
 import { VACUUM_PIPELINE_STAGES } from "../src/lib/pipeline-defaults";
+import { ensureTrackingChannels } from "../src/lib/tracking";
 
 const prisma = new PrismaClient();
 
@@ -165,6 +166,7 @@ async function main() {
   });
 
   await seedVacuumCatalog(prisma);
+  await ensureTrackingChannels(prisma);
 
   console.log("Seeded", { admin: admin.email, managers: managers.map((m) => m.email) });
 }
