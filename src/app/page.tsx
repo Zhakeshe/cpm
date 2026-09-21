@@ -43,6 +43,7 @@ type ChannelFunnel = {
 export default function HomePage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [charts, setCharts] = useState<Charts>({});
+  const [managers, setManagers] = useState<Array<Record<string, unknown>>>([]);
   const [tracking, setTracking] = useState<ChannelFunnel[]>([]);
   const [role, setRole] = useState("MANAGER");
   const { t } = useI18n();
