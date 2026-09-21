@@ -1,0 +1,2 @@
+ALTER TYPE "ContactSource" ADD VALUE 'TIKTOK';
+ALTER TYPE "ContactSource" ADD VALUE 'YOUTUBE';

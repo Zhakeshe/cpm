@@ -18,6 +18,8 @@ enum ContactSource {
   WHATSAPP
   INSTAGRAM
   FACEBOOK
+  TIKTOK
+  YOUTUBE
   PHONE_CALL
   MANUAL
   WEBSITE
@@ -280,6 +282,7 @@ model Contact {
   quotes           Quote[]
   payments         Payment[]
   files            ContactFile[]
+  trackingClicks   TrackingClick[]
 
   @@index([managerId])
   @@index([pipelineStageId])
@@ -719,4 +722,33 @@ model SavedView {
   createdAt DateTime @default(now())
 
   @@index([userId])
+}
+
+model TrackingChannel {
+  slug       String         @id
+  source     ContactSource
+  title      String
+  greeting   String         @default("")
+  waPrefill  String         @default("")
+  isActive   Boolean        @default(true)
+  updatedAt  DateTime       @updatedAt
+  clicks     TrackingClick[]
+}
+
+model TrackingClick {
+  id           String           @id @default(cuid())
+  token        String           @unique
+  slug         String
+  channel      TrackingChannel  @relation(fields: [slug], references: [slug])
+  source       ContactSource
+  ip           String?
+  userAgent    String?
+  convertedAt  DateTime?
+  contactId    String?
+  contact      Contact?         @relation(fields: [contactId], references: [id])
+  createdAt    DateTime         @default(now())
+
+  @@index([slug])
+  @@index([contactId])
+  @@index([createdAt])
 }

@@ -383,7 +383,20 @@
     "fieldOptions": "Опции через запятую",
     "automations": "Авто-правила",
     "createTask": "Создать задачу",
-    "quotas": "Квоты менеджеров, месяц {month}"
+    "quotas": "Квоты менеджеров, месяц {month}",
+    "trackingTitle": "Ссылки соцсетей → WhatsApp",
+    "trackingHint": "Вставьте ссылку в Instagram / TikTok / Reels. Клик сохраняет уникальный id, WhatsApp открывается с текстом qc:токен. Когда клиент пишет, карточка получает источник (не «WhatsApp») и авто-приветствие этой сети.",
+    "trackingCopy": "Копировать",
+    "trackingCopied": "Скопировано",
+    "trackingClicks": "Клики",
+    "trackingConverted": "Написали",
+    "trackingGreeting": "Авто-сообщение после входа в WhatsApp",
+    "trackingPrefill": "Текст в WhatsApp (обязательно qc:{token})",
+    "trackingSave": "Сохранить канал",
+    "trackingNewSlug": "slug (instagram-reels)",
+    "trackingNewTitle": "Название",
+    "trackingAdd": "Добавить канал",
+    "trackingNoNumber": "На сервере нет WHATSAPP_PUBLIC_NUMBER — редирект на WhatsApp не откроется"
   },
   "contact": {
     "source": "Источник: {source}",
@@ -495,7 +508,9 @@
   "sources": {
     "WHATSAPP": "WhatsApp",
     "INSTAGRAM": "Instagram",
+    "TIKTOK": "TikTok",
     "FACEBOOK": "Facebook",
+    "YOUTUBE": "YouTube",
     "PHONE_CALL": "Телефонный звонок",
     "MANUAL": "Вручную",
     "WEBSITE": "Сайт",

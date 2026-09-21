@@ -383,7 +383,20 @@
     "fieldOptions": "Опциялар үтірмен",
     "automations": "Авто-ережелер",
     "createTask": "Тапсырма құру",
-    "quotas": "Менеджер квоталары, ай {month}"
+    "quotas": "Менеджер квоталары, ай {month}",
+    "trackingTitle": "Әлеуметтік желі сілтемелері → WhatsApp",
+    "trackingHint": "Instagram / TikTok / Reels-ке осы сілтемені қойыңыз. Басқанда бірегей id сақталады, WhatsApp qc:токен мәтінімен ашылады. Клиент жазғанда картада көз «WhatsApp» емес, сол желі болады және сол арнаның сәлемдемесі кетеді.",
+    "trackingCopy": "Көшіру",
+    "trackingCopied": "Көшірілді",
+    "trackingClicks": "Басу",
+    "trackingConverted": "Жазды",
+    "trackingGreeting": "WhatsApp-қа кіргенде авто-хабар",
+    "trackingPrefill": "WhatsApp мәтіні (міндетті qc:{token})",
+    "trackingSave": "Арнаны сақтау",
+    "trackingNewSlug": "slug (instagram-reels)",
+    "trackingNewTitle": "Атауы",
+    "trackingAdd": "Арна қосу",
+    "trackingNoNumber": "Серверде WHATSAPP_PUBLIC_NUMBER жоқ — WhatsApp редирект істемейді"
   },
   "contact": {
     "source": "Көзі: {source}",
@@ -495,7 +508,9 @@
   "sources": {
     "WHATSAPP": "WhatsApp",
     "INSTAGRAM": "Instagram",
+    "TIKTOK": "TikTok",
     "FACEBOOK": "Facebook",
+    "YOUTUBE": "YouTube",
     "PHONE_CALL": "Телефон қоңырауы",
     "MANUAL": "Қолмен",
     "WEBSITE": "Сайт",

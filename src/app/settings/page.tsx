@@ -2,6 +2,7 @@
 
 import { AppShell } from "@/components/AppShell";
 import { SettingsSales } from "@/components/SettingsSales";
+import { TrackingLinksSection } from "@/components/TrackingLinksSection";
 import { WazzupSection } from "@/components/WazzupSection";
 import { useI18n } from "@/components/I18nProvider";
 import { useEffect, useState } from "react";
@@ -485,6 +486,7 @@ export default function SettingsPage() {
           {t("common.save")}
         </button>
       </div>
+      <TrackingLinksSection />
       <WazzupSection />
       <WabaSection />
       <QuickRepliesSection />

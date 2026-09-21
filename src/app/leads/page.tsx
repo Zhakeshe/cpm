@@ -22,7 +22,18 @@ type Contact = {
   tags?: Array<{ tag: { id: string; name: string; color: string } }>;
 };
 
-const SOURCES = ["MANUAL", "WHATSAPP", "INSTAGRAM", "FACEBOOK", "PHONE_CALL", "WEBSITE", "REFERRAL", "OTHER"];
+const SOURCES = [
+  "MANUAL",
+  "WHATSAPP",
+  "INSTAGRAM",
+  "TIKTOK",
+  "FACEBOOK",
+  "YOUTUBE",
+  "PHONE_CALL",
+  "WEBSITE",
+  "REFERRAL",
+  "OTHER",
+];
 
 function LeadsInner() {
   const params = useSearchParams();

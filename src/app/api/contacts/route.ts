@@ -40,6 +40,8 @@ const createSchema = z.object({
     "WHATSAPP",
     "INSTAGRAM",
     "FACEBOOK",
+    "TIKTOK",
+    "YOUTUBE",
     "PHONE_CALL",
     "MANUAL",
     "WEBSITE",

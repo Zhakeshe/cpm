@@ -6,6 +6,8 @@ const SOURCES = new Set<ContactSource>([
   "WHATSAPP",
   "INSTAGRAM",
   "FACEBOOK",
+  "TIKTOK",
+  "YOUTUBE",
   "PHONE_CALL",
   "MANUAL",
   "WEBSITE",
