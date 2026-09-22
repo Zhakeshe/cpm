@@ -42,7 +42,7 @@ export function Venue() {
             title="K.E.R.N School на карте 2GIS"
             src={twoGisWidgetUrl()}
             className="h-[320px] w-full bg-paper lg:h-full lg:min-h-[420px]"
-            loading="lazy"
+            loading="eager"
             referrerPolicy="no-referrer-when-downgrade"
             allow="geolocation"
           />
