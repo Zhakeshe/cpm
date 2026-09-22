@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: kern-scrimmage-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: kern
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: kern_scrimmage
+    volumes:
+      - kern_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kern -d kern_scrimmage"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks:
+      - kern-scrimmage
+
+  app:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_BASE_PATH: /scrimmage
+        NEXT_PUBLIC_SITE_URL: https://kern.ushqn.com/scrimmage
+    container_name: kern-scrimmage-app
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://kern:${DB_PASSWORD}@db:5432/kern_scrimmage?schema=public
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET}
+      NEXT_PUBLIC_BASE_PATH: /scrimmage
+      NEXT_PUBLIC_SITE_URL: https://kern.ushqn.com/scrimmage
+      NEXT_PUBLIC_INSTAGRAM_URL: https://www.instagram.com/kern.school.kz/
+      NEXT_PUBLIC_WHATSAPP_URL: https://wa.me/77775888030
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - kern-scrimmage
+
+networks:
+  kern-scrimmage:
+    name: kern-scrimmage
+
+volumes:
+  kern_pgdata:
