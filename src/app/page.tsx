@@ -5,6 +5,7 @@ import { Biobuzz } from "@/components/biobuzz";
 import { Venue } from "@/components/venue";
 import { RegisterForm } from "@/components/register-form";
 import { Footer } from "@/components/footer";
+import { EVENT } from "@/lib/constants";
 
 export default function HomePage() {
   return (
@@ -21,8 +22,9 @@ export default function HomePage() {
               Регистрация команды
             </h2>
             <p className="mt-3 text-[16px] leading-7 text-muted">
-              Введите номер или название — карточку подтянем из FTCScout. Если команды
-              ещё нет в FIRST, заполните поля сами.
+              Старт {EVENT.dateLabel} в {EVENT.timeLabel}. Введите номер или название —
+              карточку подтянем из FTCScout. Если команды ещё нет в FIRST, заполните
+              поля сами.
             </p>
             <div className="mt-8">
               <RegisterForm />

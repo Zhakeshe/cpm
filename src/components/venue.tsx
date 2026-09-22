@@ -1,4 +1,4 @@
-import { TBA, VENUE } from "@/lib/constants";
+import { EVENT, TBA, VENUE } from "@/lib/constants";
 
 export function Venue() {
   const widget = `https://widgets.2gis.com/widget?type=firmsonmap&options=${encodeURIComponent(
@@ -24,11 +24,11 @@ export function Venue() {
             <dl className="mt-8 space-y-3 text-sm text-white/75">
               <div className="flex justify-between gap-4 border-b border-white/10 py-2">
                 <dt>Дата</dt>
-                <dd className="text-white">{TBA}</dd>
+                <dd className="text-white">{EVENT.dateLabel}</dd>
               </div>
               <div className="flex justify-between gap-4 border-b border-white/10 py-2">
                 <dt>Время</dt>
-                <dd className="text-white">{TBA}</dd>
+                <dd className="text-white">{EVENT.timeLabel}</dd>
               </div>
               <div className="flex justify-between gap-4 py-2">
                 <dt>Команды</dt>

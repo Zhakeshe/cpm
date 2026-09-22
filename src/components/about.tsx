@@ -1,3 +1,5 @@
+import { EVENT } from "@/lib/constants";
+
 export function About() {
   return (
     <section id="about" className="bg-paper">
@@ -8,9 +10,10 @@ export function About() {
             <span className="mt-1 block italic text-gold">не турнир FIRST</span>
           </h2>
           <p className="max-w-xl text-[17px] leading-8 text-ink/75">
-            K.E.R.N Scrimmage — практические матчи для школьных FTC-команд:
-            выезд на поле, прогон робота, разбор. Qualifier это не заменяет,
-            зато можно спокойно найти, где ломается программа и механика.
+            {EVENT.dateLabel}, начало в {EVENT.timeLabel}. K.E.R.N Scrimmage —
+            практические матчи для школьных FTC-команд: выезд на поле, прогон робота,
+            разбор. Qualifier это не заменяет, зато можно спокойно найти, где ломается
+            программа и механика.
           </p>
         </div>
       </div>

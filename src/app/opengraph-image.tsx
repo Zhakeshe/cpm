@@ -33,7 +33,7 @@ export default function OpenGraphImage() {
           </div>
         </div>
         <div style={{ fontSize: 24, color: "#D8E3F0" }}>
-          Практические матчи для школьных FTC-команд
+          24 сентября 2026 · 18:00 · Astana
         </div>
       </div>
     ),

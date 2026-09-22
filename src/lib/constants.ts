@@ -26,6 +26,13 @@ export const MEMBER_COUNTS = [4, 5] as const;
 
 export const TBA = "Будет объявлено дополнительно";
 
+export const EVENT = {
+  dateLabel: "24 сентября 2026",
+  dateShort: "24.09.2026",
+  timeLabel: "18:00",
+  startsAt: "2026-09-24T18:00:00+05:00",
+} as const;
+
 export const VENUE = {
   name: "K.E.R.N School",
   address: "Жошы хан көшесі, 10Б",

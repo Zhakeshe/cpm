@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { EVENT } from "@/lib/constants";
 
 export function Hero() {
   return (
@@ -18,7 +19,7 @@ export function Hero() {
       <div className="relative mx-auto flex min-h-[620px] max-w-6xl flex-col justify-end px-4 pb-0 pt-28 sm:min-h-[700px] sm:px-6 lg:min-h-[780px]">
         <div className="max-w-xl pb-12 sm:pb-16">
           <p className="text-[12px] font-semibold tracking-[0.28em] text-gold-soft uppercase">
-            K.E.R.N School · Astana
+            {EVENT.dateLabel} · {EVENT.timeLabel} · Astana
           </p>
           <h1 className="mt-5 text-[3.4rem] font-semibold leading-[0.86] tracking-[-0.055em] sm:text-7xl lg:text-[5.4rem]">
             K.E.R.N
@@ -47,9 +48,9 @@ export function Hero() {
 
         <div className="grid grid-cols-3 border-t border-white/15 bg-navy-deep/55 backdrop-blur-md">
           {[
+            ["Дата", EVENT.dateLabel],
+            ["Начало", EVENT.timeLabel],
             ["Состав", "4–5 человек"],
-            ["Лига", "FIRST Tech Challenge"],
-            ["Сезон", "BIOBUZZ 2026–27"],
           ].map(([label, value]) => (
             <div key={label} className="border-r border-white/10 px-3 py-4 last:border-r-0 sm:px-6 sm:py-5">
               <p className="text-[10px] font-medium tracking-[0.18em] text-gold-soft uppercase">{label}</p>
