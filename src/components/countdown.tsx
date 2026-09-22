@@ -35,32 +35,46 @@ export function Countdown() {
   const parts = split(remaining);
 
   const cells: [string, string][] = [
-    [String(parts.days), "дней"],
-    [pad(parts.hours), "часов"],
-    [pad(parts.minutes), "минут"],
-    [pad(parts.seconds), "секунд"],
+    [now === null ? "—" : String(parts.days), "дней"],
+    [now === null ? "—" : pad(parts.hours), "часов"],
+    [now === null ? "—" : pad(parts.minutes), "минут"],
+    [now === null ? "—" : pad(parts.seconds), "секунд"],
   ];
+
+  if (started) {
+    return (
+      <p className="inline-flex rounded-full border border-gold/40 bg-gold/15 px-5 py-2.5 text-sm font-semibold tracking-[0.14em] text-gold-soft uppercase">
+        Уже началось
+      </p>
+    );
+  }
 
   return (
     <div>
-      {started ? (
-        <p className="text-2xl font-semibold tracking-[-0.03em] text-gold-soft">Уже началось</p>
-      ) : (
-        <div className="flex flex-wrap gap-3 sm:gap-5">
-          {cells.map(([value, label]) => (
-            <div key={label} className="min-w-[4.5rem]">
-              <p className="font-semibold tabular-nums text-[2.35rem] leading-none tracking-[-0.06em] sm:text-5xl">
-                {now === null ? "—" : value}
+      <p className="text-[11px] font-semibold tracking-[0.32em] text-gold-soft uppercase">До старта</p>
+      <div className="mt-4 inline-flex max-w-full items-stretch gap-1.5 sm:gap-2.5">
+        {cells.map(([value, label], index) => (
+          <div key={label} className="flex items-stretch gap-1.5 sm:gap-2.5">
+            {index > 0 ? (
+              <span className="hidden self-center pb-4 text-2xl font-light text-gold/70 sm:block" aria-hidden>
+                :
+              </span>
+            ) : null}
+            <div className="min-w-[4.4rem] rounded-2xl border border-white/15 bg-navy-deep/45 px-3 py-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_12px_32px_rgba(0,0,0,0.22)] backdrop-blur-md sm:min-w-[5.4rem] sm:px-4 sm:py-3.5">
+              <p className="font-semibold tabular-nums text-[1.85rem] leading-none tracking-[-0.06em] text-white sm:text-[2.35rem]">
+                {value}
               </p>
-              <p className="mt-2 text-[10px] font-medium tracking-[0.18em] text-gold-soft uppercase">
+              <p className="mt-2 text-[9px] font-semibold tracking-[0.2em] text-gold-soft uppercase sm:text-[10px]">
                 {label}
               </p>
             </div>
-          ))}
-        </div>
-      )}
-      <p className="mt-5 text-sm text-white/75">
-        {EVENT.dateLabel} · {EVENT.timeLabel}
+          </div>
+        ))}
+      </div>
+      <p className="mt-4 inline-flex rounded-full border border-gold/25 bg-gold/10 px-3.5 py-1.5 text-[12px] tracking-[0.04em] text-gold-soft">
+        {EVENT.dateLabel}
+        <span className="mx-2 text-gold/50">·</span>
+        {EVENT.timeLabel}
       </p>
     </div>
   );
