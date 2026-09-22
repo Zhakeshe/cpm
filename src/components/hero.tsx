@@ -75,17 +75,6 @@ export function Hero() {
               FIRST Tech Challenge · практические матчи
             </p>
           </div>
-          <svg
-            className="pointer-events-none absolute -bottom-6 -left-6 hidden w-40 text-gold/40 md:block"
-            viewBox="0 0 160 80"
-            fill="none"
-            aria-hidden="true"
-          >
-            <rect x="1" y="1" width="158" height="78" stroke="currentColor" />
-            <path d="M12 60 L48 20 L88 44 L148 12" stroke="currentColor" />
-            <circle cx="48" cy="20" r="3" fill="currentColor" />
-            <circle cx="88" cy="44" r="3" fill="currentColor" />
-          </svg>
         </div>
       </div>
     </section>
