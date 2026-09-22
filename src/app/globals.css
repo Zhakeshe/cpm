@@ -62,8 +62,3 @@ body {
   outline: 2px solid var(--gold);
   outline-offset: 3px;
 }
-
-.honeycomb {
-  background-color: #171109;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='98' viewBox='0 0 56 98'%3E%3Cpath fill='none' stroke='%23e3b341' stroke-opacity='0.18' stroke-width='1' d='M28 2l24 14v28L28 58 4 44V16z'/%3E%3Cpath fill='none' stroke='%23e3b341' stroke-opacity='0.12' stroke-width='1' d='M28 51l24 14v28L28 107 4 93V65z'/%3E%3C/svg%3E");
-}
