@@ -1,12 +1,6 @@
-import { EVENT, TBA, VENUE } from "@/lib/constants";
+import { EVENT, TBA, twoGisWidgetUrl, VENUE } from "@/lib/constants";
 
 export function Venue() {
-  const widget = `https://widgets.2gis.com/widget?type=firmsonmap&options=${encodeURIComponent(
-    JSON.stringify({
-      pos: { lat: VENUE.lat, lon: VENUE.lon, zoom: 16 },
-    }),
-  )}`;
-
   return (
     <section id="venue" className="bg-white">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
@@ -46,9 +40,11 @@ export function Venue() {
           </div>
           <iframe
             title="K.E.R.N School на карте 2GIS"
-            src={widget}
+            src={twoGisWidgetUrl()}
             className="h-[320px] w-full bg-paper lg:h-full lg:min-h-[420px]"
             loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            allow="geolocation"
           />
         </div>
       </div>

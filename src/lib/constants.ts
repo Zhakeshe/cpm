@@ -37,10 +37,22 @@ export const VENUE = {
   name: "K.E.R.N School",
   address: "Жошы хан көшесі, 10Б",
   city: "Астана",
-  twoGisUrl: "https://2gis.kz/astana/search/%D0%96%D0%BE%D1%88%D1%8B%20%D1%85%D0%B0%D0%BD%2010%D0%91",
-  lat: 51.1254,
-  lon: 71.4267,
+  twoGisUrl: "https://2gis.kz/astana/firm/70000001114203668",
+  twoGisFirmId: "70000001114203668",
+  lat: 51.099707,
+  lon: 71.441875,
 };
+
+export function twoGisWidgetUrl() {
+  const options = {
+    pos: { lat: VENUE.lat, lon: VENUE.lon, zoom: 16 },
+    opt: { city: "astana" },
+    org: VENUE.twoGisFirmId,
+  };
+  return `https://widgets.2gis.com/widget?type=firmsonmap&options=${encodeURIComponent(
+    JSON.stringify(options),
+  )}`;
+}
 
 export const CONTACTS = {
   instagram:
