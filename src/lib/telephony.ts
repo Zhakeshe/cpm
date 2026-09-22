@@ -4,6 +4,7 @@ import { ingestContact } from "./contacts";
 import { notifyUser } from "./notifications";
 import { emitToUser, emitToAdmins } from "./realtime";
 import { normalizePhone } from "./phone";
+import { zadarmaCallback, zadarmaCredentials } from "./zadarma";
 
 export type TelephonyWebhook = {
   event: "call.started" | "call.answered" | "call.ended" | "call.recording";
@@ -33,6 +34,16 @@ export function verifySipSecret(header: string | null, secret: string) {
 }
 
 export async function handleTelephonyEvent(db: PrismaClient, event: TelephonyWebhook) {
+  if (event.event === "call.recording") {
+    const existing = await db.call.findUnique({ where: { externalCallId: event.callId } });
+    if (!existing || !event.recordingUrl) return { call: existing, ingest: null };
+    await db.call.update({ where: { id: existing.id }, data: { recordingUrl: event.recordingUrl } });
+    const rec = await db.callRecording.findFirst({ where: { callId: existing.id } });
+    if (rec) await db.callRecording.update({ where: { id: rec.id }, data: { url: event.recordingUrl } });
+    else await db.callRecording.create({ data: { callId: existing.id, url: event.recordingUrl } });
+    return { call: existing, ingest: null };
+  }
+
   const customerNumber = event.direction === "INBOUND" ? event.from : event.to;
   const ingest = await ingestContact(db, {
     phone: customerNumber,
@@ -134,6 +145,9 @@ export async function handleTelephonyEvent(db: PrismaClient, event: TelephonyWeb
 }
 
 export async function originateCall(params: { fromExtension: string; toNumber: string }) {
+  if (zadarmaCredentials().configured) {
+    return zadarmaCallback(params);
+  }
   const url = process.env.SIP_ORIGINATE_URL;
   const token = process.env.SIP_API_TOKEN;
   if (!url) {

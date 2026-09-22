@@ -59,13 +59,25 @@ Webhook: `https://quantum.ushqn.com/api/webhooks/wazzup`
 
 Те же URL видны в CRM: Настройки → Вебхуки интеграций.
 
-## SIP / АТС
+## SIP / Zadarma
 
-В `.env`: `SIP_WEBHOOK_SECRET`, при необходимости `SIP_ORIGINATE_URL`, `SIP_WS_URL`, `SIP_DOMAIN`.
+Виртуальная АТС — **Zadarma**. WhatsApp остаётся на Wazzup до верификации Meta.
 
-Webhook АТС: `POST http://YOUR_SERVER_IP/api/webhooks/telephony` с заголовком `x-sip-secret`.
+В `.env` на сервере (ключи из кабинета Zadarma → Настройки → Интеграции и API):
 
-Софтфон: Настройки → SIP / софтфон — WebSocket URL, домен, JSON паролей внутренних номеров (`101`–`105`).
+- `ZADARMA_USER_KEY`
+- `ZADARMA_SECRET`
+- `SIP_WS_URL=wss://pbx.zadarma.com:8089/ws`
+- `SIP_DOMAIN=pbx.zadarma.com`
+
+В АТС заведите внутренние **101–105**, включите **WebRTC**, пароли вставьте в CRM: Настройки → Zadarma SIP (JSON).
+
+Уведомления PBX: `https://quantum.ushqn.com/api/webhooks/telephony`  
+(в кабинете Zadarma поле «Уведомления о звонках АТС», должен открываться `zd_echo`).
+
+Click-to-call с карточки клиента идёт через `GET /v1/request/callback/`. Софтфон в браузере регистрируется по WebSocket.
+
+После правок `.env`: `docker compose up -d app worker`.
 
 ## HTTPS
 

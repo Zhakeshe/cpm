@@ -55,6 +55,7 @@ export default function ContactPage() {
   const [pendingStage, setPendingStage] = useState<Stage | null>(null);
   const [reason, setReason] = useState("");
   const [note, setNote] = useState("");
+  const [calling, setCalling] = useState(false);
 
   const load = useCallback(async () => {
     setC(await fetch(`/api/contacts/${params.id}`).then((r) => r.json()));
@@ -137,6 +138,23 @@ export default function ContactPage() {
     patch({ pipelineStageId: stageId });
   }
 
+  async function sipCall() {
+    setProblem("");
+    setCalling(true);
+    const res = await fetch("/api/calls", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contactId: c?.id }),
+    });
+    setCalling(false);
+    if (!res.ok) {
+      setProblem(t("contact.sipCallFailed"));
+      return;
+    }
+    setNotice(t("contact.sipCalling"));
+    load();
+  }
+
   async function confirmOutcome() {
     if (!pendingStage || !reason) {
       setProblem(t("contact.reasonNeeded"));
@@ -164,6 +182,9 @@ export default function ContactPage() {
                   {c.phoneDisplay} · {c.email}
                 </div>
               </div>
+              <button type="button" className="rounded-xl bg-[#16a34a] px-4 py-2 h-fit" disabled={calling} onClick={sipCall}>
+                {calling ? t("contact.sipCalling") : t("contact.sipCall")}
+              </button>
             </div>
 
             <div className="mt-4">
