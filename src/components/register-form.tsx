@@ -11,7 +11,7 @@ import {
   registrationSchema,
   type RegistrationInput,
 } from "@/lib/validation";
-import { cn } from "@/lib/utils";
+import { cn, withBase } from "@/lib/utils";
 import type { ScoutTeam } from "@/lib/scout";
 
 const fieldClass =
@@ -70,7 +70,7 @@ export function RegisterForm() {
     const handle = window.setTimeout(async () => {
       setLooking(true);
       try {
-        const response = await fetch(`/api/teams/lookup?q=${encodeURIComponent(q)}`);
+        const response = await fetch(withBase(`/api/teams/lookup?q=${encodeURIComponent(q)}`));
         const data = (await response.json()) as { teams?: ScoutTeam[] };
         setMatches(data.teams ?? []);
       } catch {
@@ -105,7 +105,7 @@ export function RegisterForm() {
 
   async function onSubmit(values: RegistrationInput) {
     setServerError(null);
-    const response = await fetch("/api/register", {
+    const response = await fetch(withBase("/api/register"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(values),
@@ -116,7 +116,7 @@ export function RegisterForm() {
       return;
     }
     sessionStorage.setItem("kern-registered", "1");
-    window.history.replaceState({}, "", "/?registered=1#register");
+    window.history.replaceState({}, "", withBase("/?registered=1#register"));
     setSuccess(true);
   }
 
@@ -133,7 +133,7 @@ export function RegisterForm() {
           className="mt-8 inline-flex rounded-full bg-navy px-5 py-3 text-sm font-semibold text-white"
           onClick={() => {
             sessionStorage.removeItem("kern-registered");
-            window.history.replaceState({}, "", "/");
+            window.history.replaceState({}, "", withBase("/"));
             setSuccess(false);
           }}
         >

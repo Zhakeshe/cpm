@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Download, LogOut, Search, X } from "lucide-react";
+import { withBase } from "@/lib/utils";
 
 type Registration = {
   id: string;
@@ -36,7 +37,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch(`/api/admin/registrations?${query}`, { signal: controller.signal })
+    fetch(withBase(`/api/admin/registrations?${query}`), { signal: controller.signal })
       .then(async (response) => {
         if (response.status === 401) {
           router.replace("/admin/login");
@@ -55,7 +56,7 @@ export default function AdminPage() {
   }, [query, router]);
 
   async function logout() {
-    await fetch("/api/admin/logout", { method: "POST" });
+    await fetch(withBase("/api/admin/logout"), { method: "POST" });
     router.replace("/admin/login");
   }
 
@@ -69,7 +70,7 @@ export default function AdminPage() {
           </div>
           <div className="flex gap-2">
             <a
-              href="/api/admin/export"
+              href={withBase("/api/admin/export")}
               className="inline-flex items-center gap-2 rounded-sm border border-mist px-3 py-2 text-sm text-navy"
             >
               <Download size={16} /> CSV

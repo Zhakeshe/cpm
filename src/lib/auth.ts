@@ -76,7 +76,7 @@ export async function setAdminCookie() {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
-    path: "/",
+    path: process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, "") || "/",
     maxAge: MAX_AGE_SECONDS,
   });
 }
@@ -84,7 +84,13 @@ export async function setAdminCookie() {
 export async function clearAdminCookie() {
   const { cookies } = await import("next/headers");
   const store = await cookies();
-  store.delete(COOKIE_NAME);
+  store.set(COOKIE_NAME, "", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, "") || "/",
+    maxAge: 0,
+  });
 }
 
 export async function isAdminAuthenticated() {
