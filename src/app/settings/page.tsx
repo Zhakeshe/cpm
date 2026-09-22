@@ -315,12 +315,16 @@ export default function SettingsPage() {
     integrations: Integration[];
     sla: { enabled: boolean; minutes: number; action: string };
     routing: { existingContact: string; fallback: string };
-    webhooks: { whatsappVerify: string; whatsappInbound: string; metaLeads: string; telephony: string; publicForm?: string; wazzup?: string };
+    webhooks: { whatsappVerify: string; whatsappInbound: string; metaLeads: string; telephony: string; zadarmaNotify?: string; publicForm?: string; wazzup?: string };
   } | null>(null);
   const [stages, setStages] = useState<
     Array<{ id?: string; name: string; slug: string; order: number; isActive: boolean; requiredFields?: string[] }>
   >([]);
-  const [sip, setSip] = useState({ wsUrl: "", domain: "", extensions: "{\n  \"101\": \"\"\n}" });
+  const [sip, setSip] = useState({
+    wsUrl: "wss://pbx.zadarma.com:8089/ws",
+    domain: "pbx.zadarma.com",
+    extensions: '{\n  "101": "",\n  "102": "",\n  "103": "",\n  "104": "",\n  "105": ""\n}',
+  });
   const [sipNotice, setSipNotice] = useState("");
   const [err, setErr] = useState("");
 
@@ -333,9 +337,9 @@ export default function SettingsPage() {
         const telephony = (payload.integrations || []).find((i: Integration) => i.type === "TELEPHONY");
         const cfg = (telephony?.config || {}) as { wsUrl?: string; domain?: string; extensions?: unknown };
         setSip({
-          wsUrl: cfg.wsUrl || "",
-          domain: cfg.domain || "",
-          extensions: JSON.stringify(cfg.extensions || { "101": "" }, null, 2),
+          wsUrl: cfg.wsUrl || "wss://pbx.zadarma.com:8089/ws",
+          domain: cfg.domain || "pbx.zadarma.com",
+          extensions: JSON.stringify(cfg.extensions || { "101": "", "102": "", "103": "", "104": "", "105": "" }, null, 2),
         });
       }
     });
@@ -427,6 +431,7 @@ export default function SettingsPage() {
           [t("settings.wabaInbound"), hooks?.whatsappInbound],
           [t("settings.metaLeads"), hooks?.metaLeads],
           [t("settings.sipWebhook"), hooks?.telephony],
+          [t("settings.zadarmaWebhook"), hooks?.zadarmaNotify],
           [t("settings.publicForm"), hooks?.publicForm],
           [t("settings.wazzupWebhook"), hooks?.wazzup],
         ].map(([label, url]) => (
@@ -440,6 +445,12 @@ export default function SettingsPage() {
       <div className="card p-5 mb-6 space-y-3">
         <div className="font-medium">{t("settings.sipTitle")}</div>
         <div className="muted text-sm">{t("settings.sipHint")}</div>
+        {hooks?.zadarmaNotify && (
+          <div className="text-sm">
+            <div className="muted">{t("settings.zadarmaWebhook")}</div>
+            <code className="text-xs break-all">{hooks.zadarmaNotify}</code>
+          </div>
+        )}
         <input placeholder={t("settings.sipWs")} value={sip.wsUrl} onChange={(e) => setSip({ ...sip, wsUrl: e.target.value })} />
         <input placeholder={t("settings.sipDomain")} value={sip.domain} onChange={(e) => setSip({ ...sip, domain: e.target.value })} />
         <textarea rows={5} placeholder={t("settings.sipExt")} value={sip.extensions} onChange={(e) => setSip({ ...sip, extensions: e.target.value })} />

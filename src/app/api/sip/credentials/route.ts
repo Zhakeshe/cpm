@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { jsonError, requireUser } from "@/lib/api";
+import { ZADARMA_DEFAULTS } from "@/lib/zadarma";
 
 /**
  * WebRTC registration needs SIP credentials in the browser, so they are handed
@@ -19,8 +20,8 @@ export async function GET() {
       domain?: string;
       extensions?: Record<string, string>;
     };
-    const wsUrl = config.wsUrl || process.env.SIP_WS_URL || "";
-    const domain = config.domain || process.env.SIP_DOMAIN || "";
+    const wsUrl = config.wsUrl || process.env.SIP_WS_URL || ZADARMA_DEFAULTS.wsUrl;
+    const domain = config.domain || process.env.SIP_DOMAIN || ZADARMA_DEFAULTS.domain;
     const extension = me?.sipExtension || "";
     const password = extension ? config.extensions?.[extension] : undefined;
 

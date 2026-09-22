@@ -33,7 +33,10 @@ type UaLike = {
 };
 
 type JsSipSession = {
-  answer: (opts?: { mediaConstraints?: { audio: boolean; video: boolean } }) => void;
+  answer: (opts?: {
+    mediaConstraints?: { audio: boolean; video: boolean };
+    pcConfig?: { iceServers?: Array<{ urls: string }> };
+  }) => void;
   terminate: () => void;
   connection?: RTCPeerConnection;
   remote_identity?: { uri?: { user?: string } };
@@ -78,6 +81,8 @@ export function Softphone() {
         password: config.password,
         display_name: config.displayName,
         session_timers: false,
+        register_expires: 300,
+        connection_recovery_max_interval: 30,
       }) as unknown as UaLike;
       uaRef.current = ua;
 
@@ -115,7 +120,10 @@ export function Softphone() {
   if (disabledReason) return null;
 
   function answer() {
-    sessionRef.current?.answer({ mediaConstraints: { audio: true, video: false } });
+    sessionRef.current?.answer({
+      mediaConstraints: { audio: true, video: false },
+      pcConfig: { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] },
+    });
   }
   function hangup() {
     sessionRef.current?.terminate();

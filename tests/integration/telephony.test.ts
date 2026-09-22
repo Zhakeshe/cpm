@@ -122,4 +122,26 @@ describe("SIP телефония", () => {
     const missed = await prisma.notification.findFirst({ where: { type: "MISSED_CALL" } });
     expect(missed).not.toBeNull();
   });
+
+  it("attaches a recording without creating a second contact", async () => {
+    await handleTelephonyEvent(prisma, {
+      event: "call.started",
+      callId: "call-600",
+      direction: "INBOUND",
+      from: "77015551177",
+      to: "77270000000",
+    });
+    await handleTelephonyEvent(prisma, {
+      event: "call.recording",
+      callId: "call-600",
+      direction: "INBOUND",
+      from: "",
+      to: "",
+      recordingUrl: "zadarma:rec-600",
+    });
+    expect(await prisma.contact.count()).toBe(1);
+    const call = await prisma.call.findUniqueOrThrow({ where: { externalCallId: "call-600" } });
+    expect(call.recordingUrl).toBe("zadarma:rec-600");
+    expect(await prisma.callRecording.count({ where: { callId: call.id } })).toBe(1);
+  });
 });

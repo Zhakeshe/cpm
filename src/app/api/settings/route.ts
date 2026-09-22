@@ -29,6 +29,7 @@ export async function GET() {
         whatsappInbound: `${appUrl}/api/webhooks/whatsapp`,
         metaLeads: `${appUrl}/api/webhooks/meta-leads`,
         telephony: `${appUrl}/api/webhooks/telephony`,
+        zadarmaNotify: `${appUrl}/api/webhooks/telephony`,
         publicForm: `${appUrl}/go`,
         wazzup: `${appUrl}/api/webhooks/wazzup`,
       },
