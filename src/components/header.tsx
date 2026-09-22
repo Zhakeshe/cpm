@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { NAV_LINKS } from "@/lib/constants";
+import { withBase } from "@/lib/utils";
 
 export function Header() {
   const [open, setOpen] = useState(false);
@@ -13,14 +13,13 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b border-navy/8 bg-white/90 backdrop-blur">
       <div className="mx-auto flex h-20 max-w-6xl items-center justify-between gap-6 px-4 sm:px-6">
         <Link href="/" className="flex shrink-0 items-center" aria-label="K.E.R.N School">
-          <Image
-            src="/kern-logo.svg"
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={withBase("/kern-logo.svg")}
             alt="K.E.R.N School"
             width={168}
             height={66}
             className="h-11 w-auto"
-            priority
-            unoptimized
           />
         </Link>
 

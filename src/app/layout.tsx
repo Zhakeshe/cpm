@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Instrument_Serif, Manrope } from "next/font/google";
 import "./globals.css";
-import { siteUrl } from "@/lib/utils";
+import { siteUrl, withBase } from "@/lib/utils";
 
 const manrope = Manrope({
   subsets: ["latin", "cyrillic"],
@@ -49,10 +49,10 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/favicon.ico" },
-      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: withBase("/favicon.ico") },
+      { url: withBase("/favicon-32.png"), sizes: "32x32", type: "image/png" },
     ],
-    apple: "/apple-touch-icon.png",
+    apple: withBase("/apple-touch-icon.png"),
   },
 };
 

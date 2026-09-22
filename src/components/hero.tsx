@@ -1,16 +1,14 @@
-import Image from "next/image";
 import { Countdown } from "@/components/countdown";
+import { withBase } from "@/lib/utils";
 
 export function Hero() {
   return (
     <section className="relative isolate min-h-[620px] overflow-hidden bg-navy-deep text-white sm:min-h-[700px] lg:min-h-[780px]">
-      <Image
-        src="/hero-field.jpg"
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={withBase("/hero-field.jpg")}
         alt="Роботы FTC на игровом поле во время матча"
-        fill
-        priority
-        className="object-cover object-[68%_center] saturate-[1.05]"
-        sizes="100vw"
+        className="absolute inset-0 h-full w-full object-cover object-[68%_center] saturate-[1.05]"
       />
       <div className="absolute inset-0 bg-gradient-to-r from-navy-deep via-navy-deep/88 to-navy/20" />
       <div className="absolute inset-0 bg-gradient-to-t from-navy-deep via-transparent to-navy-deep/35" />

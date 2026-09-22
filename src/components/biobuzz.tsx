@@ -1,3 +1,5 @@
+import { withBase } from "@/lib/utils";
+
 const PIECES = [
   {
     name: "POLLEN",
@@ -20,7 +22,7 @@ export function Biobuzz() {
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-[0.14]"
         style={{
-          backgroundImage: "url('/honeycomb.svg')",
+          backgroundImage: `url('${withBase("/honeycomb.svg")}')`,
           backgroundSize: "72px 125px",
         }}
       />
