@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+:root {
+  --navy: #062d59;
+  --navy-deep: #03172e;
+  --navy-mid: #0b417a;
+  --gold: #c89b4a;
+  --gold-soft: #e3c27a;
+  --paper: #f6f3ec;
+  --mist: #d8e3f0;
+  --ink: #122033;
+  --muted: #5c6b7e;
+  --line: #d5deea;
+  --background: #f6f3ec;
+  --foreground: #122033;
+  --buzz-dark: #171109;
+  --buzz-amber: #e3b341;
+  --buzz-pollen: #f4d36a;
+  --buzz-cream: #f7eed8;
+}
+
+@theme inline {
+  --color-navy: var(--navy);
+  --color-navy-deep: var(--navy-deep);
+  --color-navy-mid: var(--navy-mid);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-paper: var(--paper);
+  --color-mist: var(--mist);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-buzz-dark: var(--buzz-dark);
+  --color-buzz-amber: var(--buzz-amber);
+  --color-buzz-pollen: var(--buzz-pollen);
+  --color-buzz-cream: var(--buzz-cream);
+  --font-sans: var(--font-manrope);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+section[id] {
+  scroll-margin-top: 88px;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+}
+
+::selection {
+  background: #0b417a;
+  color: #ffffff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}

@@ -1,0 +1,31 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ScrimmageRegistration {
+  id            String   @id @default(cuid())
+  teamName      String
+  teamNumber    String?
+  school        String
+  city          String
+  captainName   String
+  phone         String
+  email         String?
+  memberCount   Int
+  ftcExperience String
+  robotStatus   String
+  testingAreas  String[]
+  comment       String?
+  fingerprint   String
+  createdAt     DateTime @default(now())
+
+  @@index([fingerprint, createdAt])
+  @@index([school])
+  @@index([createdAt])
+  @@index([ftcExperience])
+}

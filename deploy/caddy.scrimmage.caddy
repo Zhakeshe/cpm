@@ -1,0 +1,6 @@
+# Paste this handle into the existing kern.ushqn.com Caddy site block.
+# Do not use handle_path — Next.js serves routes under /scrimmage.
+
+handle /scrimmage* {
+	reverse_proxy 127.0.0.1:3010
+}
