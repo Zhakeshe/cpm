@@ -6,7 +6,7 @@ export function Footer() {
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-3">
         <div>
           <p className="text-lg font-semibold">K.E.R.N School</p>
-          <p className="mt-1 text-sm italic text-gold-soft">K.E.R.N Scrimmage</p>
+          <p className="mt-1 text-sm italic text-gold-soft">{EVENT.name}</p>
           <p className="mt-4 text-sm leading-6 text-white/65">
             {EVENT.dateLabel} · {EVENT.timeLabel}
             <br />

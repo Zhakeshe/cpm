@@ -27,6 +27,7 @@ export const MEMBER_COUNTS = [4, 5] as const;
 export const TBA = "Будет объявлено дополнительно";
 
 export const EVENT = {
+  name: "K.E.R.N: NoRegrets Scrimmage",
   dateLabel: "24 сентября 2026",
   dateShort: "24.09.2026",
   timeLabel: "18:00",

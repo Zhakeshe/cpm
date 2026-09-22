@@ -16,11 +16,14 @@ export function Hero() {
 
       <div className="relative mx-auto flex min-h-[620px] max-w-6xl flex-col justify-end px-4 pb-14 pt-28 sm:min-h-[700px] sm:px-6 sm:pb-20 lg:min-h-[780px]">
         <p className="text-[12px] font-semibold tracking-[0.28em] text-gold-soft uppercase">
-          K.E.R.N School · Astana
+          K.E.R.N School · Astana · FTC
         </p>
-        <h1 className="mt-5 max-w-xl text-[3.4rem] font-semibold leading-[0.86] tracking-[-0.055em] sm:text-7xl lg:text-[5.4rem]">
-          K.E.R.N
-          <span className="mt-2 block font-normal italic text-gold-soft">Scrimmage</span>
+        <h1 className="mt-5 max-w-2xl text-[2.7rem] font-semibold leading-[0.88] tracking-[-0.05em] sm:text-6xl lg:text-[5rem]">
+          K.E.R.N:
+          <span className="mt-1 block font-normal italic text-gold-soft [font-family:var(--font-buzz),Georgia,serif]">
+            NoRegrets
+          </span>
+          <span className="mt-1 block">Scrimmage</span>
         </h1>
         <div className="mt-6 h-px w-24 bg-gold" />
         <p className="mt-6 max-w-md text-[17px] leading-8 text-white/82">

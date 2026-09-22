@@ -16,15 +16,15 @@ const buzz = Instrument_Serif({
   display: "swap",
 });
 
-const title = "K.E.R.N Scrimmage — 24 сентября 2026 · 18:00";
+const title = "K.E.R.N: NoRegrets Scrimmage — 24 сентября 2026 · 18:00";
 const description =
-  "Регистрация школьных FTC-команд на K.E.R.N Scrimmage в Астане. 24 сентября 2026, начало в 18:00. Сезон BIOBUZZ 2026–2027.";
+  "Регистрация школьных FTC-команд на K.E.R.N: NoRegrets Scrimmage в Астане. 24 сентября 2026, начало в 18:00. Сезон BIOBUZZ 2026–2027.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
   title,
   description,
-  applicationName: "K.E.R.N Scrimmage",
+  applicationName: "K.E.R.N: NoRegrets Scrimmage",
   keywords: [
     "FTC",
     "BIOBUZZ",
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     description,
     type: "website",
     locale: "ru_KZ",
-    siteName: "K.E.R.N Scrimmage",
+    siteName: "K.E.R.N: NoRegrets Scrimmage",
     url: "/",
   },
   twitter: {

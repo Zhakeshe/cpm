@@ -10,7 +10,7 @@ export function About() {
             <span className="mt-1 block italic text-gold">не турнир FIRST</span>
           </h2>
           <p className="max-w-xl text-[17px] leading-8 text-ink/75">
-            {EVENT.dateLabel}, начало в {EVENT.timeLabel}. K.E.R.N Scrimmage —
+            {EVENT.dateLabel}, начало в {EVENT.timeLabel}. {EVENT.name} —
             практические матчи для школьных FTC-команд: выезд на поле, прогон робота,
             разбор. Qualifier это не заменяет, зато можно спокойно найти, где ломается
             программа и механика.

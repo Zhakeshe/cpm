@@ -66,7 +66,7 @@ export default function AdminPage() {
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
           <div>
             <p className="text-xs uppercase tracking-[0.18em] text-gold">K.E.R.N School</p>
-            <h1 className="text-xl font-semibold text-navy">Заявки FTC Scrimmage</h1>
+            <h1 className="text-xl font-semibold text-navy">Заявки NoRegrets Scrimmage</h1>
           </div>
           <div className="flex gap-2">
             <a
