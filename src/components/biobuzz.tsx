@@ -1,36 +1,34 @@
 export function Biobuzz() {
   return (
     <section id="biobuzz" className="honeycomb text-buzz-cream">
-      <div className="mx-auto grid max-w-6xl gap-12 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-        <div>
-          <p className="text-sm tracking-wide text-buzz-amber">2026–2027 · FIRST Tech Challenge</p>
-          <h2 className="mt-3 text-5xl leading-none text-buzz-pollen sm:text-7xl [font-family:var(--font-buzz),Georgia,serif]">
-            BIOBUZZ
-          </h2>
-          <p className="mt-2 text-lg text-buzz-amber">presented by RTX</p>
-          <p className="mt-6 max-w-xl text-[16px] leading-8 text-buzz-cream/85">
-            Сезон про природу и инженерию: альянсы набирают POLLEN и NECTAR,
-            загружают HIVE, пока конструкция не опрокинется, и в конце матча
-            кладут элементы в FLOWERS по периметру поля.
-          </p>
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
+        <p className="text-sm text-buzz-amber">Сезон FTC 2026–2027</p>
+        <h2 className="mt-3 text-6xl leading-none text-buzz-pollen sm:text-8xl [font-family:var(--font-buzz),Georgia,serif]">
+          BIOBUZZ
+        </h2>
+        <p className="mt-2 text-buzz-amber">presented by RTX</p>
+        <p className="mt-8 max-w-2xl text-[17px] leading-8 text-buzz-cream/85">
+          Альянсы собирают POLLEN и NECTAR, загружают HIVE, пока он не опрокинется,
+          и в конце матча кладут элементы в FLOWERS. На scrimmage можно отладить
+          робота именно под это поле.
+        </p>
+        <div className="mt-12 grid gap-4 sm:grid-cols-3">
+          {[
+            ["POLLEN", "Жёлтые нейтральные элементы. Легче — их больше на тайлах."],
+            ["NECTAR", "Красные и синие, крупнее и тяжелее. Ими HIVE валится быстрее."],
+            ["HIVE", "Бистабильный улей альянса плюс четыре FLOWERS на стенках поля."],
+          ].map(([title, text]) => (
+            <article
+              key={title}
+              className="border border-buzz-amber/25 bg-black/20 px-5 py-6"
+            >
+              <h3 className="text-lg text-buzz-pollen [font-family:var(--font-buzz),Georgia,serif]">
+                {title}
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-buzz-cream/70">{text}</p>
+            </article>
+          ))}
         </div>
-        <ul className="space-y-5 border-l border-buzz-amber/40 pl-6 text-sm leading-6">
-          <li>
-            <span className="font-semibold text-buzz-pollen">POLLEN</span>
-            <p className="mt-1 text-buzz-cream/75">Нейтральные жёлтые элементы. Легче, их больше на поле.</p>
-          </li>
-          <li>
-            <span className="font-semibold text-buzz-pollen">NECTAR</span>
-            <p className="mt-1 text-buzz-cream/75">Красные и синие, крупнее и тяжелее — HIVE опрокидывается быстрее.</p>
-          </li>
-          <li>
-            <span className="font-semibold text-buzz-pollen">HIVE / FLOWERS</span>
-            <p className="mt-1 text-buzz-cream/75">
-              Центральные ульи альянсов и четыре цветка на стенках поля. На scrimmage
-              можно спокойно отладить intake, shooter и зрение.
-            </p>
-          </li>
-        </ul>
       </div>
     </section>
   );

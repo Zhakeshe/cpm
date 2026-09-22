@@ -45,8 +45,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { confirm, ...payload } = parsed.data;
-  void confirm;
+  const payload = parsed.data;
 
   const fingerprint = fingerprintOf(payload);
   const lastSeen = recentFingerprints.get(fingerprint);
@@ -84,9 +83,9 @@ export async function POST(request: Request) {
         email: payload.email || null,
         memberCount: payload.memberCount,
         ftcExperience: "unspecified",
-        robotStatus: payload.robotStatus,
-        testingAreas: payload.testingAreas,
-        comment: payload.comment || null,
+        robotStatus: "unspecified",
+        testingAreas: [],
+        comment: null,
         fingerprint,
       },
       select: { id: true },

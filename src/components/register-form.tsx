@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle2, LoaderCircle } from "lucide-react";
 import Link from "next/link";
-import { MEMBER_COUNTS, ROBOT_STATUS, TESTING_AREAS } from "@/lib/constants";
+import { MEMBER_COUNTS } from "@/lib/constants";
 import {
   formatPhoneMask,
   registrationSchema,
@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import type { ScoutTeam } from "@/lib/scout";
 
 const fieldClass =
-  "mt-1.5 w-full border border-line bg-white px-3 py-2.5 text-sm text-ink focus:border-navy focus:outline-none focus:ring-2 focus:ring-gold/40";
+  "mt-2 w-full rounded-xl border border-line bg-white px-3.5 py-3 text-sm text-ink outline-none transition focus:border-navy focus:ring-2 focus:ring-gold/35";
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
@@ -47,14 +47,9 @@ export function RegisterForm() {
       phone: "+7 ",
       email: "",
       memberCount: undefined,
-      robotStatus: undefined,
-      testingAreas: [],
-      comment: "",
-      confirm: false,
     },
   });
 
-  const comment = watch("comment") ?? "";
   const teamNumber = watch("teamNumber") ?? "";
 
   useEffect(() => {
@@ -105,7 +100,7 @@ export function RegisterForm() {
     }
     setQuery(`${team.number} · ${team.name}`);
     setMatches([]);
-    setScoutNote("Данные подставлены из FTCScout. Проверьте школу, если она указана неверно.");
+    setScoutNote("Карточка из FTCScout. Школу проверьте, если она указана неверно.");
   }
 
   async function onSubmit(values: RegistrationInput) {
@@ -127,15 +122,15 @@ export function RegisterForm() {
 
   if (success) {
     return (
-      <div className="border border-navy/10 bg-white px-6 py-12 text-center sm:px-10">
-        <CheckCircle2 className="mx-auto text-navy" size={36} />
+      <div className="rounded-2xl bg-white px-6 py-12 text-center shadow-[0_20px_60px_rgba(6,45,89,0.08)] sm:px-10">
+        <CheckCircle2 className="mx-auto text-gold" size={36} />
         <h3 className="mt-4 text-2xl font-semibold text-navy">Заявка отправлена</h3>
-        <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-muted">
-          Напишем капитану в WhatsApp, когда подтвердим участие и пришлём детали дня.
+        <p className="mx-auto mt-4 max-w-md text-sm leading-7 text-muted">
+          Напишем капитану в WhatsApp, когда подтвердим участие.
         </p>
         <Link
           href="/"
-          className="mt-8 inline-flex bg-navy px-5 py-3 text-sm font-semibold text-white"
+          className="mt-8 inline-flex rounded-full bg-navy px-5 py-3 text-sm font-semibold text-white"
           onClick={() => {
             sessionStorage.removeItem("kern-registered");
             window.history.replaceState({}, "", "/");
@@ -149,26 +144,30 @@ export function RegisterForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="border border-navy/10 bg-white p-5 sm:p-8" noValidate>
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="rounded-2xl bg-white p-5 shadow-[0_20px_60px_rgba(6,45,89,0.08)] sm:p-8"
+      noValidate
+    >
       <div ref={boxRef} className="relative">
         <label className="block text-sm font-medium text-navy">
-          Найти команду в FTCScout
+          Найти в FTCScout
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             className={fieldClass}
-            placeholder="Номер или название, например 11115 или Gluten Free"
+            placeholder="Номер или название, например 11115"
             autoComplete="off"
           />
         </label>
-        {looking ? <p className="mt-1.5 text-xs text-muted">Ищем в FTCScout…</p> : null}
+        {looking ? <p className="mt-1.5 text-xs text-muted">Ищем…</p> : null}
         {matches.length > 0 ? (
-          <ul className="absolute z-20 mt-1 max-h-56 w-full overflow-auto border border-navy/15 bg-white shadow-sm">
+          <ul className="absolute z-20 mt-2 max-h-56 w-full overflow-auto rounded-xl border border-navy/10 bg-white shadow-lg">
             {matches.map((team) => (
               <li key={team.number}>
                 <button
                   type="button"
-                  className="flex w-full flex-col items-start px-3 py-2.5 text-left text-sm hover:bg-[#f4f1ea]"
+                  className="flex w-full flex-col items-start px-3.5 py-2.5 text-left text-sm hover:bg-paper"
                   onClick={() => pickTeam(team)}
                 >
                   <span className="font-medium text-navy">
@@ -191,7 +190,7 @@ export function RegisterForm() {
           <input
             {...register("teamNumber")}
             className={fieldClass}
-            placeholder="необязательно, если команды ещё нет в FIRST"
+            placeholder="если ещё нет — оставьте пустым"
             value={teamNumber}
             onChange={(event) => {
               const value = event.target.value;
@@ -201,25 +200,21 @@ export function RegisterForm() {
           />
           <FieldError message={errors.teamNumber?.message} />
         </label>
-
         <label className="block text-sm font-medium text-navy">
           Название команды
           <input {...register("teamName")} className={fieldClass} placeholder="KERN Robotics" />
           <FieldError message={errors.teamName?.message} />
         </label>
-
         <label className="block text-sm font-medium text-navy sm:col-span-2">
           Школа
           <input {...register("school")} className={fieldClass} />
           <FieldError message={errors.school?.message} />
         </label>
-
         <label className="block text-sm font-medium text-navy">
-          Имя и фамилия капитана
+          Капитан
           <input {...register("captainName")} className={fieldClass} />
           <FieldError message={errors.captainName?.message} />
         </label>
-
         <label className="block text-sm font-medium text-navy">
           WhatsApp
           <input
@@ -236,18 +231,16 @@ export function RegisterForm() {
           />
           <FieldError message={errors.phone?.message} />
         </label>
-
         <label className="block text-sm font-medium text-navy">
-          Email капитана
+          Email
           <input {...register("email")} className={fieldClass} type="email" placeholder="необязательно" />
           <FieldError message={errors.email?.message} />
         </label>
-
         <label className="block text-sm font-medium text-navy">
           Участников
           <select {...register("memberCount")} className={fieldClass} defaultValue="">
             <option value="" disabled>
-              Только 4 или 5
+              4 или 5
             </option>
             {MEMBER_COUNTS.map((count) => (
               <option key={count} value={count}>
@@ -259,51 +252,12 @@ export function RegisterForm() {
         </label>
       </div>
 
-      <fieldset className="mt-6">
-        <legend className="text-sm font-medium text-navy">Робот готов?</legend>
-        <div className="mt-3 flex flex-wrap gap-4 text-sm">
-          {ROBOT_STATUS.map((item) => (
-            <label key={item.value} className="inline-flex items-center gap-2">
-              <input type="radio" value={item.value} {...register("robotStatus")} className="accent-navy" />
-              {item.label}
-            </label>
-          ))}
-        </div>
-        <FieldError message={errors.robotStatus?.message} />
-      </fieldset>
-
-      <fieldset className="mt-6">
-        <legend className="text-sm font-medium text-navy">Что хотите прогнать</legend>
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          {TESTING_AREAS.map((item) => (
-            <label key={item.value} className="inline-flex items-center gap-2 text-sm">
-              <input type="checkbox" value={item.value} {...register("testingAreas")} className="accent-navy" />
-              {item.label}
-            </label>
-          ))}
-        </div>
-        <FieldError message={errors.testingAreas?.message} />
-      </fieldset>
-
-      <label className="mt-6 block text-sm font-medium text-navy">
-        Комментарий
-        <textarea {...register("comment")} rows={4} maxLength={500} className={cn(fieldClass, "resize-y")} />
-        <span className="mt-1 block text-xs text-muted">{comment.length}/500</span>
-        <FieldError message={errors.comment?.message} />
-      </label>
-
-      <label className="mt-6 flex items-start gap-3 text-sm text-navy">
-        <input type="checkbox" {...register("confirm")} className="mt-0.5 accent-navy" />
-        <span>Данные верные, можно писать капитану.</span>
-      </label>
-      <FieldError message={errors.confirm?.message} />
-
       {serverError ? <p className="mt-4 text-sm text-red-700">{serverError}</p> : null}
 
       <button
         type="submit"
         disabled={isSubmitting}
-        className="mt-8 inline-flex items-center gap-2 bg-navy px-5 py-3.5 text-sm font-semibold text-white disabled:opacity-60"
+        className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full bg-navy px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-navy-mid disabled:opacity-60 sm:w-auto"
       >
         {isSubmitting ? <LoaderCircle className="animate-spin" size={16} /> : null}
         {isSubmitting ? "Отправка..." : "Отправить заявку"}

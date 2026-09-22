@@ -2,22 +2,21 @@
 
 :root {
   --navy: #062d59;
-  --navy-deep: #041e3c;
+  --navy-deep: #03172e;
   --navy-mid: #0b417a;
   --gold: #c89b4a;
   --gold-soft: #e3c27a;
-  --paper: #f4f1ea;
+  --paper: #f6f3ec;
   --mist: #d8e3f0;
-  --ink: #0e1b2b;
-  --muted: #5b6b80;
-  --line: #c9d6e6;
-  --background: #f4f1ea;
-  --foreground: #0e1b2b;
-  --buzz-dark: #1b140a;
+  --ink: #122033;
+  --muted: #5c6b7e;
+  --line: #d5deea;
+  --background: #f6f3ec;
+  --foreground: #122033;
+  --buzz-dark: #171109;
   --buzz-amber: #e3b341;
-  --buzz-pollen: #f3d56b;
-  --buzz-leaf: #3f5c38;
-  --buzz-cream: #f6edd6;
+  --buzz-pollen: #f4d36a;
+  --buzz-cream: #f7eed8;
 }
 
 @theme inline {
@@ -36,7 +35,6 @@
   --color-buzz-dark: var(--buzz-dark);
   --color-buzz-amber: var(--buzz-amber);
   --color-buzz-pollen: var(--buzz-pollen);
-  --color-buzz-leaf: var(--buzz-leaf);
   --color-buzz-cream: var(--buzz-cream);
   --font-sans: var(--font-manrope);
 }
@@ -46,7 +44,7 @@ html {
 }
 
 section[id] {
-  scroll-margin-top: 84px;
+  scroll-margin-top: 88px;
 }
 
 body {
@@ -66,9 +64,6 @@ body {
 }
 
 .honeycomb {
-  background-color: #1b140a;
-  background-image:
-    radial-gradient(circle at 12px 12px, rgba(227, 179, 65, 0.16) 7px, transparent 8px),
-    radial-gradient(circle at 36px 32px, rgba(243, 213, 107, 0.1) 6px, transparent 7px);
-  background-size: 48px 40px;
+  background-color: #171109;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='98' viewBox='0 0 56 98'%3E%3Cpath fill='none' stroke='%23e3b341' stroke-opacity='0.18' stroke-width='1' d='M28 2l24 14v28L28 58 4 44V16z'/%3E%3Cpath fill='none' stroke='%23e3b341' stroke-opacity='0.12' stroke-width='1' d='M28 51l24 14v28L28 107 4 93V65z'/%3E%3C/svg%3E");
 }

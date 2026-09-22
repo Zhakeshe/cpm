@@ -1,16 +1,7 @@
 import { z } from "zod";
-import { MEMBER_COUNTS, ROBOT_STATUS, TESTING_AREAS } from "./constants";
+import { MEMBER_COUNTS } from "./constants";
 
 export const PHONE_REGEX = /^\+7 \d{3} \d{3} \d{2} \d{2}$/;
-
-const robotValues = ROBOT_STATUS.map((item) => item.value) as [
-  string,
-  ...string[],
-];
-const testingValues = TESTING_AREAS.map((item) => item.value) as [
-  string,
-  ...string[],
-];
 
 export const registrationSchema = z.object({
   teamName: z
@@ -18,11 +9,7 @@ export const registrationSchema = z.object({
     .trim()
     .min(2, "Укажите название команды")
     .max(80, "Слишком длинное название"),
-  teamNumber: z
-    .string()
-    .trim()
-    .max(20, "Слишком длинный номер")
-    .optional(),
+  teamNumber: z.string().trim().max(20, "Слишком длинный номер").optional(),
   school: z
     .string({ required_error: "Укажите название школы" })
     .trim()
@@ -48,18 +35,6 @@ export const registrationSchema = z.object({
     .number({ invalid_type_error: "Выберите количество участников" })
     .refine((value) => MEMBER_COUNTS.includes(value as 4 | 5), {
       message: "Команда должна состоять из 4 или 5 участников",
-    }),
-  robotStatus: z.enum(robotValues, {
-    required_error: "Укажите статус робота",
-  }),
-  testingAreas: z
-    .array(z.enum(testingValues), { required_error: "Выберите хотя бы один пункт" })
-    .min(1, "Выберите хотя бы один пункт"),
-  comment: z.string().trim().max(500, "Комментарий не длиннее 500 символов").optional(),
-  confirm: z
-    .boolean({ required_error: "Подтвердите корректность данных" })
-    .refine((value) => value === true, {
-      message: "Подтвердите корректность данных",
     }),
 });
 

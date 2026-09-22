@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Download, LogOut, Search, X } from "lucide-react";
-import { robotStatusLabel, testingAreaLabel } from "@/lib/constants";
 
 type Registration = {
   id: string;
@@ -14,9 +13,6 @@ type Registration = {
   phone: string;
   email: string | null;
   memberCount: number;
-  robotStatus: string;
-  testingAreas: string[];
-  comment: string | null;
   createdAt: string;
 };
 
@@ -133,14 +129,13 @@ export default function AdminPage() {
                 <th className="px-3 py-3">Captain</th>
                 <th className="px-3 py-3">Phone</th>
                 <th className="px-3 py-3">Members</th>
-                <th className="px-3 py-3">Robot status</th>
                 <th className="px-3 py-3">Date</th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-3 py-10 text-center text-muted">
+                  <td colSpan={7} className="px-3 py-10 text-center text-muted">
                     Заявок пока нет
                   </td>
                 </tr>
@@ -157,7 +152,6 @@ export default function AdminPage() {
                     <td className="px-3 py-3">{row.captainName}</td>
                     <td className="px-3 py-3 whitespace-nowrap">{row.phone}</td>
                     <td className="px-3 py-3">{row.memberCount}</td>
-                    <td className="px-3 py-3">{robotStatusLabel(row.robotStatus)}</td>
                     <td className="px-3 py-3 whitespace-nowrap">
                       {new Date(row.createdAt).toLocaleString("ru-KZ")}
                     </td>
@@ -193,12 +187,6 @@ export default function AdminPage() {
               <Row label="WhatsApp" value={selected.phone} />
               <Row label="Email" value={selected.email || "—"} />
               <Row label="Участники" value={String(selected.memberCount)} />
-              <Row label="Робот" value={robotStatusLabel(selected.robotStatus)} />
-              <Row
-                label="Тестирование"
-                value={selected.testingAreas.map(testingAreaLabel).join(", ")}
-              />
-              <Row label="Комментарий" value={selected.comment || "—"} />
               <Row
                 label="Дата"
                 value={new Date(selected.createdAt).toLocaleString("ru-KZ")}

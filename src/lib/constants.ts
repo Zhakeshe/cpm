@@ -1,10 +1,8 @@
 export const NAV_LINKS = [
   { href: "#about", label: "О мероприятии" },
   { href: "#biobuzz", label: "BIOBUZZ" },
-  { href: "#format", label: "Формат" },
   { href: "#venue", label: "Адрес" },
   { href: "#register", label: "Регистрация" },
-  { href: "#faq", label: "FAQ" },
 ] as const;
 
 export const ROBOT_STATUS = [
