@@ -1,47 +1,32 @@
-import { Bot, Gamepad2, MessagesSquare, Trophy } from "lucide-react";
-
 const cards = [
   {
-    icon: Trophy,
     title: "Реальные матчи",
-    text: "Проверка робота в условиях, приближенных к официальным FTC-матчам.",
+    text: "Короткий цикл: выезд на поле, Autonomous, TeleOp, замечания, снова очередь.",
   },
   {
-    icon: Bot,
     title: "Autonomous",
-    text: "Возможность протестировать Autonomous и стабильность программы.",
+    text: "Прогон траекторий и стабильности без сюрпризов официального inspection.",
   },
   {
-    icon: Gamepad2,
     title: "TeleOp",
-    text: "Проверка управления, механизмов и стратегии команды.",
+    text: "Intake, scoring, drive и связь драйверов — всё, что ломается только в матче.",
   },
   {
-    icon: MessagesSquare,
-    title: "FTC Community",
-    text: "Общение и обмен опытом с другими FTC-командами.",
+    title: "Другие команды",
+    text: "Можно посмотреть чужие решения по BIOBUZZ и спокойно задать вопросы.",
   },
 ];
 
 export function Why() {
   return (
-    <section className="bg-paper">
-      <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold">
-          Преимущества
-        </p>
-        <h2 className="mt-3 text-3xl font-semibold text-navy sm:text-4xl">
-          Почему стоит участвовать
-        </h2>
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <section className="border-y border-navy/10 bg-white">
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+        <h2 className="text-2xl font-semibold text-navy">Зачем приезжать</h2>
+        <div className="mt-8 grid gap-x-12 gap-y-8 sm:grid-cols-2">
           {cards.map((card) => (
-            <article
-              key={card.title}
-              className="border border-mist bg-white p-6 transition duration-200 hover:-translate-y-0.5 hover:border-navy/20 hover:shadow-[0_12px_40px_rgba(6,45,89,0.08)]"
-            >
-              <card.icon className="text-navy" size={22} />
-              <h3 className="mt-4 text-lg font-semibold text-navy">{card.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-muted">{card.text}</p>
+            <article key={card.title} className="max-w-md">
+              <h3 className="text-lg font-semibold text-navy">{card.title}</h3>
+              <p className="mt-2 text-[15px] leading-7 text-muted">{card.text}</p>
             </article>
           ))}
         </div>

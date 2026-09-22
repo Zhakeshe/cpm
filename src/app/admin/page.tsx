@@ -3,24 +3,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Download, LogOut, Search, X } from "lucide-react";
-import {
-  experienceLabel,
-  FTC_EXPERIENCE,
-  robotStatusLabel,
-  testingAreaLabel,
-} from "@/lib/constants";
+import { robotStatusLabel, testingAreaLabel } from "@/lib/constants";
 
 type Registration = {
   id: string;
   teamName: string;
   teamNumber: string | null;
   school: string;
-  city: string;
   captainName: string;
   phone: string;
   email: string | null;
   memberCount: number;
-  ftcExperience: string;
   robotStatus: string;
   testingAreas: string[];
   comment: string | null;
@@ -33,7 +26,6 @@ export default function AdminPage() {
   const [schools, setSchools] = useState<string[]>([]);
   const [q, setQ] = useState("");
   const [school, setSchool] = useState("");
-  const [experience, setExperience] = useState("");
   const [sort, setSort] = useState<"desc" | "asc">("desc");
   const [selected, setSelected] = useState<Registration | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -42,10 +34,9 @@ export default function AdminPage() {
     const params = new URLSearchParams();
     if (q) params.set("q", q);
     if (school) params.set("school", school);
-    if (experience) params.set("experience", experience);
     params.set("sort", sort);
     return params.toString();
-  }, [q, school, experience, sort]);
+  }, [q, school, sort]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -99,7 +90,7 @@ export default function AdminPage() {
       </header>
 
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-        <div className="grid gap-3 md:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-3">
           <label className="relative md:col-span-2">
             <Search size={16} className="absolute left-3 top-3 text-muted" />
             <input
@@ -118,18 +109,6 @@ export default function AdminPage() {
             {schools.map((name) => (
               <option key={name} value={name}>
                 {name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={experience}
-            onChange={(event) => setExperience(event.target.value)}
-            className="rounded-sm border border-line bg-white px-3 py-2.5 text-sm"
-          >
-            <option value="">Весь опыт</option>
-            {FTC_EXPERIENCE.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
               </option>
             ))}
           </select>
@@ -154,7 +133,6 @@ export default function AdminPage() {
                 <th className="px-3 py-3">Captain</th>
                 <th className="px-3 py-3">Phone</th>
                 <th className="px-3 py-3">Members</th>
-                <th className="px-3 py-3">Experience</th>
                 <th className="px-3 py-3">Robot status</th>
                 <th className="px-3 py-3">Date</th>
               </tr>
@@ -162,7 +140,7 @@ export default function AdminPage() {
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-3 py-10 text-center text-muted">
+                  <td colSpan={8} className="px-3 py-10 text-center text-muted">
                     Заявок пока нет
                   </td>
                 </tr>
@@ -179,7 +157,6 @@ export default function AdminPage() {
                     <td className="px-3 py-3">{row.captainName}</td>
                     <td className="px-3 py-3 whitespace-nowrap">{row.phone}</td>
                     <td className="px-3 py-3">{row.memberCount}</td>
-                    <td className="px-3 py-3">{experienceLabel(row.ftcExperience)}</td>
                     <td className="px-3 py-3">{robotStatusLabel(row.robotStatus)}</td>
                     <td className="px-3 py-3 whitespace-nowrap">
                       {new Date(row.createdAt).toLocaleString("ru-KZ")}
@@ -212,12 +189,10 @@ export default function AdminPage() {
             <dl className="mt-6 space-y-3 text-sm">
               <Row label="FTC Number" value={selected.teamNumber || "—"} />
               <Row label="Школа" value={selected.school} />
-              <Row label="Город" value={selected.city} />
               <Row label="Капитан" value={selected.captainName} />
               <Row label="WhatsApp" value={selected.phone} />
               <Row label="Email" value={selected.email || "—"} />
               <Row label="Участники" value={String(selected.memberCount)} />
-              <Row label="Опыт" value={experienceLabel(selected.ftcExperience)} />
               <Row label="Робот" value={robotStatusLabel(selected.robotStatus)} />
               <Row
                 label="Тестирование"

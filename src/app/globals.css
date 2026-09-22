@@ -6,13 +6,18 @@
   --navy-mid: #0b417a;
   --gold: #c89b4a;
   --gold-soft: #e3c27a;
-  --paper: #f5f8fc;
+  --paper: #f4f1ea;
   --mist: #d8e3f0;
   --ink: #0e1b2b;
   --muted: #5b6b80;
   --line: #c9d6e6;
-  --background: #f5f8fc;
+  --background: #f4f1ea;
   --foreground: #0e1b2b;
+  --buzz-dark: #1b140a;
+  --buzz-amber: #e3b341;
+  --buzz-pollen: #f3d56b;
+  --buzz-leaf: #3f5c38;
+  --buzz-cream: #f6edd6;
 }
 
 @theme inline {
@@ -28,6 +33,11 @@
   --color-line: var(--line);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-buzz-dark: var(--buzz-dark);
+  --color-buzz-amber: var(--buzz-amber);
+  --color-buzz-pollen: var(--buzz-pollen);
+  --color-buzz-leaf: var(--buzz-leaf);
+  --color-buzz-cream: var(--buzz-cream);
   --font-sans: var(--font-manrope);
 }
 
@@ -36,7 +46,7 @@ html {
 }
 
 section[id] {
-  scroll-margin-top: 88px;
+  scroll-margin-top: 84px;
 }
 
 body {
@@ -55,14 +65,10 @@ body {
   outline-offset: 3px;
 }
 
-.blueprint-grid {
+.honeycomb {
+  background-color: #1b140a;
   background-image:
-    linear-gradient(to right, rgba(216, 227, 240, 0.18) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(216, 227, 240, 0.18) 1px, transparent 1px);
-  background-size: 36px 36px;
-}
-
-.gold-rule {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    radial-gradient(circle at 12px 12px, rgba(227, 179, 65, 0.16) 7px, transparent 8px),
+    radial-gradient(circle at 36px 32px, rgba(243, 213, 107, 0.1) 6px, transparent 7px);
+  background-size: 48px 40px;
 }

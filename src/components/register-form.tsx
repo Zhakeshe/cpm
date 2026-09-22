@@ -1,26 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { motion } from "framer-motion";
 import { CheckCircle2, LoaderCircle } from "lucide-react";
 import Link from "next/link";
-import {
-  FTC_EXPERIENCE,
-  MEMBER_COUNTS,
-  ROBOT_STATUS,
-  TESTING_AREAS,
-} from "@/lib/constants";
+import { MEMBER_COUNTS, ROBOT_STATUS, TESTING_AREAS } from "@/lib/constants";
 import {
   formatPhoneMask,
   registrationSchema,
   type RegistrationInput,
 } from "@/lib/validation";
 import { cn } from "@/lib/utils";
+import type { ScoutTeam } from "@/lib/scout";
 
 const fieldClass =
-  "mt-1.5 w-full rounded-sm border border-line bg-white px-3 py-2.5 text-sm text-ink transition hover:border-navy/30 focus:border-navy focus:outline-none focus:ring-2 focus:ring-gold/40";
+  "mt-1.5 w-full border border-line bg-white px-3 py-2.5 text-sm text-ink focus:border-navy focus:outline-none focus:ring-2 focus:ring-gold/40";
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
@@ -30,6 +25,11 @@ function FieldError({ message }: { message?: string }) {
 export function RegisterForm() {
   const [success, setSuccess] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [matches, setMatches] = useState<ScoutTeam[]>([]);
+  const [looking, setLooking] = useState(false);
+  const [scoutNote, setScoutNote] = useState<string | null>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
 
   const {
     register,
@@ -43,12 +43,10 @@ export function RegisterForm() {
       teamName: "",
       teamNumber: "",
       school: "",
-      city: "Астана",
       captainName: "",
       phone: "+7 ",
       email: "",
       memberCount: undefined,
-      ftcExperience: undefined,
       robotStatus: undefined,
       testingAreas: [],
       comment: "",
@@ -57,6 +55,7 @@ export function RegisterForm() {
   });
 
   const comment = watch("comment") ?? "";
+  const teamNumber = watch("teamNumber") ?? "";
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -65,6 +64,49 @@ export function RegisterForm() {
       setSuccess(true);
     }
   }, []);
+
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) {
+      setMatches([]);
+      setLooking(false);
+      return;
+    }
+    const handle = window.setTimeout(async () => {
+      setLooking(true);
+      try {
+        const response = await fetch(`/api/teams/lookup?q=${encodeURIComponent(q)}`);
+        const data = (await response.json()) as { teams?: ScoutTeam[] };
+        setMatches(data.teams ?? []);
+      } catch {
+        setMatches([]);
+      } finally {
+        setLooking(false);
+      }
+    }, 280);
+    return () => window.clearTimeout(handle);
+  }, [query]);
+
+  useEffect(() => {
+    function onDoc(event: MouseEvent) {
+      if (!boxRef.current?.contains(event.target as Node)) {
+        setMatches([]);
+      }
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
+  function pickTeam(team: ScoutTeam) {
+    setValue("teamNumber", String(team.number), { shouldValidate: true });
+    setValue("teamName", team.name, { shouldValidate: true });
+    if (team.schoolName && team.schoolName !== "Unknown") {
+      setValue("school", team.schoolName, { shouldValidate: true });
+    }
+    setQuery(`${team.number} · ${team.name}`);
+    setMatches([]);
+    setScoutNote("Данные подставлены из FTCScout. Проверьте школу, если она указана неверно.");
+  }
 
   async function onSubmit(values: RegistrationInput) {
     setServerError(null);
@@ -85,70 +127,91 @@ export function RegisterForm() {
 
   if (success) {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="border border-mist bg-white px-6 py-12 text-center sm:px-10"
-      >
-        <CheckCircle2 className="mx-auto text-gold" size={40} />
-        <h3 className="mt-4 text-2xl font-semibold text-navy">Заявка отправлена!</h3>
+      <div className="border border-navy/10 bg-white px-6 py-12 text-center sm:px-10">
+        <CheckCircle2 className="mx-auto text-navy" size={36} />
+        <h3 className="mt-4 text-2xl font-semibold text-navy">Заявка отправлена</h3>
         <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-muted">
-          Спасибо за регистрацию на K.E.R.N FTC Scrimmage.
-          Организаторы свяжутся с капитаном команды через WhatsApp
-          для подтверждения участия и отправки дальнейшей информации.
+          Напишем капитану в WhatsApp, когда подтвердим участие и пришлём детали дня.
         </p>
         <Link
           href="/"
-          className="mt-8 inline-flex rounded-sm bg-navy px-5 py-3 text-sm font-semibold text-white transition hover:bg-navy-mid"
+          className="mt-8 inline-flex bg-navy px-5 py-3 text-sm font-semibold text-white"
           onClick={() => {
             sessionStorage.removeItem("kern-registered");
             window.history.replaceState({}, "", "/");
             setSuccess(false);
           }}
         >
-          Вернуться на главную
+          На главную
         </Link>
-      </motion.div>
+      </div>
     );
   }
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      className="border border-mist bg-white p-5 sm:p-8"
-      noValidate
-    >
-      <div className="grid gap-5 sm:grid-cols-2">
+    <form onSubmit={handleSubmit(onSubmit)} className="border border-navy/10 bg-white p-5 sm:p-8" noValidate>
+      <div ref={boxRef} className="relative">
         <label className="block text-sm font-medium text-navy">
-          Название команды
+          Найти команду в FTCScout
           <input
-            {...register("teamName")}
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
             className={fieldClass}
-            placeholder="KERN Robotics"
+            placeholder="Номер или название, например 11115 или Gluten Free"
+            autoComplete="off"
           />
-          <FieldError message={errors.teamName?.message} />
         </label>
+        {looking ? <p className="mt-1.5 text-xs text-muted">Ищем в FTCScout…</p> : null}
+        {matches.length > 0 ? (
+          <ul className="absolute z-20 mt-1 max-h-56 w-full overflow-auto border border-navy/15 bg-white shadow-sm">
+            {matches.map((team) => (
+              <li key={team.number}>
+                <button
+                  type="button"
+                  className="flex w-full flex-col items-start px-3 py-2.5 text-left text-sm hover:bg-[#f4f1ea]"
+                  onClick={() => pickTeam(team)}
+                >
+                  <span className="font-medium text-navy">
+                    {team.number} · {team.name}
+                  </span>
+                  <span className="text-xs text-muted">
+                    {[team.schoolName, team.city, team.country].filter(Boolean).join(" · ")}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {scoutNote ? <p className="mt-1.5 text-xs text-muted">{scoutNote}</p> : null}
+      </div>
 
+      <div className="mt-5 grid gap-5 sm:grid-cols-2">
         <label className="block text-sm font-medium text-navy">
-          FTC Team Number
+          Номер FTC
           <input
             {...register("teamNumber")}
             className={fieldClass}
-            placeholder="Например, 12345"
+            placeholder="необязательно, если команды ещё нет в FIRST"
+            value={teamNumber}
+            onChange={(event) => {
+              const value = event.target.value;
+              setValue("teamNumber", value, { shouldValidate: true });
+              setQuery(value);
+            }}
           />
           <FieldError message={errors.teamNumber?.message} />
         </label>
 
         <label className="block text-sm font-medium text-navy">
-          Название школы
-          <input {...register("school")} className={fieldClass} />
-          <FieldError message={errors.school?.message} />
+          Название команды
+          <input {...register("teamName")} className={fieldClass} placeholder="KERN Robotics" />
+          <FieldError message={errors.teamName?.message} />
         </label>
 
-        <label className="block text-sm font-medium text-navy">
-          Город
-          <input {...register("city")} className={fieldClass} />
-          <FieldError message={errors.city?.message} />
+        <label className="block text-sm font-medium text-navy sm:col-span-2">
+          Школа
+          <input {...register("school")} className={fieldClass} />
+          <FieldError message={errors.school?.message} />
         </label>
 
         <label className="block text-sm font-medium text-navy">
@@ -158,7 +221,7 @@ export function RegisterForm() {
         </label>
 
         <label className="block text-sm font-medium text-navy">
-          WhatsApp номер
+          WhatsApp
           <input
             className={cn(fieldClass, "tracking-wide")}
             inputMode="tel"
@@ -176,20 +239,15 @@ export function RegisterForm() {
 
         <label className="block text-sm font-medium text-navy">
           Email капитана
-          <input
-            {...register("email")}
-            className={fieldClass}
-            type="email"
-            placeholder="необязательно"
-          />
+          <input {...register("email")} className={fieldClass} type="email" placeholder="необязательно" />
           <FieldError message={errors.email?.message} />
         </label>
 
         <label className="block text-sm font-medium text-navy">
-          Количество участников
+          Участников
           <select {...register("memberCount")} className={fieldClass} defaultValue="">
             <option value="" disabled>
-              Выберите
+              Только 4 или 5
             </option>
             {MEMBER_COUNTS.map((count) => (
               <option key={count} value={count}>
@@ -202,40 +260,11 @@ export function RegisterForm() {
       </div>
 
       <fieldset className="mt-6">
-        <legend className="text-sm font-medium text-navy">Опыт команды в FTC</legend>
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          {FTC_EXPERIENCE.map((item) => (
-            <label
-              key={item.value}
-              className="flex cursor-pointer items-center gap-2 border border-mist px-3 py-2.5 text-sm"
-            >
-              <input
-                type="radio"
-                value={item.value}
-                {...register("ftcExperience")}
-                className="accent-navy"
-              />
-              {item.label}
-            </label>
-          ))}
-        </div>
-        <FieldError message={errors.ftcExperience?.message} />
-      </fieldset>
-
-      <fieldset className="mt-6">
-        <legend className="text-sm font-medium text-navy">Есть ли готовый робот?</legend>
-        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+        <legend className="text-sm font-medium text-navy">Робот готов?</legend>
+        <div className="mt-3 flex flex-wrap gap-4 text-sm">
           {ROBOT_STATUS.map((item) => (
-            <label
-              key={item.value}
-              className="flex cursor-pointer items-center gap-2 border border-mist px-3 py-2.5 text-sm"
-            >
-              <input
-                type="radio"
-                value={item.value}
-                {...register("robotStatus")}
-                className="accent-navy"
-              />
+            <label key={item.value} className="inline-flex items-center gap-2">
+              <input type="radio" value={item.value} {...register("robotStatus")} className="accent-navy" />
               {item.label}
             </label>
           ))}
@@ -244,21 +273,11 @@ export function RegisterForm() {
       </fieldset>
 
       <fieldset className="mt-6">
-        <legend className="text-sm font-medium text-navy">
-          Что команда хочет протестировать?
-        </legend>
+        <legend className="text-sm font-medium text-navy">Что хотите прогнать</legend>
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
           {TESTING_AREAS.map((item) => (
-            <label
-              key={item.value}
-              className="flex cursor-pointer items-center gap-2 border border-mist px-3 py-2.5 text-sm"
-            >
-              <input
-                type="checkbox"
-                value={item.value}
-                {...register("testingAreas")}
-                className="accent-navy"
-              />
+            <label key={item.value} className="inline-flex items-center gap-2 text-sm">
+              <input type="checkbox" value={item.value} {...register("testingAreas")} className="accent-navy" />
               {item.label}
             </label>
           ))}
@@ -267,20 +286,15 @@ export function RegisterForm() {
       </fieldset>
 
       <label className="mt-6 block text-sm font-medium text-navy">
-        Дополнительный комментарий
-        <textarea
-          {...register("comment")}
-          rows={4}
-          maxLength={500}
-          className={cn(fieldClass, "resize-y")}
-        />
+        Комментарий
+        <textarea {...register("comment")} rows={4} maxLength={500} className={cn(fieldClass, "resize-y")} />
         <span className="mt-1 block text-xs text-muted">{comment.length}/500</span>
         <FieldError message={errors.comment?.message} />
       </label>
 
       <label className="mt-6 flex items-start gap-3 text-sm text-navy">
         <input type="checkbox" {...register("confirm")} className="mt-0.5 accent-navy" />
-        <span>Я подтверждаю корректность указанных данных.</span>
+        <span>Данные верные, можно писать капитану.</span>
       </label>
       <FieldError message={errors.confirm?.message} />
 
@@ -289,7 +303,7 @@ export function RegisterForm() {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-sm bg-navy px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-navy-mid disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+        className="mt-8 inline-flex items-center gap-2 bg-navy px-5 py-3.5 text-sm font-semibold text-white disabled:opacity-60"
       >
         {isSubmitting ? <LoaderCircle className="animate-spin" size={16} /> : null}
         {isSubmitting ? "Отправка..." : "Отправить заявку"}

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Manrope } from "next/font/google";
+import { Instrument_Serif, Manrope } from "next/font/google";
 import "./globals.css";
 import { siteUrl } from "@/lib/utils";
 
@@ -9,22 +9,29 @@ const manrope = Manrope({
   display: "swap",
 });
 
-const title = "K.E.R.N FTC Scrimmage — Astana";
+const buzz = Instrument_Serif({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-buzz",
+  display: "swap",
+});
+
+const title = "K.E.R.N Scrimmage — BIOBUZZ · Astana";
 const description =
-  "Регистрация школьных FTC-команд на K.E.R.N FTC Scrimmage в Астане.";
+  "Регистрация школьных FTC-команд на K.E.R.N Scrimmage в Астане. Сезон BIOBUZZ 2026–2027.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
   title,
   description,
-  applicationName: "K.E.R.N FTC Scrimmage",
+  applicationName: "K.E.R.N Scrimmage",
   keywords: [
     "FTC",
+    "BIOBUZZ",
     "FIRST Tech Challenge",
     "scrimmage",
     "K.E.R.N School",
     "Astana",
-    "робототехника",
   ],
   authors: [{ name: "K.E.R.N School" }],
   openGraph: {
@@ -32,7 +39,7 @@ export const metadata: Metadata = {
     description,
     type: "website",
     locale: "ru_KZ",
-    siteName: "K.E.R.N FTC Scrimmage",
+    siteName: "K.E.R.N Scrimmage",
     url: "/",
   },
   twitter: {
@@ -61,7 +68,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru" className={manrope.variable}>
+    <html lang="ru" className={`${manrope.variable} ${buzz.variable}`}>
       <body className="min-h-screen bg-paper font-sans text-ink antialiased">
         {children}
       </body>

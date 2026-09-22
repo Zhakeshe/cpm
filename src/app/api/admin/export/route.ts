@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isAdminAuthenticated } from "@/lib/auth";
-import { experienceLabel, robotStatusLabel, testingAreaLabel } from "@/lib/constants";
+import { robotStatusLabel, testingAreaLabel } from "@/lib/constants";
 
 function csvEscape(value: string) {
   if (/[",\n]/.test(value)) {
@@ -23,12 +23,10 @@ export async function GET() {
     "Team",
     "FTC Number",
     "School",
-    "City",
     "Captain",
     "Phone",
     "Email",
     "Members",
-    "Experience",
     "Robot status",
     "Testing areas",
     "Comment",
@@ -42,12 +40,10 @@ export async function GET() {
         row.teamName,
         row.teamNumber ?? "",
         row.school,
-        row.city,
         row.captainName,
         row.phone,
         row.email ?? "",
         String(row.memberCount),
-        experienceLabel(row.ftcExperience),
         robotStatusLabel(row.robotStatus),
         row.testingAreas.map(testingAreaLabel).join("; "),
         row.comment ?? "",

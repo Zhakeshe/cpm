@@ -1,32 +1,20 @@
 const steps = [
-  { n: "01", title: "Регистрация команды" },
-  { n: "02", title: "Подтверждение участия" },
-  { n: "03", title: "Подготовка робота" },
-  { n: "04", title: "Scrimmage matches" },
-  { n: "05", title: "Обратная связь и networking" },
+  "Заявка через форму — капитана пишут в WhatsApp.",
+  "Подтверждение слота, когда будет известен список команд.",
+  "Робот и драйверы к дню мероприятия. Полный inspection как на qualifier не обещаем заранее.",
+  "Матчи на поле BIOBUZZ и короткое обсуждение после.",
 ];
 
 export function Format() {
   return (
-    <section id="format" className="bg-white">
-      <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold">
-          Формат
-        </p>
-        <h2 className="mt-3 text-3xl font-semibold text-navy sm:text-4xl">
-          Как проходит участие
-        </h2>
-        <ol className="mt-12 grid gap-0 md:grid-cols-5">
+    <section id="format" className="bg-[#f4f1ea]">
+      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[240px_1fr]">
+        <h2 className="text-2xl font-semibold text-navy">Как это проходит</h2>
+        <ol className="space-y-5">
           {steps.map((step, index) => (
-            <li
-              key={step.n}
-              className="relative border-t border-mist px-4 py-6 md:border-l md:border-t-0 md:px-5"
-            >
-              {index < steps.length - 1 ? (
-                <span className="absolute right-0 top-8 hidden h-px w-6 bg-gold/60 md:block" />
-              ) : null}
-              <p className="text-sm font-semibold tracking-[0.2em] text-gold">{step.n}</p>
-              <p className="mt-3 text-base font-medium leading-6 text-navy">{step.title}</p>
+            <li key={step} className="flex gap-4 text-[16px] leading-7 text-ink/80">
+              <span className="w-6 shrink-0 font-semibold text-navy">{index + 1}.</span>
+              <span>{step}</span>
             </li>
           ))}
         </ol>

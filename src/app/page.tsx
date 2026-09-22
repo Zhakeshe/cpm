@@ -1,9 +1,10 @@
 import { Header } from "@/components/header";
 import { Hero } from "@/components/hero";
 import { About } from "@/components/about";
+import { Biobuzz } from "@/components/biobuzz";
 import { Why } from "@/components/why";
 import { Format } from "@/components/format";
-import { Info } from "@/components/info";
+import { Venue } from "@/components/venue";
 import { RegisterForm } from "@/components/register-form";
 import { Faq } from "@/components/faq";
 import { Footer } from "@/components/footer";
@@ -15,20 +16,16 @@ export default function HomePage() {
       <main>
         <Hero />
         <About />
+        <Biobuzz />
         <Why />
         <Format />
-        <Info />
-        <section id="register" className="bg-paper">
-          <div className="mx-auto max-w-3xl px-4 py-20 sm:px-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold">
-              Заявка
-            </p>
-            <h2 className="mt-3 text-3xl font-semibold text-navy sm:text-4xl">
-              Регистрация команды
-            </h2>
-            <p className="mt-4 text-sm leading-7 text-muted sm:text-base">
-              Заполните форму, чтобы зарегистрировать команду на K.E.R.N FTC Scrimmage.
-              После отправки заявки организаторы свяжутся с капитаном команды.
+        <Venue />
+        <section id="register" className="bg-[#f4f1ea]">
+          <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 sm:py-20">
+            <h2 className="text-3xl font-semibold text-navy">Регистрация команды</h2>
+            <p className="mt-4 text-[16px] leading-7 text-muted">
+              Если команда уже есть в FIRST, начните с номера или названия — подтянем карточку
+              из FTCScout. Если номера ещё нет, заполните поля вручную.
             </p>
             <div className="mt-8">
               <RegisterForm />

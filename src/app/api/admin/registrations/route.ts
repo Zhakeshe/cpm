@@ -10,7 +10,6 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const q = searchParams.get("q")?.trim() ?? "";
   const school = searchParams.get("school")?.trim() ?? "";
-  const experience = searchParams.get("experience")?.trim() ?? "";
   const sort = searchParams.get("sort") === "asc" ? "asc" : "desc";
 
   const rows = await prisma.scrimmageRegistration.findMany({
@@ -26,7 +25,6 @@ export async function GET(request: NextRequest) {
             }
           : {},
         school ? { school: { equals: school, mode: "insensitive" } } : {},
-        experience ? { ftcExperience: experience } : {},
       ],
     },
     orderBy: { createdAt: sort },

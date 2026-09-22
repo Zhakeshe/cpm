@@ -1,17 +1,8 @@
 import { z } from "zod";
-import {
-  FTC_EXPERIENCE,
-  MEMBER_COUNTS,
-  ROBOT_STATUS,
-  TESTING_AREAS,
-} from "./constants";
+import { MEMBER_COUNTS, ROBOT_STATUS, TESTING_AREAS } from "./constants";
 
 export const PHONE_REGEX = /^\+7 \d{3} \d{3} \d{2} \d{2}$/;
 
-const experienceValues = FTC_EXPERIENCE.map((item) => item.value) as [
-  string,
-  ...string[],
-];
 const robotValues = ROBOT_STATUS.map((item) => item.value) as [
   string,
   ...string[],
@@ -37,11 +28,6 @@ export const registrationSchema = z.object({
     .trim()
     .min(2, "Укажите название школы")
     .max(120, "Слишком длинное название школы"),
-  city: z
-    .string({ required_error: "Укажите город" })
-    .trim()
-    .min(2, "Укажите город")
-    .max(80, "Слишком длинное название города"),
   captainName: z
     .string({ required_error: "Укажите имя и фамилию капитана" })
     .trim()
@@ -63,9 +49,6 @@ export const registrationSchema = z.object({
     .refine((value) => MEMBER_COUNTS.includes(value as 4 | 5), {
       message: "Команда должна состоять из 4 или 5 участников",
     }),
-  ftcExperience: z.enum(experienceValues, {
-    required_error: "Выберите опыт команды",
-  }),
   robotStatus: z.enum(robotValues, {
     required_error: "Укажите статус робота",
   }),
