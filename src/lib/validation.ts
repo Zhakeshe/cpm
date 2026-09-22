@@ -1,0 +1,99 @@
+import { z } from "zod";
+import {
+  FTC_EXPERIENCE,
+  MEMBER_COUNTS,
+  ROBOT_STATUS,
+  TESTING_AREAS,
+} from "./constants";
+
+export const PHONE_REGEX = /^\+7 \d{3} \d{3} \d{2} \d{2}$/;
+
+const experienceValues = FTC_EXPERIENCE.map((item) => item.value) as [
+  string,
+  ...string[],
+];
+const robotValues = ROBOT_STATUS.map((item) => item.value) as [
+  string,
+  ...string[],
+];
+const testingValues = TESTING_AREAS.map((item) => item.value) as [
+  string,
+  ...string[],
+];
+
+export const registrationSchema = z.object({
+  teamName: z
+    .string()
+    .trim()
+    .min(2, "Укажите название команды")
+    .max(80, "Слишком длинное название"),
+  teamNumber: z
+    .string()
+    .trim()
+    .max(20, "Слишком длинный номер")
+    .optional(),
+  school: z
+    .string({ required_error: "Укажите название школы" })
+    .trim()
+    .min(2, "Укажите название школы")
+    .max(120, "Слишком длинное название школы"),
+  city: z
+    .string({ required_error: "Укажите город" })
+    .trim()
+    .min(2, "Укажите город")
+    .max(80, "Слишком длинное название города"),
+  captainName: z
+    .string({ required_error: "Укажите имя и фамилию капитана" })
+    .trim()
+    .min(3, "Укажите имя и фамилию капитана")
+    .max(80, "Слишком длинное имя"),
+  phone: z
+    .string({ required_error: "Введите номер в формате +7 XXX XXX XX XX" })
+    .trim()
+    .regex(PHONE_REGEX, "Введите номер в формате +7 XXX XXX XX XX"),
+  email: z
+    .string()
+    .trim()
+    .optional()
+    .refine((value) => !value || z.string().email().safeParse(value).success, {
+      message: "Некорректный email",
+    }),
+  memberCount: z.coerce
+    .number({ invalid_type_error: "Выберите количество участников" })
+    .refine((value) => MEMBER_COUNTS.includes(value as 4 | 5), {
+      message: "Команда должна состоять из 4 или 5 участников",
+    }),
+  ftcExperience: z.enum(experienceValues, {
+    required_error: "Выберите опыт команды",
+  }),
+  robotStatus: z.enum(robotValues, {
+    required_error: "Укажите статус робота",
+  }),
+  testingAreas: z
+    .array(z.enum(testingValues), { required_error: "Выберите хотя бы один пункт" })
+    .min(1, "Выберите хотя бы один пункт"),
+  comment: z.string().trim().max(500, "Комментарий не длиннее 500 символов").optional(),
+  confirm: z
+    .boolean({ required_error: "Подтвердите корректность данных" })
+    .refine((value) => value === true, {
+      message: "Подтвердите корректность данных",
+    }),
+});
+
+export type RegistrationInput = z.infer<typeof registrationSchema>;
+
+export function formatPhoneMask(raw: string) {
+  const digits = raw.replace(/\D/g, "");
+  const local = digits.startsWith("7")
+    ? digits.slice(1, 11)
+    : digits.startsWith("8")
+      ? digits.slice(1, 11)
+      : digits.slice(0, 10);
+
+  let result = "+7";
+  if (local.length > 0) result += ` ${local.slice(0, 3)}`;
+  if (local.length > 3) result += ` ${local.slice(3, 6)}`;
+  if (local.length > 6) result += ` ${local.slice(6, 8)}`;
+  if (local.length > 8) result += ` ${local.slice(8, 10)}`;
+  return result;
+}

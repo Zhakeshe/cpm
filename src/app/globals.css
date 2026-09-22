@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+:root {
+  --navy: #062d59;
+  --navy-deep: #041e3c;
+  --navy-mid: #0b417a;
+  --gold: #c89b4a;
+  --gold-soft: #e3c27a;
+  --paper: #f5f8fc;
+  --mist: #d8e3f0;
+  --ink: #0e1b2b;
+  --muted: #5b6b80;
+  --line: #c9d6e6;
+  --background: #f5f8fc;
+  --foreground: #0e1b2b;
+}
+
+@theme inline {
+  --color-navy: var(--navy);
+  --color-navy-deep: var(--navy-deep);
+  --color-navy-mid: var(--navy-mid);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-paper: var(--paper);
+  --color-mist: var(--mist);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-manrope);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+}
+
+::selection {
+  background: #0b417a;
+  color: #ffffff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+.blueprint-grid {
+  background-image:
+    linear-gradient(to right, rgba(216, 227, 240, 0.18) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(216, 227, 240, 0.18) 1px, transparent 1px);
+  background-size: 36px 36px;
+}
+
+.gold-rule {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
