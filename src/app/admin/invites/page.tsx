@@ -196,18 +196,10 @@ export default function AdminInvitesPage() {
             </div>
             <dl className="mt-6 space-y-3 text-sm">
               <Row label="Grade" value={selected.grade} />
-              <Row label="School" value={selected.school} />
-              <Row label="City" value={selected.city} />
               <Row label="Languages" value={selected.languages} />
-              <Row label="Availability" value={selected.availability} />
-              <Row label="Heard from" value={selected.heardFrom} />
-              <Row label="Superpower" value={selected.superpower} />
               <Row label="Role" value={inviteRoleLabel(selected.role)} />
               <Row label="Phone" value={selected.phone} />
               <Row label="Social" value={selected.social} />
-              <Row label="Why" value={selected.whyJoin} />
-              <Row label="Skills" value={selected.skills} />
-              <Row label="Portfolio" value={selected.portfolio || "—"} />
               <Row
                 label="Date"
                 value={new Date(selected.createdAt).toLocaleString("ru-KZ")}

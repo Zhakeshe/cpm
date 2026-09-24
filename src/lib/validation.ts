@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { MEMBER_COUNTS } from "./constants";
-import { AVAILABILITY, HEARD_FROM, INVITE_ROLE_IDS } from "./invite-copy";
+import { INVITE_ROLE_IDS } from "./invite-copy";
 
 export const PHONE_REGEX = /^\+7 \d{3} \d{3} \d{2} \d{2}$/;
 
@@ -44,30 +44,10 @@ export type RegistrationInput = z.infer<typeof registrationSchema>;
 export const inviteSchema = z.object({
   fullName: z.string().trim().min(3).max(80),
   grade: z.string().trim().min(1).max(40),
-  school: z.string().trim().max(120).optional(),
-  city: z.string().trim().min(2).max(80),
   languages: z.string().trim().min(2).max(80),
   phone: z.string().trim().regex(PHONE_REGEX),
   social: z.string().trim().min(2).max(80),
   role: z.enum(INVITE_ROLE_IDS),
-  availability: z.enum(AVAILABILITY),
-  heardFrom: z.enum(HEARD_FROM),
-  superpower: z.string().trim().min(8).max(280),
-  whyJoin: z.string().trim().min(10).max(800),
-  skills: z.string().trim().min(8).max(800),
-  portfolio: z
-    .string()
-    .trim()
-    .max(240)
-    .optional()
-    .refine(
-      (value) =>
-        !value ||
-        /^https?:\/\//i.test(value) ||
-        value.startsWith("@") ||
-        value.startsWith("t.me/") ||
-        value.startsWith("instagram.com/"),
-    ),
 });
 
 export type InviteInput = z.infer<typeof inviteSchema>;

@@ -4,13 +4,12 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle2, LoaderCircle } from "lucide-react";
-import { AVAILABILITY, HEARD_FROM, INVITE_ROLE_IDS } from "@/lib/invite-copy";
+import { INVITE_ROLE_IDS } from "@/lib/invite-copy";
 import { formatPhoneMask, inviteSchema, type InviteInput } from "@/lib/validation";
 import { cn, withBase } from "@/lib/utils";
 import { useInviteLang } from "@/components/invite-i18n";
 
-const fieldClass =
-  "invite-field";
+const fieldClass = "invite-field";
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
@@ -32,17 +31,10 @@ export function InviteForm() {
     defaultValues: {
       fullName: "",
       grade: "",
-      city: "Астана",
       languages: "",
       phone: "+7 ",
       social: "",
       role: undefined,
-      availability: undefined,
-      heardFrom: undefined,
-      superpower: "",
-      whyJoin: "",
-      skills: "",
-      portfolio: "",
     },
   });
 
@@ -112,11 +104,6 @@ export function InviteForm() {
           <FieldError message={errors.grade ? t.errors.grade : undefined} />
         </label>
         <label>
-          {t.fields.city}
-          <input {...register("city")} className={fieldClass} />
-          <FieldError message={errors.city ? t.errors.city : undefined} />
-        </label>
-        <label>
           {t.fields.languages}
           <input {...register("languages")} className={fieldClass} placeholder="ҚАЗ / РУС / ENG" />
           <FieldError message={errors.languages ? t.errors.languages : undefined} />
@@ -142,7 +129,7 @@ export function InviteForm() {
           <input {...register("social")} className={fieldClass} placeholder="@username" />
           <FieldError message={errors.social ? t.errors.social : undefined} />
         </label>
-        <label>
+        <label className="sm:col-span-2">
           {t.fields.role}
           <select {...register("role")} className={fieldClass} defaultValue="">
             <option value="" disabled>
@@ -155,57 +142,6 @@ export function InviteForm() {
             ))}
           </select>
           <FieldError message={errors.role ? t.errors.role : undefined} />
-        </label>
-        <label>
-          {t.fields.availability}
-          <select {...register("availability")} className={fieldClass} defaultValue="">
-            <option value="" disabled>
-              {t.fields.availabilityPlaceholder}
-            </option>
-            {AVAILABILITY.map((id) => (
-              <option key={id} value={id}>
-                {t.availabilityOpts[id]}
-              </option>
-            ))}
-          </select>
-          <FieldError message={errors.availability ? t.errors.availability : undefined} />
-        </label>
-        <label className="sm:col-span-2">
-          {t.fields.heardFrom}
-          <select {...register("heardFrom")} className={fieldClass} defaultValue="">
-            <option value="" disabled>
-              {t.fields.heardPlaceholder}
-            </option>
-            {HEARD_FROM.map((id) => (
-              <option key={id} value={id}>
-                {t.heardOpts[id]}
-              </option>
-            ))}
-          </select>
-          <FieldError message={errors.heardFrom ? t.errors.heardFrom : undefined} />
-        </label>
-        <label className="sm:col-span-2">
-          {t.fields.superpower}
-          <textarea {...register("superpower")} className={cn(fieldClass, "min-h-24 resize-y")} rows={3} />
-          <FieldError message={errors.superpower ? t.errors.superpower : undefined} />
-        </label>
-        <label className="sm:col-span-2">
-          {t.fields.whyJoin}
-          <textarea {...register("whyJoin")} className={cn(fieldClass, "min-h-28 resize-y")} rows={4} />
-          <FieldError message={errors.whyJoin ? t.errors.whyJoin : undefined} />
-        </label>
-        <label className="sm:col-span-2">
-          {t.fields.skills}
-          <textarea {...register("skills")} className={cn(fieldClass, "min-h-28 resize-y")} rows={4} />
-          <FieldError message={errors.skills ? t.errors.skills : undefined} />
-        </label>
-        <label className="sm:col-span-2">
-          {t.fields.portfolio}
-          <span className="ml-2 text-[11px] font-normal tracking-normal text-[var(--invite-mute)]">
-            {t.fields.portfolioHint}
-          </span>
-          <input {...register("portfolio")} className={fieldClass} />
-          <FieldError message={errors.portfolio ? t.errors.portfolio : undefined} />
         </label>
       </div>
 

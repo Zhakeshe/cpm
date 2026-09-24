@@ -391,7 +391,7 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
     houston: "FIRST Championship · Houston",
     formKicker: "08",
     formTitle: "Өтініш нысаны",
-    formLead: "Барлық міндетті өрісті толтырыңыз. Жауап Instagram немесе Telegram арқылы жіберіледі.",
+    formLead: "Аты-жөні, сынып, тіл, телефон, әлеуметтік желі және рөл. Жауап Instagram немесе Telegram арқылы келеді.",
     fields: {
       fullName: "Аты-жөні",
       grade: "Сынып",
@@ -590,7 +590,7 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
     houston: "FIRST Championship · Houston",
     formKicker: "08",
     formTitle: "Форма заявки",
-    formLead: "Заполните все обязательные поля. Ответ придёт в Instagram или Telegram.",
+    formLead: "Имя, класс, языки, телефон, соцсеть и роль. Ответ придёт в Instagram или Telegram.",
     fields: {
       fullName: "Имя и фамилия",
       grade: "Класс",
@@ -789,7 +789,7 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
     houston: "FIRST Championship · Houston",
     formKicker: "08",
     formTitle: "Application form",
-    formLead: "Complete every required field. We reply on Instagram or Telegram.",
+    formLead: "Name, grade, languages, phone, social, and role. We reply on Instagram or Telegram.",
     fields: {
       fullName: "Full name",
       grade: "Grade / class",
