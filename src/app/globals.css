@@ -863,14 +863,41 @@ body {
 .invite-grant-card {
   display: flex;
   flex-direction: column;
-  min-height: 148px;
+  min-height: 196px;
   padding: 1.1rem 1.15rem 1.2rem;
   background: #fff;
   border-radius: 1.15rem;
   box-shadow: 0 8px 20px rgb(26 26 26 / 0.05);
 }
 
+.invite-grant-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 72px;
+  margin-bottom: 0.75rem;
+  background: #faf7f1;
+  border-radius: 0.75rem;
+}
+
+.invite-grant-logo img {
+  max-height: 52px;
+  max-width: 148px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+.invite-grant-card b {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--invite-gold);
+}
+
 .invite-grant-card strong {
+  margin-top: 0.2rem;
   font-size: 15px;
   font-weight: 700;
 }

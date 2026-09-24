@@ -1,7 +1,8 @@
 "use client";
 
-import { InviteLogoMarquee, InviteMarquee } from "@/components/invite-marquee";
-import { FIRST_PARTNER_LOGOS, KZ_PARTNER_LOGOS } from "@/lib/invite-media";
+import { InviteLogoMarquee } from "@/components/invite-marquee";
+import { FIRST_PARTNER_LOGOS, KZ_PARTNER_LOGOS, UNI_LOGOS } from "@/lib/invite-media";
+import { withBase } from "@/lib/utils";
 import { useInviteLang } from "@/components/invite-i18n";
 
 export function InviteSeason() {
@@ -38,8 +39,13 @@ export function InviteSeason() {
           <p className="mt-4 max-w-2xl text-[16px] leading-7 text-[var(--invite-mute)]">{t.unisLead}</p>
         </div>
         <div className="invite-grant-grid mx-auto mt-8 max-w-6xl px-4 sm:px-6">
-          {t.unis.map((item) => (
+          {t.unis.map((item, index) => (
             <article key={item.name} className="invite-grant-card">
+              <div className="invite-grant-logo">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={withBase(UNI_LOGOS[index] ?? UNI_LOGOS[0])} alt="" />
+              </div>
+              <b>{t.unisGrantBadge}</b>
               <strong>{item.name}</strong>
               <span>{item.place}</span>
               <p>{item.grant}</p>
@@ -47,9 +53,7 @@ export function InviteSeason() {
           ))}
         </div>
         <div className="mt-7">
-          <InviteMarquee
-            items={t.unis.map((item) => ({ title: item.name, note: item.place, grant: item.grant }))}
-          />
+          <InviteLogoMarquee logos={UNI_LOGOS} />
         </div>
       </section>
 

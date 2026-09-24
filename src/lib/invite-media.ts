@@ -2,18 +2,28 @@ import type { InviteRoleId } from "@/lib/invite-copy";
 
 export const ROLE_PHOTOS: Record<InviteRoleId, string> = {
   ftc_member: "/hero-field.jpg",
-  designer: "/invite/design.jpg",
-  smm: "/invite/social.jpg",
-  content: "/invite/studio.jpg",
-  video: "/invite/video.jpg",
-  photo: "/invite/camera.jpg",
-  organizer: "/hero-field.jpg",
+  designer: "/invite/ftc/gears.jpg",
+  smm: "/invite/ftc/finals3.jpg",
+  content: "/invite/ftc/drivers.jpg",
+  video: "/invite/ftc/finals5.jpg",
+  photo: "/invite/ftc/finals4.jpg",
+  organizer: "/invite/ftc/finals1.jpg",
 };
 
+export const UNI_LOGOS = [
+  "/invite/unis/first.svg",
+  "/invite/unis/nu.svg",
+  "/invite/unis/kbtu.png",
+  "/invite/unis/aitu.png",
+  "/invite/unis/sdu.png",
+  "/invite/unis/satbayev.svg",
+  "/invite/unis/enu.svg",
+] as const;
+
 export const PROGRAM_PHOTOS = [
-  "/invite/workshop.jpg",
-  "/invite/team.jpg",
-  "/invite/robot.jpg",
+  "/invite/ftc/finals4.jpg",
+  "/invite/ftc/finals3.jpg",
+  "/invite/ftc/finals5.jpg",
   "/hero-field.jpg",
 ] as const;
 

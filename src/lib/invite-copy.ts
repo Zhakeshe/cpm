@@ -78,6 +78,7 @@ export type InviteCopy = {
   unisTitle: string;
   unisItalic: string;
   unisLead: string;
+  unisGrantBadge: string;
   unis: { name: string; place: string; grant: string }[];
   partnersKicker: string;
   partnersTitle: string;
@@ -378,10 +379,11 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
       { name: "Design", text: "Механикалық дизайн." },
     ],
     unisKicker: "06",
-    unisTitle: "Грант пен стипендия",
+    unisTitle: "Осы университеттерге грант беріледі",
     unisItalic: "FIRST тәжірибесі өтінішті күшейтеді. Пайызды университет шешеді.",
     unisLead:
-      "Төменде — нақты жолдар: FIRST стипендия каталогы және Қазақстан ЖОО гранттары. Бұл ресми серіктестік тізімі емес.",
+      "FIRST стипендия каталогы және Қазақстан ЖОО гранттары. Төменде — логотиппен нақты жолдар. Бұл мектептің ресми серіктестік тізімі емес.",
+    unisGrantBadge: "Грант",
     unis: [...SHARED_UNIS.kk],
     partnersKicker: "07",
     partnersTitle: "FIRST серіктестері",
@@ -577,10 +579,11 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
       { name: "Design", text: "Механический дизайн." },
     ],
     unisKicker: "06",
-    unisTitle: "Гранты и стипендии",
+    unisTitle: "Этим университетам дают гранты",
     unisItalic: "Опыт FIRST усиливает заявку. Процент определяет вуз.",
     unisLead:
-      "Ниже — реальные пути: каталог стипендий FIRST и гранты вузов Казахстана. Это не список официальных партнёров школы.",
+      "Каталог стипендий FIRST и гранты вузов Казахстана. Ниже — с официальными логотипами. Это не список официальных партнёров школы.",
+    unisGrantBadge: "Грант",
     unis: [...SHARED_UNIS.ru],
     partnersKicker: "07",
     partnersTitle: "Партнёры FIRST",
@@ -776,10 +779,11 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
       { name: "Design", text: "Mechanical design." },
     ],
     unisKicker: "06",
-    unisTitle: "Grants and scholarships",
+    unisTitle: "These universities award grants",
     unisItalic: "FIRST work strengthens an application. The university sets the award.",
     unisLead:
-      "Real routes: the FIRST scholarship directory and Kazakh university grants. This is not a list of official school partners.",
+      "The FIRST scholarship catalog and Kazakh university grants, shown with official marks. This is not a list of official school partners.",
+    unisGrantBadge: "Grant",
     unis: [...SHARED_UNIS.en],
     partnersKicker: "07",
     partnersTitle: "FIRST partners",
