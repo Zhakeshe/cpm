@@ -1,7 +1,7 @@
 import type { InviteRoleId } from "@/lib/invite-copy";
 
 export const ROLE_PHOTOS: Record<InviteRoleId, string> = {
-  ftc_member: "/invite/workshop.jpg",
+  ftc_member: "/invite/arm.jpg",
   designer: "/invite/design.jpg",
   smm: "/invite/social.jpg",
   content: "/invite/studio.jpg",
@@ -10,6 +10,6 @@ export const ROLE_PHOTOS: Record<InviteRoleId, string> = {
   organizer: "/invite/event.jpg",
 };
 
-export const PROGRAMME_PHOTOS = ["/invite/arm.jpg", "/invite/camera.jpg", "/invite/team.jpg"] as const;
+export const PROGRAMME_PHOTOS = ["/invite/workshop.jpg", "/invite/camera.jpg", "/invite/event.jpg"] as const;
 
 export const PROGRAMME_INDEXES = [0, 2, 4] as const;
