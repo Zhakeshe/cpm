@@ -79,6 +79,9 @@ export type InviteCopy = {
   programsTitle: string;
   programsItalic: string;
   programsLead: string;
+  programsMore: string;
+  programsTeaser: string;
+  programsBrand: string;
   programs: { name: string; ages: string; text: string }[];
   unisKicker: string;
   unisTitle: string;
@@ -306,30 +309,32 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
     introLead:
       "K.E.R.N оқушыларын FIRST жарысына жинаймыз. Жарыс күні FTC пен FLL не екенін осында көресіз. Өтініш қабылданады, қаралады, кейін сұхбат тағайындалады.",
     programsKicker: "02",
-    programsTitle: "FTC және FLL",
-    programsItalic: "Жарыста не болып жатқанын түсіну үшін.",
-    programsLead:
-      "FIRST — жас бойынша бірнеше бағдарлама. K.E.R.N командасы FTC бойынша жұмыс істейді. FLL — кіші сыныптарға арналған жол.",
+    programsTitle: "FIRST® бағдарламалары",
+    programsItalic: "",
+    programsLead: "Жасы мен қызығушылығына қарай оқушылар әртүрлі бағдарламаға қатыса алады.",
+    programsMore: "Толығырақ",
+    programsTeaser: "Тизерді көру",
+    programsBrand: "FIRST® Kazakhstan",
     programs: [
       {
-        name: "FIRST LEGO League Discover",
+        name: "FIRST® LEGO® League Discover",
         ages: "4–6 жас",
-        text: "LEGO арқылы ойын. STEM-ке алғашқы қадам, жарыс емес.",
+        text: "FIRST® LEGO® League Discover – мектепке дейінгі балаларға LEGO конструкторымен ойын арқылы STEM әлеміне кіріспе.",
       },
       {
-        name: "FIRST LEGO League Explore",
+        name: "FIRST® LEGO® League Explore",
         ages: "6–10 жас",
-        text: "Қозғалатын модель, зерттеу постері, командалық жұмыс.",
+        text: "FIRST® LEGO® League Explore – кіші сыныптарға арналған бағдарлама: LEGO-дан қозғалатын модель жасап, қызықты есептерді шешеді.",
       },
       {
-        name: "FIRST LEGO League Challenge",
-        ages: "9–16 жас",
-        text: "LEGO робот, маусым тақырыбы, төреші алдында қорғау.",
+        name: "FIRST® LEGO® League Challenge",
+        ages: "10–16 жас",
+        text: "FIRST® LEGO® League Challenge – робототехника жарысы: оқушылар LEGO роботын программалап, зерттеу жобасымен жұмыс істейді.",
       },
       {
-        name: "FIRST Tech Challenge",
+        name: "FIRST® Tech Challenge",
         ages: "12–18 жас",
-        text: "Металл робот, Autonomous және TeleOp, алаңда матч. K.E.R.N осында.",
+        text: "FIRST® Tech Challenge – жоғары деңгейлі робототехника: жасөспірімдер робот жинап, нақты есептерді шешу үшін программалауды дамытады. K.E.R.N осында.",
       },
     ],
     whyKicker: "01",
@@ -529,30 +534,32 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
     introLead:
       "Набираем учеников K.E.R.N в FIRST. В день соревнований здесь видно, что такое FTC и FLL. Заявки принимаются, рассматриваются, затем назначается собеседование.",
     programsKicker: "02",
-    programsTitle: "FTC и FLL",
-    programsItalic: "Чтобы на площадке было понятно, что происходит.",
-    programsLead:
-      "У FIRST несколько программ по возрасту. Команда K.E.R.N работает в FTC. FLL — путь для младших классов.",
+    programsTitle: "Программы FIRST®",
+    programsItalic: "",
+    programsLead: "В зависимости от возраста и интересов ученики могут участвовать в разных программах.",
+    programsMore: "Подробнее",
+    programsTeaser: "Посмотреть тизер",
+    programsBrand: "FIRST® Kazakhstan",
     programs: [
       {
-        name: "FIRST LEGO League Discover",
+        name: "FIRST® LEGO® League Discover",
         ages: "4–6 лет",
-        text: "Игра с LEGO. Первый шаг в STEM, без матчей.",
+        text: "FIRST® LEGO® League Discover – введение в мир STEM для дошкольников через игровое обучение с конструктором LEGO.",
       },
       {
-        name: "FIRST LEGO League Explore",
+        name: "FIRST® LEGO® League Explore",
         ages: "6–10 лет",
-        text: "Подвижная модель, исследовательский постер, работа в команде.",
+        text: "FIRST® LEGO® League Explore – программа для младших школьников, где дети создают движущиеся модели из LEGO и решают интересные задачи.",
       },
       {
-        name: "FIRST LEGO League Challenge",
-        ages: "9–16 лет",
-        text: "Робот LEGO, тема сезона, защита перед судьями.",
+        name: "FIRST® LEGO® League Challenge",
+        ages: "10–16 лет",
+        text: "FIRST® LEGO® League Challenge – соревнования по робототехнике, где школьники программируют роботов LEGO и работают над исследовательскими проектами.",
       },
       {
-        name: "FIRST Tech Challenge",
+        name: "FIRST® Tech Challenge",
         ages: "12–18 лет",
-        text: "Металлический робот, Autonomous и TeleOp, матч на поле. Здесь работает K.E.R.N.",
+        text: "FIRST® Tech Challenge – продвинутая программа по робототехнике, где подростки создают роботов и развивают навыки программирования для решения реальных задач.",
       },
     ],
     whyKicker: "01",
@@ -752,30 +759,32 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
     introLead:
       "We recruit K.E.R.N students into FIRST. On match day this page shows what FTC and FLL are. Applications are reviewed; shortlisted candidates are invited to interview.",
     programsKicker: "02",
-    programsTitle: "FTC and FLL",
-    programsItalic: "So the field makes sense on competition day.",
-    programsLead:
-      "FIRST runs several age programmes. The K.E.R.N team competes in FTC. FLL is the path for younger students.",
+    programsTitle: "FIRST® programs",
+    programsItalic: "",
+    programsLead: "Depending on age and interests, students can join different programs.",
+    programsMore: "Learn more",
+    programsTeaser: "Watch teaser",
+    programsBrand: "FIRST® Kazakhstan",
     programs: [
       {
-        name: "FIRST LEGO League Discover",
+        name: "FIRST® LEGO® League Discover",
         ages: "Ages 4–6",
-        text: "Play with LEGO. A first step into STEM, not a match.",
+        text: "FIRST® LEGO® League Discover – an introduction to STEM for preschoolers through play with LEGO.",
       },
       {
-        name: "FIRST LEGO League Explore",
+        name: "FIRST® LEGO® League Explore",
         ages: "Ages 6–10",
-        text: "A moving model, a research poster, and team work.",
+        text: "FIRST® LEGO® League Explore – younger students build moving LEGO models and solve open problems.",
       },
       {
-        name: "FIRST LEGO League Challenge",
-        ages: "Ages 9–16",
-        text: "A LEGO robot, a season theme, and a judged presentation.",
+        name: "FIRST® LEGO® League Challenge",
+        ages: "Ages 10–16",
+        text: "FIRST® LEGO® League Challenge – robotics competition: students program LEGO robots and run a research project.",
       },
       {
-        name: "FIRST Tech Challenge",
+        name: "FIRST® Tech Challenge",
         ages: "Ages 12–18",
-        text: "A metal robot, Autonomous and TeleOp, a field match. This is K.E.R.N.",
+        text: "FIRST® Tech Challenge – advanced robotics: teens build robots and grow programming skills for real tasks.",
       },
     ],
     whyKicker: "01",

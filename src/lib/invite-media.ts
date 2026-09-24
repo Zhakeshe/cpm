@@ -30,14 +30,36 @@ export const UNI_LOGOS = [
   "/invite/unis/enu.svg",
 ] as const;
 
-export const PROGRAM_PHOTOS = [
-  "/invite/ftc/finals4.jpg",
-  "/invite/ftc/finals3.jpg",
-  "/invite/ftc/finals5.jpg",
-  "/hero-field.jpg",
+export const PROGRAM_CARDS = [
+  {
+    photo: "/invite/programs/discover.png",
+    mark: "/invite/programs/discover-mark.png",
+    color: "#CA32FF",
+    youtube: "yF_zKolSUI8",
+    more: "https://www.firstrobotics.kz/ru/fll-discover/",
+  },
+  {
+    photo: "/invite/programs/explore.png",
+    mark: "/invite/programs/explore-mark.png",
+    color: "#00BA34",
+    youtube: "BayY9b0uX8A",
+    more: "https://www.firstrobotics.kz/ru/fll-explore/",
+  },
+  {
+    photo: "/invite/programs/challenge.png",
+    mark: "/invite/programs/challenge-mark.png",
+    color: "#FF4848",
+    youtube: "MkpSgkw8A7I",
+    more: "https://www.firstrobotics.kz/ru/fll-challenge/",
+  },
+  {
+    photo: "/invite/programs/ftc.png",
+    mark: "/invite/programs/ftc-mark.png",
+    color: "#FF7A00",
+    youtube: "dxfRKaqIiP8",
+    more: "https://www.firstrobotics.kz/ru/ftc/",
+  },
 ] as const;
-
-export const PROGRAM_FOCUS = ["42% 40%", "50% 35%", "55% 45%", "68% center"] as const;
 
 export const FIRST_PARTNER_LOGOS = [
   "/invite/partners/p1.png",
