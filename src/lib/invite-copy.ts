@@ -1,10 +1,9 @@
-export const LOCALES = ["kk", "ru", "en"] as const;
+export const LOCALES = ["kk", "ru"] as const;
 export type Locale = (typeof LOCALES)[number];
 
 export const LOCALE_META: Record<Locale, { short: string; native: string }> = {
   kk: { short: "ҚАЗ", native: "Қазақша" },
   ru: { short: "РУС", native: "Русский" },
-  en: { short: "ENG", native: "English" },
 };
 
 export const INVITE_ROLE_IDS = [
@@ -266,7 +265,7 @@ const SHARED_UNIS = {
   ],
 } as const;
 
-export const INVITE_COPY: Record<Locale, InviteCopy> = {
+export const INVITE_COPY: Record<Locale | "en", InviteCopy> = {
   kk: {
     metaTitle: "K.E.R.N FTC · қабылдау",
     nav: { first: "FIRST", programs: "FTC / FLL", roles: "Рөлдер", season: "Маусым", who: "Кім керек", apply: "Өтініш" },
@@ -945,7 +944,7 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
   },
 };
 
-export function inviteRoleTitle(role: string, locale: Locale = "en") {
+export function inviteRoleTitle(role: string, locale: Locale = "ru") {
   const id = role as InviteRoleId;
   return INVITE_COPY[locale].roles[id]?.title ?? role;
 }

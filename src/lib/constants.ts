@@ -11,7 +11,6 @@ export const INVITE_NAV_LINKS = [
   { href: "#first", key: "first" },
   { href: "#programs", key: "programs" },
   { href: "#roles", key: "roles" },
-  { href: "#apply", key: "apply" },
 ] as const;
 
 export const ROBOT_STATUS = [
@@ -69,7 +68,7 @@ export const INVITE_PUBLIC_URL =
 
 export const INVITE_ROLES = INVITE_ROLE_IDS.map((value) => ({
   value,
-  title: INVITE_COPY.en.roles[value].title,
+  title: INVITE_COPY.ru.roles[value].title,
 }));
 
 export const CONTACTS = {
@@ -89,5 +88,5 @@ export function testingAreaLabel(value: string) {
 
 export function inviteRoleLabel(value: string) {
   const id = value as InviteRoleId;
-  return INVITE_COPY.en.roles[id]?.title ?? value;
+  return INVITE_COPY.ru.roles[id]?.title ?? value;
 }
