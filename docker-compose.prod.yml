@@ -23,6 +23,7 @@ services:
       args:
         NEXT_PUBLIC_BASE_PATH: /scrimmage
         NEXT_PUBLIC_SITE_URL: https://kern.ushqn.com/scrimmage
+        NEXT_PUBLIC_INVITE_URL: https://kern.ushqn.com/invite
     container_name: kern-scrimmage-app
     restart: unless-stopped
     environment:
@@ -31,6 +32,7 @@ services:
       ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET}
       NEXT_PUBLIC_BASE_PATH: /scrimmage
       NEXT_PUBLIC_SITE_URL: https://kern.ushqn.com/scrimmage
+      NEXT_PUBLIC_INVITE_URL: https://kern.ushqn.com/invite
       NEXT_PUBLIC_INSTAGRAM_URL: https://www.instagram.com/kern.school.kz/
       NEXT_PUBLIC_WHATSAPP_URL: https://wa.me/77775888030
     depends_on:
