@@ -31,17 +31,23 @@ model ScrimmageRegistration {
 }
 
 model TeamInvite {
-  id          String   @id @default(cuid())
-  fullName    String
-  grade       String
-  phone       String
-  social      String
-  role        String
-  whyJoin     String
-  skills      String
-  portfolio   String?
-  fingerprint String
-  createdAt   DateTime @default(now())
+  id           String   @id @default(cuid())
+  fullName     String
+  grade        String
+  school       String
+  city         String
+  languages    String
+  availability String
+  heardFrom    String
+  superpower   String
+  phone        String
+  social       String
+  role         String
+  whyJoin      String
+  skills       String
+  portfolio    String?
+  fingerprint  String
+  createdAt    DateTime @default(now())
 
   @@index([createdAt])
   @@index([role])

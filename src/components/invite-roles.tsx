@@ -1,28 +1,29 @@
-import { INVITE_ROLES } from "@/lib/constants";
+"use client";
+
+import { INVITE_ROLE_IDS } from "@/lib/invite-copy";
 import { Reveal } from "@/components/reveal";
+import { useInviteLang } from "@/components/invite-i18n";
 
 export function InviteRoles() {
+  const { t } = useInviteLang();
+
   return (
-    <section id="roles" className="bg-navy-deep text-white">
-      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+    <section id="roles" className="invite-ink-band">
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
         <Reveal>
-          <p className="text-[12px] font-semibold tracking-[0.26em] text-gold-soft uppercase">
-            Roles we are looking for
-          </p>
-          <h2 className="mt-3 max-w-2xl text-3xl font-semibold leading-tight tracking-[-0.03em] sm:text-4xl">
-            Robotics, media, and the people
-            <span className="mt-1 block italic text-gold-soft [font-family:var(--font-buzz),Georgia,serif]">
-              who hold the season together
-            </span>
+          <p className="invite-kicker invite-kicker-light">{t.rolesKicker}</p>
+          <h2 className="invite-h2 invite-h2-light mt-3">
+            {t.rolesTitle}
+            <em>{t.rolesItalic}</em>
           </h2>
         </Reveal>
-
-        <div className="mt-10 grid gap-4 md:grid-cols-2">
-          {INVITE_ROLES.map((role, index) => (
-            <Reveal key={role.value} delay={index * 55}>
-              <article className="h-full border border-white/10 bg-white/4 px-5 py-6 backdrop-blur-sm">
-                <h3 className="text-xl font-semibold">{role.title}</h3>
-                <p className="mt-2 text-sm leading-7 text-white/68">{role.text}</p>
+        <div className="invite-bento mt-12">
+          {INVITE_ROLE_IDS.map((id, index) => (
+            <Reveal key={id} delay={index * 50}>
+              <article className={index === 0 ? "is-lead" : undefined}>
+                <p>0{index + 1}</p>
+                <h3>{t.roles[id].title}</h3>
+                <p>{t.roles[id].text}</p>
               </article>
             </Reveal>
           ))}

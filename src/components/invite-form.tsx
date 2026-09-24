@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle2, LoaderCircle } from "lucide-react";
-import { INVITE_ROLES } from "@/lib/constants";
+import { AVAILABILITY, HEARD_FROM, INVITE_ROLE_IDS } from "@/lib/invite-copy";
 import { formatPhoneMask, inviteSchema, type InviteInput } from "@/lib/validation";
 import { cn, withBase } from "@/lib/utils";
+import { useInviteLang } from "@/components/invite-i18n";
 
 const fieldClass =
-  "mt-2 w-full rounded-xl border border-line bg-white px-3.5 py-3 text-sm text-ink outline-none transition focus:border-navy focus:ring-2 focus:ring-gold/35";
+  "invite-field";
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
@@ -17,6 +18,7 @@ function FieldError({ message }: { message?: string }) {
 }
 
 export function InviteForm() {
+  const { t } = useInviteLang();
   const [success, setSuccess] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -30,9 +32,15 @@ export function InviteForm() {
     defaultValues: {
       fullName: "",
       grade: "",
+      school: "",
+      city: "Астана",
+      languages: "",
       phone: "+7 ",
       social: "",
       role: undefined,
+      availability: undefined,
+      heardFrom: undefined,
+      superpower: "",
       whyJoin: "",
       skills: "",
       portfolio: "",
@@ -56,7 +64,13 @@ export function InviteForm() {
     });
     const data = (await response.json().catch(() => ({}))) as { error?: string };
     if (!response.ok) {
-      setServerError(data.error || "Could not send the application. Try again.");
+      setServerError(
+        data.error === "We already have this application."
+          ? t.errors.duplicate
+          : data.error?.includes("just sent")
+            ? t.errors.wait
+            : t.errors.server,
+      );
       return;
     }
     sessionStorage.setItem("kern-invite", "1");
@@ -66,46 +80,55 @@ export function InviteForm() {
 
   if (success) {
     return (
-      <div className="rounded-2xl bg-white px-6 py-12 text-center shadow-[0_20px_60px_rgba(6,45,89,0.08)] sm:px-10">
-        <CheckCircle2 className="mx-auto text-gold" size={36} />
-        <h3 className="mt-4 text-2xl font-semibold text-navy">Application sent</h3>
-        <p className="mx-auto mt-4 max-w-md text-sm leading-7 text-muted">
-          We will write you on Instagram or Telegram after we review the form.
-        </p>
+      <div className="invite-success">
+        <CheckCircle2 className="mx-auto text-[var(--invite-gold)]" size={36} />
+        <h3>{t.successTitle}</h3>
+        <p>{t.successText}</p>
         <button
           type="button"
-          className="mt-8 inline-flex rounded-full bg-navy px-5 py-3 text-sm font-semibold text-white"
+          className="invite-btn-navy mt-8"
           onClick={() => {
             sessionStorage.removeItem("kern-invite");
             window.history.replaceState({}, "", withBase("/invite"));
             setSuccess(false);
           }}
         >
-          Send another
+          {t.another}
         </button>
       </div>
     );
   }
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      className="rounded-2xl bg-white p-5 shadow-[0_20px_60px_rgba(6,45,89,0.08)] sm:p-8"
-      noValidate
-    >
+    <form onSubmit={handleSubmit(onSubmit)} className="invite-form" noValidate>
       <div className="grid gap-5 sm:grid-cols-2">
-        <label className="block text-sm font-medium text-navy sm:col-span-2">
-          Full Name
+        <label className="sm:col-span-2">
+          {t.fields.fullName}
           <input {...register("fullName")} className={fieldClass} autoComplete="name" />
-          <FieldError message={errors.fullName?.message} />
+          <FieldError message={errors.fullName ? t.errors.fullName : undefined} />
         </label>
-        <label className="block text-sm font-medium text-navy">
-          Grade / Class
+        <label>
+          {t.fields.grade}
           <input {...register("grade")} className={fieldClass} placeholder="10A" />
-          <FieldError message={errors.grade?.message} />
+          <FieldError message={errors.grade ? t.errors.grade : undefined} />
         </label>
-        <label className="block text-sm font-medium text-navy">
-          Phone number
+        <label>
+          {t.fields.school}
+          <input {...register("school")} className={fieldClass} />
+          <FieldError message={errors.school ? t.errors.school : undefined} />
+        </label>
+        <label>
+          {t.fields.city}
+          <input {...register("city")} className={fieldClass} />
+          <FieldError message={errors.city ? t.errors.city : undefined} />
+        </label>
+        <label>
+          {t.fields.languages}
+          <input {...register("languages")} className={fieldClass} placeholder="ҚАЗ / РУС / ENG" />
+          <FieldError message={errors.languages ? t.errors.languages : undefined} />
+        </label>
+        <label>
+          {t.fields.phone}
           <input
             className={cn(fieldClass, "tracking-wide")}
             inputMode="tel"
@@ -118,57 +141,85 @@ export function InviteForm() {
               },
             })}
           />
-          <FieldError message={errors.phone?.message} />
+          <FieldError message={errors.phone ? t.errors.phone : undefined} />
         </label>
-        <label className="block text-sm font-medium text-navy">
-          Instagram or Telegram
+        <label>
+          {t.fields.social}
           <input {...register("social")} className={fieldClass} placeholder="@username" />
-          <FieldError message={errors.social?.message} />
+          <FieldError message={errors.social ? t.errors.social : undefined} />
         </label>
-        <label className="block text-sm font-medium text-navy">
-          Role of interest
+        <label>
+          {t.fields.role}
           <select {...register("role")} className={fieldClass} defaultValue="">
             <option value="" disabled>
-              Choose a role
+              {t.fields.rolePlaceholder}
             </option>
-            {INVITE_ROLES.map((role) => (
-              <option key={role.value} value={role.value}>
-                {role.title}
+            {INVITE_ROLE_IDS.map((id) => (
+              <option key={id} value={id}>
+                {t.roles[id].title}
               </option>
             ))}
           </select>
-          <FieldError message={errors.role?.message} />
+          <FieldError message={errors.role ? t.errors.role : undefined} />
         </label>
-        <label className="block text-sm font-medium text-navy sm:col-span-2">
-          Why do you want to join?
+        <label>
+          {t.fields.availability}
+          <select {...register("availability")} className={fieldClass} defaultValue="">
+            <option value="" disabled>
+              {t.fields.availabilityPlaceholder}
+            </option>
+            {AVAILABILITY.map((id) => (
+              <option key={id} value={id}>
+                {t.availabilityOpts[id]}
+              </option>
+            ))}
+          </select>
+          <FieldError message={errors.availability ? t.errors.availability : undefined} />
+        </label>
+        <label className="sm:col-span-2">
+          {t.fields.heardFrom}
+          <select {...register("heardFrom")} className={fieldClass} defaultValue="">
+            <option value="" disabled>
+              {t.fields.heardPlaceholder}
+            </option>
+            {HEARD_FROM.map((id) => (
+              <option key={id} value={id}>
+                {t.heardOpts[id]}
+              </option>
+            ))}
+          </select>
+          <FieldError message={errors.heardFrom ? t.errors.heardFrom : undefined} />
+        </label>
+        <label className="sm:col-span-2">
+          {t.fields.superpower}
+          <textarea {...register("superpower")} className={cn(fieldClass, "min-h-24 resize-y")} rows={3} />
+          <FieldError message={errors.superpower ? t.errors.superpower : undefined} />
+        </label>
+        <label className="sm:col-span-2">
+          {t.fields.whyJoin}
           <textarea {...register("whyJoin")} className={cn(fieldClass, "min-h-28 resize-y")} rows={4} />
-          <FieldError message={errors.whyJoin?.message} />
+          <FieldError message={errors.whyJoin ? t.errors.whyJoin : undefined} />
         </label>
-        <label className="block text-sm font-medium text-navy sm:col-span-2">
-          Your skills / experience
+        <label className="sm:col-span-2">
+          {t.fields.skills}
           <textarea {...register("skills")} className={cn(fieldClass, "min-h-28 resize-y")} rows={4} />
-          <FieldError message={errors.skills?.message} />
+          <FieldError message={errors.skills ? t.errors.skills : undefined} />
         </label>
-        <label className="block text-sm font-medium text-navy sm:col-span-2">
-          Link to portfolio or works
-          <input
-            {...register("portfolio")}
-            className={fieldClass}
-            placeholder="optional — URL or @username"
-          />
-          <FieldError message={errors.portfolio?.message} />
+        <label className="sm:col-span-2">
+          {t.fields.portfolio}
+          <span className="ml-2 text-[11px] font-normal tracking-normal text-[var(--invite-mute)]">
+            {t.fields.portfolioHint}
+          </span>
+          <input {...register("portfolio")} className={fieldClass} />
+          <FieldError message={errors.portfolio ? t.errors.portfolio : undefined} />
         </label>
       </div>
 
       {serverError ? <p className="mt-4 text-sm text-red-700">{serverError}</p> : null}
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full bg-navy px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-navy-mid disabled:opacity-60 sm:w-auto"
-      >
+      <button type="submit" disabled={isSubmitting} className="invite-btn-navy mt-8 w-full sm:w-auto">
         {isSubmitting ? <LoaderCircle className="animate-spin" size={16} /> : null}
-        {isSubmitting ? "Sending..." : "Submit Application"}
+        {isSubmitting ? t.sending : t.submit}
       </button>
     </form>
   );

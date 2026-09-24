@@ -11,6 +11,12 @@ type Invite = {
   id: string;
   fullName: string;
   grade: string;
+  school: string;
+  city: string;
+  languages: string;
+  availability: string;
+  heardFrom: string;
+  superpower: string;
   phone: string;
   social: string;
   role: string;
@@ -100,7 +106,7 @@ export default function AdminInvitesPage() {
             <input
               value={q}
               onChange={(event) => setQ(event.target.value)}
-              placeholder="Search by name, phone, social"
+              placeholder="Search by name, school, phone"
               className="w-full rounded-sm border border-line bg-white py-2.5 pl-9 pr-3 text-sm"
             />
           </label>
@@ -132,6 +138,7 @@ export default function AdminInvitesPage() {
             <thead className="bg-paper text-xs uppercase tracking-wide text-muted">
               <tr>
                 <th className="px-3 py-3">Name</th>
+                <th className="px-3 py-3">School</th>
                 <th className="px-3 py-3">Grade</th>
                 <th className="px-3 py-3">Role</th>
                 <th className="px-3 py-3">Phone</th>
@@ -142,7 +149,7 @@ export default function AdminInvitesPage() {
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-3 py-10 text-center text-muted">
+                  <td colSpan={7} className="px-3 py-10 text-center text-muted">
                     No applications yet
                   </td>
                 </tr>
@@ -154,6 +161,7 @@ export default function AdminInvitesPage() {
                     onClick={() => setSelected(row)}
                   >
                     <td className="px-3 py-3 font-medium text-navy">{row.fullName}</td>
+                    <td className="px-3 py-3">{row.school}</td>
                     <td className="px-3 py-3">{row.grade}</td>
                     <td className="px-3 py-3">{inviteRoleLabel(row.role)}</td>
                     <td className="px-3 py-3 whitespace-nowrap">{row.phone}</td>
@@ -188,6 +196,12 @@ export default function AdminInvitesPage() {
             </div>
             <dl className="mt-6 space-y-3 text-sm">
               <Row label="Grade" value={selected.grade} />
+              <Row label="School" value={selected.school} />
+              <Row label="City" value={selected.city} />
+              <Row label="Languages" value={selected.languages} />
+              <Row label="Availability" value={selected.availability} />
+              <Row label="Heard from" value={selected.heardFrom} />
+              <Row label="Superpower" value={selected.superpower} />
               <Row label="Role" value={inviteRoleLabel(selected.role)} />
               <Row label="Phone" value={selected.phone} />
               <Row label="Social" value={selected.social} />

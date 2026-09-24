@@ -1,35 +1,34 @@
-import { INVITE_WHO } from "@/lib/constants";
+"use client";
+
 import { Reveal } from "@/components/reveal";
+import { useInviteLang } from "@/components/invite-i18n";
 
 export function InviteWho() {
+  const { t } = useInviteLang();
+
   return (
-    <section id="who" className="bg-paper">
-      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-        <div className="grid gap-10 lg:grid-cols-[1fr_1.15fr] lg:items-start">
-          <Reveal>
-            <p className="text-[12px] font-semibold tracking-[0.26em] text-gold uppercase">
-              Who can apply
-            </p>
-            <h2 className="mt-3 text-3xl font-semibold leading-tight tracking-[-0.03em] text-navy sm:text-4xl">
-              If you want to learn
-              <span className="mt-1 block italic text-gold">and actually show up</span>
-            </h2>
-            <p className="mt-5 max-w-md text-[16px] leading-7 text-ink/70">
-              You do not need a finished portfolio. You need curiosity, a role you
-              care about, and the habit of finishing work with other people.
-            </p>
-          </Reveal>
-          <div className="grid gap-3">
-            {INVITE_WHO.map((item, index) => (
-              <Reveal key={item} delay={index * 80}>
-                <div className="flex gap-4 rounded-2xl bg-white px-5 py-4 shadow-[0_12px_32px_rgba(6,45,89,0.05)]">
-                  <span className="mt-0.5 text-sm font-semibold text-gold">0{index + 1}</span>
-                  <p className="text-[15px] leading-7 text-navy">{item}</p>
+    <section id="who" className="invite-section">
+      <div className="mx-auto grid max-w-6xl gap-12 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-[0.9fr_1.1fr]">
+        <Reveal>
+          <p className="invite-kicker">{t.whoKicker}</p>
+          <h2 className="invite-h2 mt-3">
+            {t.whoTitle}
+            <em>{t.whoItalic}</em>
+          </h2>
+          <p className="mt-5 max-w-md text-[16px] leading-7 text-[var(--invite-mute)]">{t.whoLead}</p>
+        </Reveal>
+        <ol className="invite-who">
+          {t.who.map((item, index) => (
+            <li key={item}>
+              <Reveal delay={index * 70}>
+                <div className="invite-who-row">
+                  <i>{String(index + 1).padStart(2, "0")}</i>
+                  <span>{item}</span>
                 </div>
               </Reveal>
-            ))}
-          </div>
-        </div>
+            </li>
+          ))}
+        </ol>
       </div>
     </section>
   );

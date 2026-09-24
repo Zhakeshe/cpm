@@ -1,10 +1,6 @@
 import { z } from "zod";
-import { INVITE_ROLES, MEMBER_COUNTS } from "./constants";
-
-const INVITE_ROLE_VALUES = INVITE_ROLES.map((role) => role.value) as [
-  (typeof INVITE_ROLES)[number]["value"],
-  ...(typeof INVITE_ROLES)[number]["value"][],
-];
+import { MEMBER_COUNTS } from "./constants";
+import { AVAILABILITY, HEARD_FROM, INVITE_ROLE_IDS } from "./invite-copy";
 
 export const PHONE_REGEX = /^\+7 \d{3} \d{3} \d{2} \d{2}$/;
 
@@ -46,43 +42,23 @@ export const registrationSchema = z.object({
 export type RegistrationInput = z.infer<typeof registrationSchema>;
 
 export const inviteSchema = z.object({
-  fullName: z
-    .string({ required_error: "Enter your full name" })
-    .trim()
-    .min(3, "Enter your full name")
-    .max(80, "Name is too long"),
-  grade: z
-    .string({ required_error: "Enter your grade or class" })
-    .trim()
-    .min(1, "Enter your grade or class")
-    .max(40, "Too long"),
-  phone: z
-    .string({ required_error: "Enter a number as +7 XXX XXX XX XX" })
-    .trim()
-    .regex(PHONE_REGEX, "Enter a number as +7 XXX XXX XX XX"),
-  social: z
-    .string({ required_error: "Add Instagram or Telegram" })
-    .trim()
-    .min(2, "Add Instagram or Telegram")
-    .max(80, "Too long"),
-  role: z.enum(INVITE_ROLE_VALUES, {
-    required_error: "Choose a role",
-    invalid_type_error: "Choose a role",
-  }),
-  whyJoin: z
-    .string({ required_error: "Tell us why you want to join" })
-    .trim()
-    .min(10, "Write at least a couple of sentences")
-    .max(800, "Keep it under 800 characters"),
-  skills: z
-    .string({ required_error: "Describe your skills" })
-    .trim()
-    .min(8, "Describe your skills")
-    .max(800, "Keep it under 800 characters"),
+  fullName: z.string().trim().min(3).max(80),
+  grade: z.string().trim().min(1).max(40),
+  school: z.string().trim().min(2).max(120),
+  city: z.string().trim().min(2).max(80),
+  languages: z.string().trim().min(2).max(80),
+  phone: z.string().trim().regex(PHONE_REGEX),
+  social: z.string().trim().min(2).max(80),
+  role: z.enum(INVITE_ROLE_IDS),
+  availability: z.enum(AVAILABILITY),
+  heardFrom: z.enum(HEARD_FROM),
+  superpower: z.string().trim().min(8).max(280),
+  whyJoin: z.string().trim().min(10).max(800),
+  skills: z.string().trim().min(8).max(800),
   portfolio: z
     .string()
     .trim()
-    .max(240, "Link is too long")
+    .max(240)
     .optional()
     .refine(
       (value) =>
@@ -91,7 +67,6 @@ export const inviteSchema = z.object({
         value.startsWith("@") ||
         value.startsWith("t.me/") ||
         value.startsWith("instagram.com/"),
-      { message: "Add a link or @username" },
     ),
 });
 

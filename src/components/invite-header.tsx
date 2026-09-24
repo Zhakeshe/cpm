@@ -4,14 +4,17 @@ import Link from "next/link";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { INVITE_NAV_LINKS } from "@/lib/constants";
+import { LOCALE_META, LOCALES } from "@/lib/invite-copy";
 import { withBase } from "@/lib/utils";
+import { useInviteLang } from "@/components/invite-i18n";
 
 export function InviteHeader() {
   const [open, setOpen] = useState(false);
+  const { t, locale, setLocale } = useInviteLang();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-navy/8 bg-white/90 backdrop-blur">
-      <div className="mx-auto flex h-20 max-w-6xl items-center justify-between gap-6 px-4 sm:px-6">
+    <header className="invite-bar sticky top-0 z-50">
+      <div className="mx-auto flex h-[72px] max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link href="/" className="flex shrink-0 items-center" aria-label="K.E.R.N School">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -19,33 +22,38 @@ export function InviteHeader() {
             alt="K.E.R.N School"
             width={168}
             height={66}
-            className="h-11 w-auto"
+            className="h-10 w-auto sm:h-11"
           />
         </Link>
 
-        <nav className="hidden items-center gap-8 lg:flex" aria-label="Invite navigation">
+        <nav className="hidden items-center gap-7 lg:flex" aria-label="Invite">
           {INVITE_NAV_LINKS.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="text-[13px] font-medium text-navy/70 transition hover:text-navy"
-            >
-              {link.label}
+            <a key={link.href} href={link.href} className="invite-nav">
+              {t.nav[link.key]}
             </a>
           ))}
         </nav>
 
-        <div className="flex items-center gap-3">
-          <a
-            href="#apply"
-            className="hidden rounded-full bg-navy px-5 py-2.5 text-[13px] font-semibold text-white transition hover:bg-navy-mid lg:inline-flex"
-          >
-            Apply Now
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="invite-langs" role="group" aria-label="Language">
+            {LOCALES.map((item) => (
+              <button
+                key={item}
+                type="button"
+                className={item === locale ? "is-on" : undefined}
+                onClick={() => setLocale(item)}
+              >
+                {LOCALE_META[item].short}
+              </button>
+            ))}
+          </div>
+          <a href="#apply" className="invite-btn-navy hidden sm:inline-flex">
+            {t.apply}
           </a>
           <button
             type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-navy/15 text-navy lg:hidden"
-            aria-label={open ? "Close menu" : "Open menu"}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--invite-line)] text-[var(--invite-ink)] lg:hidden"
+            aria-label={open ? "Close" : "Menu"}
             aria-expanded={open}
             onClick={() => setOpen((value) => !value)}
           >
@@ -55,24 +63,24 @@ export function InviteHeader() {
       </div>
 
       {open ? (
-        <div className="border-t border-navy/10 bg-white px-4 py-4 lg:hidden">
-          <nav className="flex flex-col gap-1" aria-label="Mobile invite navigation">
+        <div className="border-t border-[var(--invite-line)] bg-[var(--invite-cream)] px-4 py-4 lg:hidden">
+          <nav className="flex flex-col gap-1">
             {INVITE_NAV_LINKS.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
-                className="px-2 py-2.5 text-sm font-medium text-navy"
+                className="px-2 py-2.5 text-sm font-medium text-[var(--invite-ink)]"
                 onClick={() => setOpen(false)}
               >
-                {link.label}
+                {t.nav[link.key]}
               </a>
             ))}
             <a
               href="#apply"
-              className="mt-2 rounded-full bg-navy px-3 py-3 text-center text-sm font-semibold text-white"
+              className="invite-btn-navy mt-2 justify-center"
               onClick={() => setOpen(false)}
             >
-              Apply Now
+              {t.apply}
             </a>
           </nav>
         </div>

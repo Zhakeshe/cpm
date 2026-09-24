@@ -22,6 +22,8 @@ export async function GET(request: NextRequest) {
                 { phone: { contains: q, mode: "insensitive" } },
                 { social: { contains: q, mode: "insensitive" } },
                 { grade: { contains: q, mode: "insensitive" } },
+                { school: { contains: q, mode: "insensitive" } },
+                { city: { contains: q, mode: "insensitive" } },
               ],
             }
           : {},

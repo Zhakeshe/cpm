@@ -9,10 +9,10 @@ const WINDOW_MS = 60_000;
 function fingerprintOf(data: {
   fullName: string;
   phone: string;
-  social: string;
+  school: string;
   role: string;
 }) {
-  const raw = [data.fullName, data.phone, data.social, data.role]
+  const raw = [data.fullName, data.phone, data.school, data.role]
     .map((value) => value.trim().toLowerCase())
     .join("|");
   return createHash("sha256").update(raw).digest("hex");
@@ -67,6 +67,12 @@ export async function POST(request: Request) {
       data: {
         fullName: payload.fullName,
         grade: payload.grade,
+        school: payload.school,
+        city: payload.city,
+        languages: payload.languages,
+        availability: payload.availability,
+        heardFrom: payload.heardFrom,
+        superpower: payload.superpower,
         phone: payload.phone,
         social: payload.social,
         role: payload.role,
