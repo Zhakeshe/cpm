@@ -167,10 +167,10 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
     nav: { why: "Бағдарлама", roles: "Рөлдер", season: "Маусым", who: "Талаптар", apply: "Өтініш" },
     apply: "Өтініш беру",
     heroEyebrow: "K.E.R.N School · Астана",
-    heroTitle: "K.E.R.N FTC",
-    heroItalic: "Командаға қабылдау · 2026–2027",
+    heroTitle: "Мектептегі FIRST Tech Challenge командасы",
+    heroItalic: "K.E.R.N School · Астана · 2026–2027",
     heroLead:
-      "FIRST Tech Challenge бағдарламасы бойынша мектеп командасына қабылдау ашық. Робототехника, медиа, дизайн және ұйымдастыру бағыттары.",
+      "Робототехника, медиа, дизайн және ұйымдастыру. Өтініш қабылданады, қаралады, кейін сұхбат тағайындалады.",
     heroBody:
       "Өтініш қабылданады, қаралады, содан кейін сұхбат тағайындалады. Қабылдау шектеулі.",
     ctaPrimary: "Өтініш беру",
@@ -334,10 +334,10 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
     nav: { why: "Программа", roles: "Роли", season: "Сезон", who: "Требования", apply: "Заявка" },
     apply: "Подать заявку",
     heroEyebrow: "K.E.R.N School · Астана",
-    heroTitle: "K.E.R.N FTC",
-    heroItalic: "Набор в команду · 2026–2027",
+    heroTitle: "Школьная команда FIRST Tech Challenge",
+    heroItalic: "K.E.R.N School · Астана · 2026–2027",
     heroLead:
-      "Открыт набор в школьную команду FIRST Tech Challenge. Направления: робототехника, медиа, дизайн и организация.",
+      "Робототехника, медиа, дизайн и организация. Заявки принимаются, рассматриваются, затем назначается собеседование.",
     heroBody:
       "Заявки принимаются, рассматриваются, затем назначается собеседование. Мест ограниченное число.",
     ctaPrimary: "Подать заявку",
@@ -501,10 +501,10 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
     nav: { why: "Programme", roles: "Roles", season: "Season", who: "Requirements", apply: "Apply" },
     apply: "Submit application",
     heroEyebrow: "K.E.R.N School · Astana",
-    heroTitle: "K.E.R.N FTC",
-    heroItalic: "Team recruitment · 2026–2027",
+    heroTitle: "The school FIRST Tech Challenge team",
+    heroItalic: "K.E.R.N School · Astana · 2026–2027",
     heroLead:
-      "Applications are open for the school FIRST Tech Challenge team. Tracks: robotics, media, design, and operations.",
+      "Robotics, media, design, and operations. Applications are reviewed, then shortlisted candidates are invited to interview.",
     heroBody:
       "Applications are reviewed, then shortlisted candidates are invited to interview. Places are limited.",
     ctaPrimary: "Submit application",

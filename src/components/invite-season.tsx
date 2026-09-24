@@ -32,15 +32,15 @@ export function InviteSeason() {
         </div>
       </section>
 
-      <section className="invite-ink-band">
+      <section className="invite-section">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
           <Reveal>
-            <p className="invite-kicker invite-kicker-light">{t.nomsKicker}</p>
-            <h2 className="invite-h2 invite-h2-light mt-3">
+            <p className="invite-kicker">{t.nomsKicker}</p>
+            <h2 className="invite-h2 mt-3">
               {t.nomsTitle}
               <em>{t.nomsItalic}</em>
             </h2>
-            <p className="mt-5 max-w-xl text-[16px] leading-7 text-white/60">{t.nomsLead}</p>
+            <p className="mt-5 max-w-xl text-[16px] leading-7 text-[var(--invite-mute)]">{t.nomsLead}</p>
           </Reveal>
           <div className="invite-noms mt-12">
             {t.noms.map((item, index) => (
@@ -81,15 +81,15 @@ export function InviteSeason() {
         </div>
       </section>
 
-      <section className="invite-ink-band">
+      <section className="invite-section">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
           <Reveal>
-            <p className="invite-kicker invite-kicker-light">{t.partnersKicker}</p>
-            <h2 className="invite-h2 invite-h2-light mt-3">
+            <p className="invite-kicker">{t.partnersKicker}</p>
+            <h2 className="invite-h2 mt-3">
               {t.partnersTitle}
               <em>{t.partnersItalic}</em>
             </h2>
-            <p className="mt-5 max-w-xl text-[16px] leading-7 text-white/60">{t.partnersLead}</p>
+            <p className="mt-5 max-w-xl text-[16px] leading-7 text-[var(--invite-mute)]">{t.partnersLead}</p>
           </Reveal>
           <ul className="invite-partners">
             {t.partners.map((name) => (

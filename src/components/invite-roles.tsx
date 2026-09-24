@@ -8,11 +8,11 @@ export function InviteRoles() {
   const { t } = useInviteLang();
 
   return (
-    <section id="roles" className="invite-ink-band">
+    <section id="roles" className="invite-section">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
         <Reveal>
-          <p className="invite-kicker invite-kicker-light">{t.rolesKicker}</p>
-          <h2 className="invite-h2 invite-h2-light mt-3">
+          <p className="invite-kicker">{t.rolesKicker}</p>
+          <h2 className="invite-h2 mt-3">
             {t.rolesTitle}
             <em>{t.rolesItalic}</em>
           </h2>
