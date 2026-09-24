@@ -8,7 +8,6 @@ import { InviteHero } from "@/components/invite-hero";
 import { InviteLangProvider, useInviteLang } from "@/components/invite-i18n";
 import { InviteRoles } from "@/components/invite-roles";
 import { InviteSeason } from "@/components/invite-season";
-import { InviteWhy } from "@/components/invite-why";
 
 function InviteInner() {
   const { t } = useInviteLang();
@@ -29,7 +28,6 @@ function InviteInner() {
         </div>
       </section>
       <main>
-        <InviteWhy />
         <InviteRoles />
         <InviteSeason />
         <section id="apply" className="invite-section">

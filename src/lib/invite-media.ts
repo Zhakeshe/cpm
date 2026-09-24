@@ -10,6 +10,3 @@ export const ROLE_PHOTOS: Record<InviteRoleId, string> = {
   organizer: "/invite/event.jpg",
 };
 
-export const PROGRAMME_PHOTOS = ["/invite/workshop.jpg", "/invite/camera.jpg", "/invite/event.jpg"] as const;
-
-export const PROGRAMME_INDEXES = [0, 2, 4] as const;

@@ -8,7 +8,6 @@ export const NAV_LINKS = [
 ] as const;
 
 export const INVITE_NAV_LINKS = [
-  { href: "#why", key: "why" },
   { href: "#roles", key: "roles" },
   { href: "#season", key: "season" },
   { href: "#roles", key: "who" },

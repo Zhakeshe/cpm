@@ -34,7 +34,7 @@ type RoleCopy = { title: string; text: string };
 
 export type InviteCopy = {
   metaTitle: string;
-  nav: { why: string; roles: string; season: string; who: string; apply: string };
+  nav: { roles: string; season: string; who: string; apply: string };
   apply: string;
   heroEyebrow: string;
   heroTitle: string;
@@ -167,7 +167,7 @@ const SHARED_UNIS = {
 export const INVITE_COPY: Record<Locale, InviteCopy> = {
   kk: {
     metaTitle: "K.E.R.N FTC · қабылдау",
-    nav: { why: "Бағдарлама", roles: "Рөлдер", season: "Маусым", who: "Кім керек", apply: "Өтініш" },
+    nav: { roles: "Рөлдер", season: "Маусым", who: "Кім керек", apply: "Өтініш" },
     apply: "Өтініш беру",
     heroEyebrow: "K.E.R.N School · Астана",
     heroTitle: "Мектептегі FIRST Tech Challenge командасы",
@@ -338,7 +338,7 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
   },
   ru: {
     metaTitle: "K.E.R.N FTC · набор",
-    nav: { why: "Программа", roles: "Роли", season: "Сезон", who: "Кто нужен", apply: "Заявка" },
+    nav: { roles: "Роли", season: "Сезон", who: "Кто нужен", apply: "Заявка" },
     apply: "Подать заявку",
     heroEyebrow: "K.E.R.N School · Астана",
     heroTitle: "Школьная команда FIRST Tech Challenge",
@@ -509,7 +509,7 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
   },
   en: {
     metaTitle: "K.E.R.N FTC · recruitment",
-    nav: { why: "Programme", roles: "Roles", season: "Season", who: "Who we need", apply: "Apply" },
+    nav: { roles: "Roles", season: "Season", who: "Who we need", apply: "Apply" },
     apply: "Submit application",
     heroEyebrow: "K.E.R.N School · Astana",
     heroTitle: "The school FIRST Tech Challenge team",
