@@ -109,30 +109,26 @@ body {
 }
 
 .invite-skin {
-  --invite-cream: #efe6d4;
-  --invite-ink: #1a140c;
-  --invite-mute: #6a5d4c;
-  --invite-gold: #b8893a;
-  --invite-navy: #071f3d;
-  --invite-line: rgba(26, 20, 12, 0.12);
-  background:
-    radial-gradient(1200px 480px at 10% -10%, rgba(184, 137, 58, 0.12), transparent 50%),
-    var(--invite-cream);
+  --invite-cream: #ffffff;
+  --invite-ink: #122033;
+  --invite-mute: #5c6b7e;
+  --invite-gold: #c89b4a;
+  --invite-navy: #062d59;
+  --invite-line: #d5deea;
+  background: #f4f6f8;
   color: var(--invite-ink);
   min-height: 100vh;
 }
 
 .invite-bar {
-  background: color-mix(in srgb, var(--invite-cream) 88%, white);
+  background: rgba(255, 255, 255, 0.94);
   border-bottom: 1px solid var(--invite-line);
-  backdrop-filter: blur(14px);
+  backdrop-filter: blur(12px);
 }
 
 .invite-nav {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: 13px;
+  font-weight: 500;
   color: color-mix(in srgb, var(--invite-ink) 62%, transparent);
 }
 
@@ -143,7 +139,6 @@ body {
 .invite-langs {
   display: flex;
   border: 1px solid var(--invite-line);
-  border-radius: 999px;
   overflow: hidden;
 }
 
@@ -161,9 +156,9 @@ body {
 }
 
 .invite-kicker {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.22em;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--invite-gold);
 }
@@ -172,36 +167,59 @@ body {
   color: #e3c27a;
 }
 
+.invite-hero {
+  background: var(--invite-navy);
+  color: #fff;
+}
+
+.invite-hero-photo {
+  height: min(42vh, 380px);
+  overflow: hidden;
+  border-top: 3px solid var(--invite-gold);
+}
+
+.invite-hero-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 68% center;
+}
+
 .invite-display {
-  font-size: clamp(3.1rem, 9vw, 6.4rem);
-  line-height: 0.88;
-  letter-spacing: -0.06em;
-  font-weight: 600;
+  font-size: clamp(2.4rem, 6vw, 4.1rem);
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  font-weight: 650;
 }
 
 .invite-display em,
 .invite-h2 em {
   display: block;
-  margin-top: 0.08em;
-  font-style: italic;
-  font-weight: 400;
-  color: var(--invite-gold);
-  font-family: var(--font-buzz), Georgia, serif;
+  margin-top: 0.4em;
+  font-style: normal;
+  font-size: 0.34em;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: inherit;
+  opacity: 0.55;
+  font-family: inherit;
+  line-height: 1.45;
 }
 
 .invite-h2 {
-  font-size: clamp(2rem, 4.4vw, 3.3rem);
-  line-height: 1.05;
-  letter-spacing: -0.04em;
-  font-weight: 600;
+  font-size: clamp(1.7rem, 3.2vw, 2.35rem);
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+  font-weight: 650;
 }
 
 .invite-h2-light {
-  color: #f6efe2;
+  color: #fff;
 }
 
 .invite-h2-light em {
-  color: #e3c27a;
+  color: #fff;
 }
 
 .invite-btn-navy,
@@ -211,10 +229,10 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border-radius: 999px;
-  padding: 0.85rem 1.45rem;
+  border-radius: 2px;
+  padding: 0.75rem 1.2rem;
   font-size: 13px;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .invite-btn-navy {
@@ -227,22 +245,15 @@ body {
   color: #1a140c;
 }
 
+.invite-hero .invite-btn-ghost {
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #fff;
+}
+
 .invite-btn-ghost {
-  border: 1px solid color-mix(in srgb, var(--invite-ink) 22%, transparent);
-  color: var(--invite-ink);
-}
-
-.invite-plate {
-  padding: 0.85rem;
-  background: #fff8ec;
   border: 1px solid var(--invite-line);
-  box-shadow: 12px 18px 0 var(--invite-navy);
-}
-
-.invite-frame {
-  aspect-ratio: 4 / 5;
-  overflow: hidden;
-  background: var(--invite-navy);
+  color: var(--invite-ink);
+  background: #fff;
 }
 
 .invite-index {
@@ -296,13 +307,13 @@ body {
 }
 
 .invite-bento article {
-  background: #0a2748;
+  background: #062d59;
   padding: 1.35rem 1.25rem 1.5rem;
-  min-height: 160px;
+  min-height: 148px;
 }
 
 .invite-bento article.is-lead {
-  background: #0d3158;
+  background: #08366b;
 }
 
 @media (min-width: 768px) {
@@ -339,8 +350,8 @@ body {
   grid-template-columns: 40px 1fr;
   gap: 0.85rem;
   padding: 1rem 1.1rem;
-  background: #fff8ec;
-  border-left: 3px solid var(--invite-gold);
+  background: #fff;
+  border: 1px solid var(--invite-line);
 }
 
 .invite-who-row i {
@@ -352,7 +363,7 @@ body {
 
 .invite-form,
 .invite-success {
-  background: #fff8ec;
+  background: #fff;
   border: 1px solid var(--invite-line);
   padding: 1.4rem;
 }
@@ -376,17 +387,17 @@ body {
 .invite-field {
   margin-top: 0.45rem;
   width: 100%;
-  border: 0;
-  border-bottom: 1px solid var(--invite-line);
-  background: transparent;
-  padding: 0.7rem 0;
+  border: 1px solid var(--invite-line);
+  background: #fff;
+  padding: 0.7rem 0.8rem;
   font-size: 15px;
   color: var(--invite-ink);
   outline: none;
+  border-radius: 2px;
 }
 
 .invite-field:focus {
-  border-bottom-color: var(--invite-gold);
+  border-color: var(--invite-navy);
 }
 
 .invite-success {
@@ -422,8 +433,8 @@ body {
 
 .invite-path li {
   padding: 1.3rem 1.2rem;
-  background: #fff8ec;
-  border-top: 3px solid var(--invite-gold);
+  background: #fff;
+  border: 1px solid var(--invite-line);
 }
 
 .invite-path li > div > p:first-child {
@@ -459,15 +470,15 @@ body {
 }
 
 .invite-noms article {
-  background: #0a2748;
+  background: #062d59;
   padding: 1.15rem 1.1rem 1.3rem;
-  min-height: 132px;
+  min-height: 120px;
 }
 
 .invite-noms h3 {
-  font-family: var(--font-buzz), Georgia, serif;
-  font-size: 1.55rem;
-  color: #e3c27a;
+  font-size: 1.05rem;
+  font-weight: 650;
+  color: #fff;
 }
 
 .invite-noms p {
@@ -521,7 +532,7 @@ body {
 }
 
 .invite-partners li {
-  background: #0a2748;
+  background: #062d59;
   padding: 1.6rem 1.1rem;
   text-align: center;
   font-size: 13px;
@@ -537,13 +548,13 @@ body {
 }
 
 .invite-footer {
-  background: #041326;
-  color: rgba(246, 239, 226, 0.5);
+  background: #03172e;
+  color: rgba(255, 255, 255, 0.45);
   font-size: 12px;
 }
 
 .invite-footer a {
-  color: rgba(246, 239, 226, 0.72);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 @media (prefers-reduced-motion: reduce) {

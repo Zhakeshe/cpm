@@ -52,7 +52,7 @@ export function InviteHeader() {
           </a>
           <button
             type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--invite-line)] text-[var(--invite-ink)] lg:hidden"
+            className="inline-flex h-10 w-10 items-center justify-center border border-[var(--invite-line)] text-[var(--invite-ink)] lg:hidden"
             aria-label={open ? "Close" : "Menu"}
             aria-expanded={open}
             onClick={() => setOpen((value) => !value)}
@@ -63,7 +63,7 @@ export function InviteHeader() {
       </div>
 
       {open ? (
-        <div className="border-t border-[var(--invite-line)] bg-[var(--invite-cream)] px-4 py-4 lg:hidden">
+        <div className="border-t border-[var(--invite-line)] bg-white px-4 py-4 lg:hidden">
           <nav className="flex flex-col gap-1">
             {INVITE_NAV_LINKS.map((link) => (
               <a
