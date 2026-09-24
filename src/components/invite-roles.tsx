@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { INVITE_ROLE_IDS } from "@/lib/invite-copy";
-import { ROLE_PHOTOS } from "@/lib/invite-media";
+import { ROLE_FOCUS, ROLE_PHOTOS } from "@/lib/invite-media";
 import { withBase } from "@/lib/utils";
 import { useInviteLang } from "@/components/invite-i18n";
 
@@ -83,7 +83,7 @@ export function InviteRoles() {
           <article key={id} className={`invite-role-card${index === active ? " is-on" : ""}`}>
             <div className="invite-role-photo">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={withBase(ROLE_PHOTOS[id])} alt="" />
+              <img src={withBase(ROLE_PHOTOS[id])} alt="" style={{ objectPosition: ROLE_FOCUS[id] }} />
             </div>
             <p>0{index + 1}</p>
             <h3>{t.roles[id].title}</h3>

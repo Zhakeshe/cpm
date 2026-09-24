@@ -3,11 +3,21 @@ import type { InviteRoleId } from "@/lib/invite-copy";
 export const ROLE_PHOTOS: Record<InviteRoleId, string> = {
   ftc_member: "/hero-field.jpg",
   designer: "/invite/ftc/gears.jpg",
-  smm: "/invite/ftc/finals3.jpg",
+  smm: "/invite/ftc/bot.jpg",
   content: "/invite/ftc/drivers.jpg",
-  video: "/invite/ftc/finals5.jpg",
-  photo: "/invite/ftc/finals4.jpg",
-  organizer: "/invite/ftc/finals1.jpg",
+  video: "/hero-field.jpg",
+  photo: "/invite/ftc/bot.jpg",
+  organizer: "/invite/ftc/gears.jpg",
+};
+
+export const ROLE_FOCUS: Record<InviteRoleId, string> = {
+  ftc_member: "68% center",
+  designer: "50% 40%",
+  smm: "50% 35%",
+  content: "50% 40%",
+  video: "30% 60%",
+  photo: "70% 20%",
+  organizer: "20% 70%",
 };
 
 export const UNI_LOGOS = [

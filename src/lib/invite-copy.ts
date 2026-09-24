@@ -34,7 +34,7 @@ type RoleCopy = { title: string; text: string };
 
 export type InviteCopy = {
   metaTitle: string;
-  nav: { programs: string; roles: string; season: string; who: string; apply: string };
+  nav: { first: string; programs: string; roles: string; season: string; who: string; apply: string };
   apply: string;
   heroEyebrow: string;
   heroTitle: string;
@@ -43,7 +43,13 @@ export type InviteCopy = {
   heroBody: string;
   ctaPrimary: string;
   ctaSecondary: string;
+  scrollHint: string;
   seasonChip: string;
+  firstKicker: string;
+  firstTitle: string;
+  firstItalic: string;
+  firstLead: string;
+  first: { title: string; text: string }[];
   introTitle: string;
   introLead: string;
   whyKicker: string;
@@ -260,22 +266,46 @@ const SHARED_UNIS = {
 export const INVITE_COPY: Record<Locale, InviteCopy> = {
   kk: {
     metaTitle: "K.E.R.N FTC · қабылдау",
-    nav: { programs: "FTC / FLL", roles: "Рөлдер", season: "Маусым", who: "Кім керек", apply: "Өтініш" },
+    nav: { first: "FIRST", programs: "FTC / FLL", roles: "Рөлдер", season: "Маусым", who: "Кім керек", apply: "Өтініш" },
     apply: "Өтініш беру",
-    heroEyebrow: "K.E.R.N School · Астана",
-    heroTitle: "Мектептегі FIRST Tech Challenge командасы",
+    heroEyebrow: "K.E.R.N School · Астана · FTC",
+    heroTitle: "Бізге келгің келе ме?",
     heroItalic: "K.E.R.N School · Астана · 2026–2027",
     heroLead:
-      "Робототехника, медиа, дизайн және ұйымдастыру. Өтініш қабылданады, қаралады, кейін сұхбат тағайындалады.",
+      "Мектептегі FIRST Tech Challenge командасы. Робототехника, медиа, дизайн, ұйымдастыру.",
     heroBody:
       "Өтініш қабылданады, қаралады, содан кейін сұхбат тағайындалады. Қабылдау шектеулі.",
     ctaPrimary: "Өтініш беру",
-    ctaSecondary: "FTC / FLL",
+    ctaSecondary: "FIRST деген не",
+    scrollHint: "Әрі қарай ақтар",
     seasonChip: "Жаңа маусым",
+    firstKicker: "01",
+    firstTitle: "FIRST деген не",
+    firstItalic: "For Inspiration and Recognition of Science and Technology.",
+    firstLead:
+      "FIRST — әлемдік робототехника жарысы. Оқушылар робот жинайды, программалайды, төреші алдында қорғайды. K.E.R.N командасы FTC-де ойнайды.",
+    first: [
+      {
+        title: "Не үшін",
+        text: "Ғылым мен техниканы жарыс арқылы үйрету. Команда, мерзім, нақты нәтиже.",
+      },
+      {
+        title: "FLL",
+        text: "FIRST LEGO League — кіші сыныптар. LEGO робот, зерттеу, төреші.",
+      },
+      {
+        title: "FTC",
+        text: "FIRST Tech Challenge — 12–18 жас. Металл робот, Autonomous және TeleOp. K.E.R.N осында.",
+      },
+      {
+        title: "Неге маңызды",
+        text: "Портфолио, стипендия каталогы, университет гранттарына нақты дәлел.",
+      },
+    ],
     introTitle: "K.E.R.N School FTC 2026–2027",
     introLead:
       "K.E.R.N оқушыларын FIRST жарысына жинаймыз. Жарыс күні FTC пен FLL не екенін осында көресіз. Өтініш қабылданады, қаралады, кейін сұхбат тағайындалады.",
-    programsKicker: "01",
+    programsKicker: "02",
     programsTitle: "FTC және FLL",
     programsItalic: "Жарыста не болып жатқанын түсіну үшін.",
     programsLead:
@@ -460,22 +490,45 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
   },
   ru: {
     metaTitle: "K.E.R.N FTC · набор",
-    nav: { programs: "FTC / FLL", roles: "Роли", season: "Сезон", who: "Кто нужен", apply: "Заявка" },
+    nav: { first: "FIRST", programs: "FTC / FLL", roles: "Роли", season: "Сезон", who: "Кто нужен", apply: "Заявка" },
     apply: "Подать заявку",
-    heroEyebrow: "K.E.R.N School · Астана",
-    heroTitle: "Школьная команда FIRST Tech Challenge",
+    heroEyebrow: "K.E.R.N School · Астана · FTC",
+    heroTitle: "Хочешь к нам?",
     heroItalic: "K.E.R.N School · Астана · 2026–2027",
-    heroLead:
-      "Робототехника, медиа, дизайн и организация. Заявки принимаются, рассматриваются, затем назначается собеседование.",
+    heroLead: "Школьная команда FIRST Tech Challenge. Робототехника, медиа, дизайн, организация.",
     heroBody:
       "Заявки принимаются, рассматриваются, затем назначается собеседование. Мест ограниченное число.",
     ctaPrimary: "Подать заявку",
-    ctaSecondary: "FTC / FLL",
+    ctaSecondary: "Что такое FIRST",
+    scrollHint: "Листай дальше",
     seasonChip: "Новый сезон",
+    firstKicker: "01",
+    firstTitle: "Что такое FIRST",
+    firstItalic: "For Inspiration and Recognition of Science and Technology.",
+    firstLead:
+      "FIRST — мировая робототехника. Ученики собирают робота, пишут код, защищаются перед судьями. Команда K.E.R.N играет в FTC.",
+    first: [
+      {
+        title: "Зачем",
+        text: "Наука и техника через соревнование. Команда, сроки, конкретный результат.",
+      },
+      {
+        title: "FLL",
+        text: "FIRST LEGO League — младшие классы. Робот LEGO, исследование, судьи.",
+      },
+      {
+        title: "FTC",
+        text: "FIRST Tech Challenge — 12–18 лет. Металлический робот, Autonomous и TeleOp. Здесь K.E.R.N.",
+      },
+      {
+        title: "Почему важно",
+        text: "Портфолио, каталог стипендий, аргумент для вузовских грантов.",
+      },
+    ],
     introTitle: "K.E.R.N School FTC 2026–2027",
     introLead:
       "Набираем учеников K.E.R.N в FIRST. В день соревнований здесь видно, что такое FTC и FLL. Заявки принимаются, рассматриваются, затем назначается собеседование.",
-    programsKicker: "01",
+    programsKicker: "02",
     programsTitle: "FTC и FLL",
     programsItalic: "Чтобы на площадке было понятно, что происходит.",
     programsLead:
@@ -660,22 +713,45 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
   },
   en: {
     metaTitle: "K.E.R.N FTC · recruitment",
-    nav: { programs: "FTC / FLL", roles: "Roles", season: "Season", who: "Who we need", apply: "Apply" },
+    nav: { first: "FIRST", programs: "FTC / FLL", roles: "Roles", season: "Season", who: "Who we need", apply: "Apply" },
     apply: "Submit application",
-    heroEyebrow: "K.E.R.N School · Astana",
-    heroTitle: "The school FIRST Tech Challenge team",
+    heroEyebrow: "K.E.R.N School · Astana · FTC",
+    heroTitle: "Want to join us?",
     heroItalic: "K.E.R.N School · Astana · 2026–2027",
-    heroLead:
-      "Robotics, media, design, and operations. Applications are reviewed, then shortlisted candidates are invited to interview.",
+    heroLead: "The school FIRST Tech Challenge team. Robotics, media, design, operations.",
     heroBody:
       "Applications are reviewed, then shortlisted candidates are invited to interview. Places are limited.",
     ctaPrimary: "Submit application",
-    ctaSecondary: "FTC / FLL",
+    ctaSecondary: "What is FIRST",
+    scrollHint: "Keep scrolling",
     seasonChip: "New season",
+    firstKicker: "01",
+    firstTitle: "What is FIRST",
+    firstItalic: "For Inspiration and Recognition of Science and Technology.",
+    firstLead:
+      "FIRST is global student robotics. Teams build a robot, write code, and present to judges. K.E.R.N competes in FTC.",
+    first: [
+      {
+        title: "Why it exists",
+        text: "Science and engineering through competition. A team, deadlines, finished work.",
+      },
+      {
+        title: "FLL",
+        text: "FIRST LEGO League — younger students. A LEGO robot, research, judges.",
+      },
+      {
+        title: "FTC",
+        text: "FIRST Tech Challenge — ages 12–18. A metal robot, Autonomous and TeleOp. This is K.E.R.N.",
+      },
+      {
+        title: "Why it matters",
+        text: "A portfolio, the scholarship catalog, evidence for university grants.",
+      },
+    ],
     introTitle: "K.E.R.N School FTC 2026–2027",
     introLead:
       "We recruit K.E.R.N students into FIRST. On match day this page shows what FTC and FLL are. Applications are reviewed; shortlisted candidates are invited to interview.",
-    programsKicker: "01",
+    programsKicker: "02",
     programsTitle: "FTC and FLL",
     programsItalic: "So the field makes sense on competition day.",
     programsLead:

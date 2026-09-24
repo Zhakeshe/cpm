@@ -43,10 +43,13 @@ export function InviteHero() {
           <a href="#apply" className="invite-btn-gold">
             {t.ctaPrimary}
           </a>
-          <a href="#programs" className="invite-btn-ghost">
+          <a href="#first" className="invite-btn-ghost">
             {t.ctaSecondary}
           </a>
         </div>
+        <a href="#first" className="invite-scroll invite-rise">
+          <span>{t.scrollHint}</span>
+        </a>
       </div>
     </section>
   );
