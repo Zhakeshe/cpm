@@ -63,10 +63,25 @@ export async function isValidSessionToken(token: string | undefined | null) {
   }
 }
 
+function normalizeSecret(value: string) {
+  let next = value.trim().replace(/^\uFEFF/, "");
+  if (
+    (next.startsWith('"') && next.endsWith('"')) ||
+    (next.startsWith("'") && next.endsWith("'"))
+  ) {
+    next = next.slice(1, -1);
+  }
+  if (next.startsWith("ADMIN_PASSWORD=")) {
+    next = next.slice("ADMIN_PASSWORD=".length);
+  }
+  return next;
+}
+
 export function verifyAdminPassword(password: string) {
-  const expected = process.env.ADMIN_PASSWORD ?? "";
-  if (!expected || !password) return false;
-  return safeEqual(password, expected) && password.length === expected.length;
+  const expected = normalizeSecret(process.env.ADMIN_PASSWORD ?? "");
+  const given = normalizeSecret(password);
+  if (!expected || !given) return false;
+  return safeEqual(given, expected);
 }
 
 export async function setAdminCookie() {
