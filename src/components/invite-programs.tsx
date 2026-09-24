@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { PROGRAM_CARDS } from "@/lib/invite-media";
 import { withBase } from "@/lib/utils";
 import { useInviteLang } from "@/components/invite-i18n";
@@ -8,15 +9,48 @@ import { useInviteLang } from "@/components/invite-i18n";
 export function InvitePrograms() {
   const { t } = useInviteLang();
   const [teaser, setTeaser] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!teaser) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") setTeaser(null);
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
   }, [teaser]);
+
+  const modal =
+    mounted && teaser
+      ? createPortal(
+          <div className="invite-teaser" role="dialog" aria-modal="true" aria-label={t.programsTeaser}>
+            <button type="button" className="invite-teaser-veil" onClick={() => setTeaser(null)} aria-label="Close" />
+            <div className="invite-teaser-sheet">
+              <button type="button" className="invite-teaser-close" onClick={() => setTeaser(null)}>
+                ×
+              </button>
+              <div className="invite-teaser-box">
+                <iframe
+                  src={`https://www.youtube-nocookie.com/embed/${teaser}?autoplay=1&rel=0`}
+                  title={t.programsTeaser}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )
+      : null;
 
   return (
     <section id="programs" className="invite-section">
@@ -55,25 +89,7 @@ export function InvitePrograms() {
           })}
         </div>
       </div>
-
-      {teaser ? (
-        <div className="invite-teaser" role="dialog" aria-modal="true" aria-label={t.programsTeaser}>
-          <button type="button" className="invite-teaser-veil" onClick={() => setTeaser(null)} aria-label="Close" />
-          <div className="invite-teaser-sheet">
-            <button type="button" className="invite-teaser-close" onClick={() => setTeaser(null)}>
-              ×
-            </button>
-            <div className="invite-teaser-box">
-              <iframe
-                src={`https://www.youtube-nocookie.com/embed/${teaser}?autoplay=1&rel=0`}
-                title={t.programsTeaser}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-              />
-            </div>
-          </div>
-        </div>
-      ) : null}
+      {modal}
     </section>
   );
 }

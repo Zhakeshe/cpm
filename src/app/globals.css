@@ -879,10 +879,11 @@ body {
 .invite-teaser {
   position: fixed;
   inset: 0;
-  z-index: 80;
+  z-index: 200;
   display: grid;
   place-items: center;
   padding: 1.25rem;
+  background: rgb(8 12 20 / 0.82);
 }
 
 .invite-teaser-veil {
@@ -1390,13 +1391,13 @@ body {
   }
 
   .invite-teaser {
-    padding: 0.45rem;
-    padding-top: max(0.45rem, env(safe-area-inset-top));
-    padding-bottom: max(0.45rem, env(safe-area-inset-bottom));
+    padding: 0.2rem;
+    padding-top: max(0.2rem, env(safe-area-inset-top));
+    padding-bottom: max(0.2rem, env(safe-area-inset-bottom));
   }
 
   .invite-teaser-sheet {
-    width: 100%;
+    width: min(100vw - 8px, 100%);
   }
 
   .invite-teaser-close {
