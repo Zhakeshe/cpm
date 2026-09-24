@@ -43,6 +43,9 @@ export type InviteCopy = {
   heroBody: string;
   ctaPrimary: string;
   ctaSecondary: string;
+  seasonChip: string;
+  introTitle: string;
+  introLead: string;
   whyKicker: string;
   whyTitle: string;
   whyItalic: string;
@@ -175,9 +178,13 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
       "Өтініш қабылданады, қаралады, содан кейін сұхбат тағайындалады. Қабылдау шектеулі.",
     ctaPrimary: "Өтініш беру",
     ctaSecondary: "Бағдарлама",
+    seasonChip: "Жаңа маусым",
+    introTitle: "K.E.R.N School FTC 2026–2027",
+    introLead:
+      "Мектеп командасы роботты жарыс ережесі бойынша жинайды, медиа мен дизайнды жүргізеді, скриммидж және outreach өткізеді. Өтініш қабылданады, қаралады, кейін сұхбат тағайындалады.",
     whyKicker: "01",
-    whyTitle: "Не үшін қатысасыз",
-    whyItalic: "Маусым бойына нақты жұмыс.",
+    whyTitle: "Бағдарлама",
+    whyItalic: "FIRST Tech Challenge маусымының бөліктері.",
     benefits: [
       { title: "FTC жарысы", text: "FIRST ережесі бойынша робот, Autonomous және TeleOp. Жаттығу алаңы — мектепте." },
       { title: "Жауапкершілік", text: "Әр қатысушының рөлі мен мерзімі бар. Жұмыс есепке алынады." },
@@ -342,9 +349,13 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
       "Заявки принимаются, рассматриваются, затем назначается собеседование. Мест ограниченное число.",
     ctaPrimary: "Подать заявку",
     ctaSecondary: "О программе",
+    seasonChip: "Новый сезон",
+    introTitle: "K.E.R.N School FTC 2026–2027",
+    introLead:
+      "Школьная команда собирает робота по правилам сезона, ведёт медиа и дизайн, проводит скриммидж и outreach. Заявки принимаются, рассматриваются, затем назначается собеседование.",
     whyKicker: "01",
-    whyTitle: "Что даёт участие",
-    whyItalic: "Работа в течение сезона, не разовое занятие.",
+    whyTitle: "Программа",
+    whyItalic: "Части сезона FIRST Tech Challenge.",
     benefits: [
       { title: "Соревнования FTC", text: "Робот по правилам FIRST, Autonomous и TeleOp. Поле — на площадке школы." },
       { title: "Ответственность", text: "У каждого участника есть роль и сроки. Работа учитывается." },
@@ -509,9 +520,13 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
       "Applications are reviewed, then shortlisted candidates are invited to interview. Places are limited.",
     ctaPrimary: "Submit application",
     ctaSecondary: "Programme",
+    seasonChip: "New season",
+    introTitle: "K.E.R.N School FTC 2026–2027",
+    introLead:
+      "The school team builds a competition robot, runs media and design, and hosts scrimmage and outreach. Applications are reviewed; shortlisted candidates are invited to interview.",
     whyKicker: "01",
-    whyTitle: "What the season includes",
-    whyItalic: "Sustained work across the year, not a one-off class.",
+    whyTitle: "Programme",
+    whyItalic: "The parts of a FIRST Tech Challenge season.",
     benefits: [
       { title: "FTC competition", text: "A robot under FIRST rules, Autonomous and TeleOp. The field is at the school." },
       { title: "Accountability", text: "Each member has a role and deadlines. Work is recorded." },

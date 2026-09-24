@@ -86,7 +86,7 @@ export function InviteForm() {
         <p>{t.successText}</p>
         <button
           type="button"
-          className="invite-btn-navy mt-8"
+          className="invite-btn-gold mt-8"
           onClick={() => {
             sessionStorage.removeItem("kern-invite");
             window.history.replaceState({}, "", withBase("/invite"));
@@ -217,7 +217,7 @@ export function InviteForm() {
 
       {serverError ? <p className="mt-4 text-sm text-red-700">{serverError}</p> : null}
 
-      <button type="submit" disabled={isSubmitting} className="invite-btn-navy mt-8 w-full sm:w-auto">
+      <button type="submit" disabled={isSubmitting} className="invite-btn-gold mt-8 w-full sm:w-auto">
         {isSubmitting ? <LoaderCircle className="animate-spin" size={16} /> : null}
         {isSubmitting ? t.sending : t.submit}
       </button>

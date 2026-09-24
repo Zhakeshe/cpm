@@ -13,8 +13,8 @@ export function InviteHeader() {
   const { t, locale, setLocale } = useInviteLang();
 
   return (
-    <header className="invite-bar sticky top-0 z-50">
-      <div className="mx-auto flex h-[72px] max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+    <header className="invite-bar">
+      <div className="mx-auto flex h-[68px] max-w-6xl items-center justify-between gap-4 px-4 sm:h-[76px] sm:px-6">
         <Link href="/" className="flex shrink-0 items-center" aria-label="K.E.R.N School">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -22,11 +22,11 @@ export function InviteHeader() {
             alt="K.E.R.N School"
             width={168}
             height={66}
-            className="h-10 w-auto sm:h-11"
+            className="h-9 w-auto sm:h-10"
           />
         </Link>
 
-        <nav className="hidden items-center gap-7 lg:flex" aria-label="Invite">
+        <nav className="hidden items-center gap-8 lg:flex" aria-label="Invite">
           {INVITE_NAV_LINKS.map((link) => (
             <a key={link.href} href={link.href} className="invite-nav">
               {t.nav[link.key]}
@@ -47,12 +47,12 @@ export function InviteHeader() {
               </button>
             ))}
           </div>
-          <a href="#apply" className="invite-btn-navy hidden sm:inline-flex">
+          <a href="#apply" className="invite-btn-gold hidden sm:inline-flex">
             {t.apply}
           </a>
           <button
             type="button"
-            className="inline-flex h-10 w-10 items-center justify-center border border-[var(--invite-line)] text-[var(--invite-ink)] lg:hidden"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--invite-line)] text-[var(--invite-ink)] lg:hidden"
             aria-label={open ? "Close" : "Menu"}
             aria-expanded={open}
             onClick={() => setOpen((value) => !value)}
@@ -77,7 +77,7 @@ export function InviteHeader() {
             ))}
             <a
               href="#apply"
-              className="invite-btn-navy mt-2 justify-center"
+              className="invite-btn-gold mt-2 justify-center"
               onClick={() => setOpen(false)}
             >
               {t.apply}

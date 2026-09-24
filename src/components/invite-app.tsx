@@ -16,9 +16,20 @@ function InviteInner() {
 
   return (
     <div className="invite-skin">
-      <InviteHeader />
-      <main>
+      <div className="invite-stage">
+        <InviteHeader />
         <InviteHero />
+      </div>
+      <div className="invite-season-chip">
+        <span>{t.seasonChip}</span>
+      </div>
+      <section className="invite-intro">
+        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
+          <h2 className="invite-h2">{t.introTitle}</h2>
+          <p className="mt-5 text-[17px] leading-8 text-[var(--invite-mute)]">{t.introLead}</p>
+        </div>
+      </section>
+      <main>
         <InviteWhy />
         <InviteRoles />
         <InviteSeason />
