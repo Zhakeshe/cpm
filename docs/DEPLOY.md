@@ -28,7 +28,7 @@ docker compose up -d --build
 
 Webhook: `https://quantum.ushqn.com/api/webhooks/wazzup`
 
-Публичный номер для ссылок соцсетей: `WHATSAPP_PUBLIC_NUMBER=77765079188` (цифры без +). Ссылки: `https://quantum.ushqn.com/w/instagram`, `/w/tiktok`, `/w/facebook`, `/w/youtube`, `/w/site`, `/w/ads`. Клик пишет уникальный `qc:токен` в WhatsApp; когда клиент пишет, источник карточки = сеть, не WhatsApp, и уходит авто-приветствие канала.
+Публичный номер для ссылок соцсетей: `WHATSAPP_PUBLIC_NUMBER=77765079188` (цифры без +). Ссылки: `https://quantum.ushqn.com/w/instagram`, `/w/tiktok`, `/w/facebook`, `/w/youtube`, `/w/site`, `/w/ads`. Клик пишет только `qc:токен` в WhatsApp (без авто-текста); когда клиент пишет, источник карточки = сеть, не WhatsApp. CRM сам в чат не отвечает.
 
 В кабинете Wazzup нажмите «Подписать вебхук» в CRM или `PATCH /v3/webhooks`. Пока ключ задан, исходящие идут в Wazzup, не в Graph.
 
