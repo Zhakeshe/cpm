@@ -1,5 +1,11 @@
-# Paste this handle into the existing kern.ushqn.com Caddy site block.
+# Paste these handles into the existing kern.ushqn.com Caddy site block.
 # Do not use handle_path — Next.js serves routes under /scrimmage.
+# /invite is rewritten so the public URL stays kern.ushqn.com/invite.
+
+handle /invite* {
+	rewrite * /scrimmage{uri}
+	reverse_proxy 127.0.0.1:3010
+}
 
 handle /scrimmage* {
 	reverse_proxy 127.0.0.1:3010

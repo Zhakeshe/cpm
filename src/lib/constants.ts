@@ -1,8 +1,16 @@
+import { INVITE_COPY, INVITE_ROLE_IDS, type InviteRoleId } from "./invite-copy";
+
 export const NAV_LINKS = [
   { href: "#about", label: "О мероприятии" },
   { href: "#biobuzz", label: "BIOBUZZ" },
   { href: "#venue", label: "Адрес" },
   { href: "#register", label: "Регистрация" },
+] as const;
+
+export const INVITE_NAV_LINKS = [
+  { href: "#first", key: "first" },
+  { href: "#programs", key: "programs" },
+  { href: "#roles", key: "roles" },
 ] as const;
 
 export const ROBOT_STATUS = [
@@ -55,6 +63,14 @@ export function twoGisWidgetUrl() {
   )}`;
 }
 
+export const INVITE_PUBLIC_URL =
+  process.env.NEXT_PUBLIC_INVITE_URL || "https://kern.ushqn.com/invite";
+
+export const INVITE_ROLES = INVITE_ROLE_IDS.map((value) => ({
+  value,
+  title: INVITE_COPY.ru.roles[value].title,
+}));
+
 export const CONTACTS = {
   instagram:
     process.env.NEXT_PUBLIC_INSTAGRAM_URL ||
@@ -68,4 +84,9 @@ export function robotStatusLabel(value: string) {
 
 export function testingAreaLabel(value: string) {
   return TESTING_AREAS.find((item) => item.value === value)?.label ?? value;
+}
+
+export function inviteRoleLabel(value: string) {
+  const id = value as InviteRoleId;
+  return INVITE_COPY.ru.roles[id]?.title ?? value;
 }

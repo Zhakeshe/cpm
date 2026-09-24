@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Download, LogOut, Search, X } from "lucide-react";
 import { withBase } from "@/lib/utils";
@@ -83,6 +84,12 @@ export default function AdminPage() {
               <LogOut size={16} /> Выйти
             </button>
           </div>
+        </div>
+        <div className="mx-auto flex max-w-6xl gap-4 px-4 pb-3 text-sm sm:px-6">
+          <span className="font-semibold text-navy">Scrimmage</span>
+          <Link href="/admin/invites" className="text-muted hover:text-navy">
+            Team invites
+          </Link>
         </div>
       </header>
 

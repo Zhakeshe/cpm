@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { MEMBER_COUNTS } from "./constants";
+import { INVITE_ROLE_IDS } from "./invite-copy";
 
 export const PHONE_REGEX = /^\+7 \d{3} \d{3} \d{2} \d{2}$/;
 
@@ -39,6 +40,17 @@ export const registrationSchema = z.object({
 });
 
 export type RegistrationInput = z.infer<typeof registrationSchema>;
+
+export const inviteSchema = z.object({
+  fullName: z.string().trim().min(3).max(80),
+  grade: z.string().trim().min(1).max(40),
+  languages: z.string().trim().min(2).max(80),
+  phone: z.string().trim().regex(PHONE_REGEX),
+  social: z.string().trim().min(2).max(80),
+  role: z.enum(INVITE_ROLE_IDS),
+});
+
+export type InviteInput = z.infer<typeof inviteSchema>;
 
 export function formatPhoneMask(raw: string) {
   const digits = raw.replace(/\D/g, "");

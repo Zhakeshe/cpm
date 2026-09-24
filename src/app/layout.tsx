@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Instrument_Serif, Manrope } from "next/font/google";
+import { Instrument_Serif, Manrope, Roboto } from "next/font/google";
 import "./globals.css";
 import { siteUrl, withBase } from "@/lib/utils";
 
@@ -13,6 +13,13 @@ const buzz = Instrument_Serif({
   subsets: ["latin"],
   weight: "400",
   variable: "--font-buzz",
+  display: "swap",
+});
+
+const roboto = Roboto({
+  subsets: ["latin", "cyrillic"],
+  weight: ["400", "500", "700"],
+  variable: "--font-roboto",
   display: "swap",
 });
 
@@ -68,7 +75,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru" className={`${manrope.variable} ${buzz.variable}`}>
+    <html lang="ru" className={`${manrope.variable} ${buzz.variable} ${roboto.variable}`}>
       <body className="min-h-screen bg-paper font-sans text-ink antialiased">
         {children}
       </body>

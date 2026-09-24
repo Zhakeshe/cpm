@@ -15,8 +15,10 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ARG NEXT_PUBLIC_BASE_PATH=/scrimmage
 ARG NEXT_PUBLIC_SITE_URL=https://kern.ushqn.com/scrimmage
+ARG NEXT_PUBLIC_INVITE_URL=https://kern.ushqn.com/invite
 ENV NEXT_PUBLIC_BASE_PATH=$NEXT_PUBLIC_BASE_PATH
 ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+ENV NEXT_PUBLIC_INVITE_URL=$NEXT_PUBLIC_INVITE_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npx prisma generate && npm run build
 
