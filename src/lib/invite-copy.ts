@@ -34,7 +34,7 @@ type RoleCopy = { title: string; text: string };
 
 export type InviteCopy = {
   metaTitle: string;
-  nav: { why: string; roles: string; who: string; apply: string };
+  nav: { why: string; roles: string; season: string; who: string; apply: string };
   apply: string;
   heroEyebrow: string;
   heroTitle: string;
@@ -56,6 +56,27 @@ export type InviteCopy = {
   whoItalic: string;
   whoLead: string;
   who: string[];
+  pathKicker: string;
+  pathTitle: string;
+  pathItalic: string;
+  pathLead: string;
+  path: { n: string; title: string; text: string }[];
+  nomsKicker: string;
+  nomsTitle: string;
+  nomsItalic: string;
+  nomsLead: string;
+  noms: { name: string; text: string }[];
+  unisKicker: string;
+  unisTitle: string;
+  unisItalic: string;
+  unisLead: string;
+  unis: { name: string; place: string }[];
+  partnersKicker: string;
+  partnersTitle: string;
+  partnersItalic: string;
+  partnersLead: string;
+  partners: string[];
+  houston: string;
   formKicker: string;
   formTitle: string;
   formLead: string;
@@ -116,14 +137,14 @@ export type InviteCopy = {
 export const INVITE_COPY: Record<Locale, InviteCopy> = {
   kk: {
     metaTitle: "K.E.R.N FTC командасына қосыл",
-    nav: { why: "Неге біз", roles: "Рөлдер", who: "Кімге", apply: "Өтініш" },
+    nav: { why: "Неге біз", roles: "Рөлдер", season: "Маусым", who: "Кімге", apply: "Өтініш" },
     apply: "Өтініш жіберу",
     heroEyebrow: "K.E.R.N School · Астана · 2026 маусым",
     heroTitle: "Командаға",
     heroItalic: "орын бар",
-    heroLead: "Робот құрастыратын, контент түсіретін, бренд жасайтын және жарысты ұйымдастыратын оқушыларды іздейміз.",
+    heroLead: "Бұл үйірме емес. Өтініш → іріктеу → сұхбат. Tesla сияқты: бір экипаж, бір стандарт, бәрінен бөлек.",
     heroBody:
-      "FTC — тек темір мен код емес. Бұл бір экипаж: пит, камера, дедлайн, дауыс. K.E.R.N-де сен тек мүше емессің — маусымның авторысың.",
+      "FTC — темір мен код қана емес. Номинация, топ университет, серіктес, Houston. K.E.R.N-де сен маусымның авторысың.",
     ctaPrimary: "Өтініш жіберу",
     ctaSecondary: "Рөлдерді көру",
     whyKicker: "01  /  Неге бізбен",
@@ -180,9 +201,49 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
       "Командада жұмыс істеп, дедлайнға үлгеретіндер",
       "Жаңа құралды үйренуге ашықтар",
     ],
-    formKicker: "04  /  Өтініш",
+    pathKicker: "04  /  Қалай өтесің",
+    pathTitle: "Өтініш жеткіліксіз.",
+    pathItalic: "Іріктеу бар.",
+    pathLead: "Кім көбірек келсе, соғұрлым қатаң қараймыз. Кейін — сұхбат.",
+    path: [
+      { n: "01", title: "Өтініш", text: "Форманы адал толтыр. Мектеп, рөл, не әкелесің." },
+      { n: "02", title: "Іріктеу", text: "Әр өтінішті оқимыз. Бәрі өтпейді — және ол дұрыс." },
+      { n: "03", title: "Сұхбат", text: "Қысқа әңгіме. Көзқарас, жауапкершілік, командаға сай ма." },
+    ],
+    nomsKicker: "05  /  Номинациялар",
+    nomsTitle: "Жүлде үшін де",
+    nomsItalic: "жиналамыз.",
+    nomsLead: "FTC — тек матч емес. Judge-тар көретін жұмыс: код, бренд, outreach, басқару.",
+    noms: [
+      { name: "Inspire", text: "Команданың бүкіл бет-бейнесі." },
+      { name: "Think", text: "Инженерлік дәптер мен шешім." },
+      { name: "Connect", text: "Серіктестік пен outreach." },
+      { name: "Innovate", text: "Өзің ойлап тапқан шешім." },
+      { name: "Control", text: "Программа мен Autonomous." },
+      { name: "Motivate", text: "Команданың мәдениеті." },
+      { name: "Design", text: "Механикалық дизайн." },
+    ],
+    unisKicker: "06  /  Топ университет",
+    unisTitle: "Маусымнан кейін",
+    unisItalic: "жол ашық.",
+    unisLead: "FTC портфолиосы — NU, KBTU, AITU және әрі қарай. Біз жалған серіктестік жазбаймыз. Жолды көрсетеміз.",
+    unis: [
+      { name: "Nazarbayev University", place: "Астана" },
+      { name: "KBTU", place: "Алматы" },
+      { name: "AITU", place: "Астана" },
+      { name: "SDU", place: "Қонаев" },
+      { name: "Satbayev University", place: "Алматы" },
+      { name: "ENU", place: "Астана" },
+    ],
+    partnersKicker: "07  /  Спонсорлар",
+    partnersTitle: "Кіммен тұрамыз.",
+    partnersItalic: "Кіммен өсеміз.",
+    partnersLead: "Мектеп, FIRST, маусым серіктесі. Tesla сияқты бренд емес — сондай деңгейдегі тәртіп.",
+    partners: ["K.E.R.N School", "FIRST", "BIOBUZZ · RTX", "Маусым серіктесі"],
+    houston: "North star · FIRST Championship · Houston",
+    formKicker: "08  /  Өтініш",
     formTitle: "Өзіңді таныстыр.",
-    formLead: "Мектебіңді, рөліңді және неге дәл сен екеніңді жаз. Әр өтінішті оқимыз.",
+    formLead: "Мектеп, рөл, неге дәл сен. Әр өтініш оқылады. Кейін — іріктеу және сұхбат.",
     fields: {
       fullName: "Аты-жөні",
       grade: "Сынып",
@@ -249,14 +310,14 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
   },
   ru: {
     metaTitle: "В команду K.E.R.N FTC",
-    nav: { why: "Зачем мы", roles: "Роли", who: "Кому", apply: "Заявка" },
+    nav: { why: "Зачем мы", roles: "Роли", season: "Сезон", who: "Кому", apply: "Заявка" },
     apply: "Оставить заявку",
     heroEyebrow: "K.E.R.N School · Астана · сезон 2026",
     heroTitle: "В команде",
     heroItalic: "есть место",
-    heroLead: "Ищем учеников, которые хотят собирать роботов, снимать, делать бренд и вести сезон вместе.",
+    heroLead: "Это не кружок. Заявка → отбор → собеседование. Как Tesla: один экипаж, один стандарт, не как все.",
     heroBody:
-      "FTC — это не только железо и код. Это экипаж: пит, камера, дедлайн, голос. В K.E.R.N ты не «участник кружка» — ты автор сезона.",
+      "FTC — не только железо и код. Номинации, топ-университеты, партнёры, Houston. В K.E.R.N ты автор сезона.",
     ctaPrimary: "Оставить заявку",
     ctaSecondary: "Смотреть роли",
     whyKicker: "01  /  Зачем с нами",
@@ -313,9 +374,49 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
       "Готовые работать в команде и в срок",
       "Открытые к новым инструментам",
     ],
-    formKicker: "04  /  Заявка",
+    pathKicker: "04  /  Как проходишь",
+    pathTitle: "Заявки мало.",
+    pathItalic: "Есть отбор.",
+    pathLead: "Чем больше заявок — тем жёстче смотрим. Потом собеседование.",
+    path: [
+      { n: "01", title: "Заявка", text: "Честно заполни форму. Школа, роль, что принесёшь." },
+      { n: "02", title: "Отбор", text: "Каждую заявку читаем. Проходят не все — так и должно быть." },
+      { n: "03", title: "Собеседование", text: "Короткий разговор. Взгляд, ответственность, подходишь ли экипажу." },
+    ],
+    nomsKicker: "05  /  Номинации",
+    nomsTitle: "Собираемся и",
+    nomsItalic: "под судей.",
+    nomsLead: "FTC — не только матч. То, что видят судьи: код, бренд, outreach, управление.",
+    noms: [
+      { name: "Inspire", text: "Лицо всей команды." },
+      { name: "Think", text: "Инженерный ноутбук и решения." },
+      { name: "Connect", text: "Партнёры и outreach." },
+      { name: "Innovate", text: "Своё решение, не копия." },
+      { name: "Control", text: "Программа и Autonomous." },
+      { name: "Motivate", text: "Культура команды." },
+      { name: "Design", text: "Механический дизайн." },
+    ],
+    unisKicker: "06  /  Топ-университеты",
+    unisTitle: "После сезона",
+    unisItalic: "дорога дальше.",
+    unisLead: "Портфолио FTC открывает NU, KBTU, AITU и дальше. Мы не рисуем фейковые партнёрства. Показываем трек.",
+    unis: [
+      { name: "Nazarbayev University", place: "Астана" },
+      { name: "KBTU", place: "Алматы" },
+      { name: "AITU", place: "Астана" },
+      { name: "SDU", place: "Конаев" },
+      { name: "Satbayev University", place: "Алматы" },
+      { name: "ENU", place: "Астана" },
+    ],
+    partnersKicker: "07  /  Спонсоры",
+    partnersTitle: "С кем стоим.",
+    partnersItalic: "С кем растём.",
+    partnersLead: "Школа, FIRST, партнёр сезона. Не бренд Tesla — дисциплина такого уровня.",
+    partners: ["K.E.R.N School", "FIRST", "BIOBUZZ · RTX", "Партнёр сезона"],
+    houston: "North star · FIRST Championship · Houston",
+    formKicker: "08  /  Заявка",
     formTitle: "Расскажи о себе.",
-    formLead: "Школа, роль и почему именно ты. Каждую заявку читаем.",
+    formLead: "Школа, роль, почему именно ты. Каждую заявку читаем. Дальше — отбор и собеседование.",
     fields: {
       fullName: "Имя и фамилия",
       grade: "Класс",
@@ -382,14 +483,14 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
   },
   en: {
     metaTitle: "Join the K.E.R.N FTC team",
-    nav: { why: "Why us", roles: "Roles", who: "Who", apply: "Apply" },
+    nav: { why: "Why us", roles: "Roles", season: "Season", who: "Who", apply: "Apply" },
     apply: "Apply now",
     heroEyebrow: "K.E.R.N School · Astana · 2026 season",
     heroTitle: "There is a seat",
     heroItalic: "on the crew",
-    heroLead: "We want students who build robots, shoot, brand, and run a season together.",
+    heroLead: "This is not a club. Apply → shortlist → interview. Tesla energy: one crew, one bar, not like everyone.",
     heroBody:
-      "FTC is not only metal and code. It is a crew: the pit, the camera, the deadline, the voice. At K.E.R.N you are not a club member — you author the season.",
+      "FTC is more than metal and code. Awards, top universities, partners, Houston. At K.E.R.N you author the season.",
     ctaPrimary: "Apply now",
     ctaSecondary: "See the roles",
     whyKicker: "01  /  Why with us",
@@ -446,9 +547,49 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
       "Ready to work in a team and hit a deadline",
       "Open to tools you have not used yet",
     ],
-    formKicker: "04  /  Application",
+    pathKicker: "04  /  How you get in",
+    pathTitle: "A form is not enough.",
+    pathItalic: "There is a cut.",
+    pathLead: "The more people apply, the tighter we read. Then an interview.",
+    path: [
+      { n: "01", title: "Apply", text: "Fill the form honestly. School, role, what you bring." },
+      { n: "02", title: "Shortlist", text: "We read every file. Not everyone gets through — that is the point." },
+      { n: "03", title: "Interview", text: "A short conversation. Point of view, grit, fit for the crew." },
+    ],
+    nomsKicker: "05  /  Awards",
+    nomsTitle: "We build for",
+    nomsItalic: "the judges too.",
+    nomsLead: "FTC is not only the match. It is what judges see: code, brand, outreach, control.",
+    noms: [
+      { name: "Inspire", text: "The whole face of the team." },
+      { name: "Think", text: "Engineering notebook and decisions." },
+      { name: "Connect", text: "Partners and outreach." },
+      { name: "Innovate", text: "A solution that is yours." },
+      { name: "Control", text: "Software and Autonomous." },
+      { name: "Motivate", text: "How the team lives." },
+      { name: "Design", text: "Mechanical design." },
+    ],
+    unisKicker: "06  /  Top universities",
+    unisTitle: "After the season",
+    unisItalic: "the track stays open.",
+    unisLead: "An FTC portfolio points to NU, KBTU, AITU and beyond. We do not invent partners. We show the road.",
+    unis: [
+      { name: "Nazarbayev University", place: "Astana" },
+      { name: "KBTU", place: "Almaty" },
+      { name: "AITU", place: "Astana" },
+      { name: "SDU", place: "Konaev" },
+      { name: "Satbayev University", place: "Almaty" },
+      { name: "ENU", place: "Astana" },
+    ],
+    partnersKicker: "07  /  Sponsors",
+    partnersTitle: "Who we stand with.",
+    partnersItalic: "Who we grow with.",
+    partnersLead: "The school, FIRST, a season partner. Not a Tesla logo — that level of discipline.",
+    partners: ["K.E.R.N School", "FIRST", "BIOBUZZ · RTX", "Season partner"],
+    houston: "North star · FIRST Championship · Houston",
+    formKicker: "08  /  Application",
     formTitle: "Introduce yourself.",
-    formLead: "School, role, and why it is you. We read every form.",
+    formLead: "School, role, why it is you. We read every form. Next: shortlist and interview.",
     fields: {
       fullName: "Full name",
       grade: "Grade / class",
