@@ -2,7 +2,7 @@ import { withBase } from "@/lib/utils";
 
 export function InviteHero() {
   return (
-    <section className="relative isolate min-h-[620px] overflow-hidden bg-navy-deep text-white sm:min-h-[700px] lg:min-h-[780px]">
+    <section className="relative isolate min-h-[560px] overflow-hidden bg-navy-deep text-white sm:min-h-[700px] lg:min-h-[780px]">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={withBase("/hero-field.jpg")}
@@ -13,7 +13,7 @@ export function InviteHero() {
       <div className="absolute inset-0 bg-gradient-to-t from-navy-deep via-transparent to-navy-deep/35" />
       <div className="absolute inset-y-0 left-0 w-1 bg-gold" />
 
-      <div className="relative mx-auto flex min-h-[620px] max-w-6xl flex-col justify-end px-4 pb-14 pt-28 sm:min-h-[700px] sm:px-6 sm:pb-20 lg:min-h-[780px]">
+      <div className="relative mx-auto flex min-h-[560px] max-w-6xl flex-col justify-end px-4 pb-12 pt-24 sm:min-h-[700px] sm:px-6 sm:pb-20 lg:min-h-[780px]">
         <p className="hero-rise text-[12px] font-semibold tracking-[0.28em] text-gold-soft uppercase">
           K.E.R.N School · FTC Team
         </p>
