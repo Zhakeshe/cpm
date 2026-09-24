@@ -167,7 +167,7 @@ const SHARED_UNIS = {
 export const INVITE_COPY: Record<Locale, InviteCopy> = {
   kk: {
     metaTitle: "K.E.R.N FTC · қабылдау",
-    nav: { why: "Бағдарлама", roles: "Рөлдер", season: "Маусым", who: "Талаптар", apply: "Өтініш" },
+    nav: { why: "Бағдарлама", roles: "Рөлдер", season: "Маусым", who: "Кім керек", apply: "Өтініш" },
     apply: "Өтініш беру",
     heroEyebrow: "K.E.R.N School · Астана",
     heroTitle: "Мектептегі FIRST Tech Challenge командасы",
@@ -194,8 +194,8 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
       { title: "Портфолио", text: "Маусым соңында нақты жұмыс: код, жоба, медиа немесе ұйымдастыру." },
     ],
     rolesKicker: "02",
-    rolesTitle: "Қандай рөлдер бар",
-    rolesItalic: "Бір өтініште бір негізгі бағыт.",
+    rolesTitle: "Командаға кім керек",
+    rolesItalic: "Бір өтініште бір негізгі бағыт. Карточкаларды сырғытыңыз.",
     roles: {
       ftc_member: {
         title: "FTC қатысушысы",
@@ -338,7 +338,7 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
   },
   ru: {
     metaTitle: "K.E.R.N FTC · набор",
-    nav: { why: "Программа", roles: "Роли", season: "Сезон", who: "Требования", apply: "Заявка" },
+    nav: { why: "Программа", roles: "Роли", season: "Сезон", who: "Кто нужен", apply: "Заявка" },
     apply: "Подать заявку",
     heroEyebrow: "K.E.R.N School · Астана",
     heroTitle: "Школьная команда FIRST Tech Challenge",
@@ -365,8 +365,8 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
       { title: "Портфолио", text: "К концу сезона — конкретные работы: код, проект, медиа или организация." },
     ],
     rolesKicker: "02",
-    rolesTitle: "Роли в команде",
-    rolesItalic: "В заявке укажите одно основное направление.",
+    rolesTitle: "Кто нужен команде",
+    rolesItalic: "В заявке одно основное направление. Листайте карточки.",
     roles: {
       ftc_member: {
         title: "Участник FTC",
@@ -509,7 +509,7 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
   },
   en: {
     metaTitle: "K.E.R.N FTC · recruitment",
-    nav: { why: "Programme", roles: "Roles", season: "Season", who: "Requirements", apply: "Apply" },
+    nav: { why: "Programme", roles: "Roles", season: "Season", who: "Who we need", apply: "Apply" },
     apply: "Submit application",
     heroEyebrow: "K.E.R.N School · Astana",
     heroTitle: "The school FIRST Tech Challenge team",
@@ -536,8 +536,8 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
       { title: "Portfolio", text: "Concrete work by the end of the season: code, project, media, or operations." },
     ],
     rolesKicker: "02",
-    rolesTitle: "Roles",
-    rolesItalic: "Select one primary track in the form.",
+    rolesTitle: "Who the team needs",
+    rolesItalic: "Choose one primary track. Swipe the cards.",
     roles: {
       ftc_member: {
         title: "FTC team member",

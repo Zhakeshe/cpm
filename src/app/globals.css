@@ -109,12 +109,12 @@ body {
 }
 
 .invite-skin {
-  --invite-cream: #f4e2c5;
-  --invite-ink: #181818;
-  --invite-mute: #5b5b5b;
+  --invite-cream: #f7f1e6;
+  --invite-ink: #1a1a1a;
+  --invite-mute: #5c5c5c;
   --invite-gold: #ed6b1f;
   --invite-navy: #282c38;
-  --invite-line: #e4bf82;
+  --invite-line: #ead9b8;
   background: var(--invite-cream);
   color: var(--invite-ink);
   min-height: 100vh;
@@ -123,8 +123,9 @@ body {
 
 .invite-stage {
   position: relative;
-  height: 100vh;
-  min-height: 640px;
+  height: 86vh;
+  min-height: 560px;
+  max-height: 860px;
   overflow: hidden;
 }
 
@@ -225,8 +226,8 @@ body {
 
 .invite-hero-copy h1 {
   margin-top: 1rem;
-  max-width: 18ch;
-  font-size: clamp(2.1rem, 5.4vw, 4.4rem);
+  max-width: 16ch;
+  font-size: clamp(1.9rem, 4.6vw, 3.6rem);
   font-weight: 700;
   line-height: 1.08;
   letter-spacing: -0.02em;
@@ -636,8 +637,9 @@ body {
 .invite-photo-card img {
   display: block;
   width: 100%;
-  height: 190px;
+  height: 168px;
   object-fit: cover;
+  filter: saturate(0.82) contrast(0.96);
 }
 
 .invite-photo-card div {
@@ -673,13 +675,164 @@ body {
   font-weight: 600;
 }
 
+.invite-role-scroller {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  padding: 1.5rem 1.25rem 0.4rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.invite-role-scroller::-webkit-scrollbar {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .invite-role-scroller {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+.invite-role-card {
+  flex: 0 0 min(78vw, 300px);
+  scroll-snap-align: start;
+  background: #fff;
+  border-radius: 1.25rem;
+  overflow: hidden;
+  box-shadow: 0 10px 28px rgb(26 26 26 / 0.06);
+  padding-bottom: 1.15rem;
+}
+
+.invite-role-photo {
+  overflow: hidden;
+  height: 168px;
+}
+
+.invite-role-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.8) contrast(0.95);
+  transform: scale(1.02);
+}
+
+.invite-role-card > p:nth-of-type(1) {
+  margin: 0.9rem 1.1rem 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--invite-gold);
+}
+
+.invite-role-card h3 {
+  margin: 0.35rem 1.1rem 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.invite-role-card > p:last-child {
+  margin: 0.4rem 1.1rem 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--invite-mute);
+}
+
+.invite-role-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 1rem 0 0.4rem;
+}
+
+.invite-role-dots button {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #d6c7ae;
+}
+
+.invite-role-dots button.is-on {
+  width: 22px;
+  background: var(--invite-gold);
+}
+
+.invite-rail {
+  padding: 1.6rem 0 2rem;
+}
+
+.invite-marquee {
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+}
+
+.invite-marquee-track {
+  display: flex;
+  gap: 0.85rem;
+  width: max-content;
+  animation: invite-marquee 38s linear infinite;
+}
+
+.invite-marquee.is-rev .invite-marquee-track {
+  animation-direction: reverse;
+}
+
+.invite-marquee:hover .invite-marquee-track {
+  animation-play-state: paused;
+}
+
+.invite-logo-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 168px;
+  height: 92px;
+  padding: 0 1.2rem;
+  background: #fff;
+  border-radius: 1rem;
+  box-shadow: 0 8px 20px rgb(26 26 26 / 0.05);
+}
+
+.invite-logo-card strong {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.invite-logo-card span {
+  margin-top: 0.2rem;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--invite-mute);
+}
+
+@keyframes invite-marquee {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hero-rise,
   .reveal,
-  .reveal-in {
+  .reveal-in,
+  .invite-rise {
     animation: none;
     opacity: 1;
     transform: none;
     transition: none;
+  }
+
+  .invite-marquee-track {
+    animation: none;
+    flex-wrap: wrap;
+    width: auto;
+    justify-content: center;
+    padding: 0 1rem;
   }
 }
