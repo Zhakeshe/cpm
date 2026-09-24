@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { animate } from "animejs";
 import { INVITE_ROLE_IDS } from "@/lib/invite-copy";
 import { ROLE_PHOTOS } from "@/lib/invite-media";
 import { withBase } from "@/lib/utils";
 import { useInviteLang } from "@/components/invite-i18n";
+
+function isCoarsePointer() {
+  return window.matchMedia("(pointer: coarse)").matches;
+}
 
 export function InviteRoles() {
   const { t } = useInviteLang();
@@ -39,14 +42,20 @@ export function InviteRoles() {
 
   useEffect(() => {
     const root = scroller.current;
-    if (!root || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (!root) return;
+    if (
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+      isCoarsePointer()
+    ) {
+      return;
+    }
     const timer = window.setInterval(() => {
       const cards = root.querySelectorAll<HTMLElement>(".invite-role-card");
       if (!cards.length) return;
       const next = (active + 1) % cards.length;
       const card = cards[next];
-      root.scrollTo({ left: card.offsetLeft - 24, behavior: "smooth" });
-    }, 4200);
+      root.scrollTo({ left: Math.max(0, card.offsetLeft - 24), behavior: "smooth" });
+    }, 5200);
     return () => window.clearInterval(timer);
   }, [active]);
 
@@ -54,21 +63,11 @@ export function InviteRoles() {
     const root = scroller.current;
     const card = root?.querySelectorAll<HTMLElement>(".invite-role-card")[index];
     if (!root || !card) return;
-    root.scrollTo({ left: card.offsetLeft - 24, behavior: "smooth" });
-  }
-
-  useEffect(() => {
-    const card = scroller.current?.querySelectorAll<HTMLElement>(".invite-role-card")[active];
-    if (!card || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const motion = animate(card, {
-      scale: [0.985, 1],
-      duration: 520,
-      ease: "out(3)",
+    root.scrollTo({
+      left: Math.max(0, card.offsetLeft - 24),
+      behavior: isCoarsePointer() ? "auto" : "smooth",
     });
-    return () => {
-      motion.pause();
-    };
-  }, [active]);
+  }
 
   return (
     <section id="roles" className="invite-section">

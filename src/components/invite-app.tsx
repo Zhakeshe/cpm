@@ -6,6 +6,7 @@ import { InviteForm } from "@/components/invite-form";
 import { InviteHeader } from "@/components/invite-header";
 import { InviteHero } from "@/components/invite-hero";
 import { InviteLangProvider, useInviteLang } from "@/components/invite-i18n";
+import { InvitePrograms } from "@/components/invite-programs";
 import { InviteRoles } from "@/components/invite-roles";
 import { InviteSeason } from "@/components/invite-season";
 
@@ -28,6 +29,7 @@ function InviteInner() {
         </div>
       </section>
       <main>
+        <InvitePrograms />
         <InviteRoles />
         <InviteSeason />
         <section id="apply" className="invite-section">

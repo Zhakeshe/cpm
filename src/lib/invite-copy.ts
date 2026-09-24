@@ -34,7 +34,7 @@ type RoleCopy = { title: string; text: string };
 
 export type InviteCopy = {
   metaTitle: string;
-  nav: { roles: string; season: string; who: string; apply: string };
+  nav: { programs: string; roles: string; season: string; who: string; apply: string };
   apply: string;
   heroEyebrow: string;
   heroTitle: string;
@@ -69,11 +69,16 @@ export type InviteCopy = {
   nomsItalic: string;
   nomsLead: string;
   noms: { name: string; text: string }[];
+  programsKicker: string;
+  programsTitle: string;
+  programsItalic: string;
+  programsLead: string;
+  programs: { name: string; ages: string; text: string }[];
   unisKicker: string;
   unisTitle: string;
   unisItalic: string;
   unisLead: string;
-  unis: { name: string; place: string }[];
+  unis: { name: string; place: string; grant: string }[];
   partnersKicker: string;
   partnersTitle: string;
   partnersItalic: string;
@@ -139,35 +144,122 @@ export type InviteCopy = {
 
 const SHARED_UNIS = {
   kk: [
-    { name: "Nazarbayev University", place: "Астана" },
-    { name: "KBTU", place: "Алматы" },
-    { name: "AITU", place: "Астана" },
-    { name: "SDU", place: "Қонаев" },
-    { name: "Satbayev University", place: "Алматы" },
-    { name: "ENU", place: "Астана" },
+    {
+      name: "FIRST Scholarship Program",
+      place: "Халықаралық",
+      grant: "800+ стипендия. FTC/FLL түлектері firstinspires.org/scholarships каталогынан өтініш береді.",
+    },
+    {
+      name: "Nazarbayev University",
+      place: "Астана",
+      grant: "Need-based және merit. Жарыс портфолиосы — өтініштің күшті бөлігі, пайызды университет өзі шешеді.",
+    },
+    {
+      name: "KBTU",
+      place: "Алматы",
+      grant: "Ішкі және мемлекеттік грант. STEM олимпиада мен жоба тәжірибесі есепке алынады.",
+    },
+    {
+      name: "AITU",
+      place: "Астана",
+      grant: "IT бағытындағы грант пен жеңілдік. Код, робот, медиа — нақты жұмыс ретінде қосылады.",
+    },
+    {
+      name: "SDU",
+      place: "Қонаев",
+      grant: "Университет гранты және жеңілдік. FIRST тәжірибесі өтінішті толықтырады.",
+    },
+    {
+      name: "Satbayev University",
+      place: "Алматы",
+      grant: "Инженерлік гранттар. Механика мен программалау портфолиосы маңызды.",
+    },
+    {
+      name: "ENU",
+      place: "Астана",
+      grant: "Мемлекеттік грант квотасы. Жарыс және жоба — қосымша дәлел.",
+    },
   ],
   ru: [
-    { name: "Nazarbayev University", place: "Астана" },
-    { name: "KBTU", place: "Алматы" },
-    { name: "AITU", place: "Астана" },
-    { name: "SDU", place: "Конаев" },
-    { name: "Satbayev University", place: "Алматы" },
-    { name: "ENU", place: "Астана" },
+    {
+      name: "FIRST Scholarship Program",
+      place: "Международный",
+      grant: "800+ стипендий. Выпускники FTC/FLL подают через каталог firstinspires.org/scholarships.",
+    },
+    {
+      name: "Nazarbayev University",
+      place: "Астана",
+      grant: "Need-based и merit. Портфолио сезона усиливает заявку; процент решает университет.",
+    },
+    {
+      name: "KBTU",
+      place: "Алматы",
+      grant: "Внутренний и государственный грант. Учитываются олимпиады и проектный опыт.",
+    },
+    {
+      name: "AITU",
+      place: "Астана",
+      grant: "IT-грант и скидки. Код, робот, медиа идут как реальная работа.",
+    },
+    {
+      name: "SDU",
+      place: "Конаев",
+      grant: "Университетский грант и скидки. Опыт FIRST дополняет заявку.",
+    },
+    {
+      name: "Satbayev University",
+      place: "Алматы",
+      grant: "Инженерные гранты. Важны механика и программное портфолио.",
+    },
+    {
+      name: "ENU",
+      place: "Астана",
+      grant: "Квота государственного гранта. Соревнования и проект — дополнительный аргумент.",
+    },
   ],
   en: [
-    { name: "Nazarbayev University", place: "Astana" },
-    { name: "KBTU", place: "Almaty" },
-    { name: "AITU", place: "Astana" },
-    { name: "SDU", place: "Konaev" },
-    { name: "Satbayev University", place: "Almaty" },
-    { name: "ENU", place: "Astana" },
+    {
+      name: "FIRST Scholarship Program",
+      place: "International",
+      grant: "800+ scholarships. FTC/FLL alumni apply via firstinspires.org/scholarships.",
+    },
+    {
+      name: "Nazarbayev University",
+      place: "Astana",
+      grant: "Need-based and merit aid. A season portfolio strengthens the file; the university sets the award.",
+    },
+    {
+      name: "KBTU",
+      place: "Almaty",
+      grant: "Internal and state grants. Olympiads and project work are considered.",
+    },
+    {
+      name: "AITU",
+      place: "Astana",
+      grant: "IT grants and fee reductions. Code, robot, and media count as finished work.",
+    },
+    {
+      name: "SDU",
+      place: "Konaev",
+      grant: "University grants and discounts. FIRST experience supports the application.",
+    },
+    {
+      name: "Satbayev University",
+      place: "Almaty",
+      grant: "Engineering grants. Mechanics and software portfolios matter.",
+    },
+    {
+      name: "ENU",
+      place: "Astana",
+      grant: "State-grant quota. Competition and project work add evidence.",
+    },
   ],
 } as const;
 
 export const INVITE_COPY: Record<Locale, InviteCopy> = {
   kk: {
     metaTitle: "K.E.R.N FTC · қабылдау",
-    nav: { roles: "Рөлдер", season: "Маусым", who: "Кім керек", apply: "Өтініш" },
+    nav: { programs: "FTC / FLL", roles: "Рөлдер", season: "Маусым", who: "Кім керек", apply: "Өтініш" },
     apply: "Өтініш беру",
     heroEyebrow: "K.E.R.N School · Астана",
     heroTitle: "Мектептегі FIRST Tech Challenge командасы",
@@ -177,11 +269,38 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
     heroBody:
       "Өтініш қабылданады, қаралады, содан кейін сұхбат тағайындалады. Қабылдау шектеулі.",
     ctaPrimary: "Өтініш беру",
-    ctaSecondary: "Бағдарлама",
+    ctaSecondary: "FTC / FLL",
     seasonChip: "Жаңа маусым",
     introTitle: "K.E.R.N School FTC 2026–2027",
     introLead:
-      "Мектеп командасы роботты жарыс ережесі бойынша жинайды, медиа мен дизайнды жүргізеді, скриммидж және outreach өткізеді. Өтініш қабылданады, қаралады, кейін сұхбат тағайындалады.",
+      "K.E.R.N оқушыларын FIRST жарысына жинаймыз. Жарыс күні FTC пен FLL не екенін осында көресіз. Өтініш қабылданады, қаралады, кейін сұхбат тағайындалады.",
+    programsKicker: "01",
+    programsTitle: "FTC және FLL",
+    programsItalic: "Жарыста не болып жатқанын түсіну үшін.",
+    programsLead:
+      "FIRST — жас бойынша бірнеше бағдарлама. K.E.R.N командасы FTC бойынша жұмыс істейді. FLL — кіші сыныптарға арналған жол.",
+    programs: [
+      {
+        name: "FIRST LEGO League Discover",
+        ages: "4–6 жас",
+        text: "LEGO арқылы ойын. STEM-ке алғашқы қадам, жарыс емес.",
+      },
+      {
+        name: "FIRST LEGO League Explore",
+        ages: "6–10 жас",
+        text: "Қозғалатын модель, зерттеу постері, командалық жұмыс.",
+      },
+      {
+        name: "FIRST LEGO League Challenge",
+        ages: "9–16 жас",
+        text: "LEGO робот, маусым тақырыбы, төреші алдында қорғау.",
+      },
+      {
+        name: "FIRST Tech Challenge",
+        ages: "12–18 жас",
+        text: "Металл робот, Autonomous және TeleOp, алаңда матч. K.E.R.N осында.",
+      },
+    ],
     whyKicker: "01",
     whyTitle: "Бағдарлама",
     whyItalic: "FIRST Tech Challenge маусымының бөліктері.",
@@ -241,7 +360,7 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
     pathItalic: "Үш кезең.",
     pathLead: "Барлық өтініш қаралады. Келесі кезеңге шақыру — іріктеу нәтижесі бойынша.",
     path: [
-      { n: "01", title: "Өтініш", text: "Форманы толық толтырыңыз: мектеп, рөл, тәжірибе." },
+      { n: "01", title: "Өтініш", text: "Форманы толық толтырыңыз: сынып, рөл, тәжірибе." },
       { n: "02", title: "Іріктеу", text: "Команда өтінішті қарайды. Барлық үміткер шақырылмайды." },
       { n: "03", title: "Сұхбат", text: "Қысқа әңгіме: рөл, уақыт, жауапкершілік." },
     ],
@@ -259,15 +378,16 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
       { name: "Design", text: "Механикалық дизайн." },
     ],
     unisKicker: "06",
-    unisTitle: "Білім беру жолы",
-    unisItalic: "FTC тәжірибесі университет өтінішіне қосылады.",
-    unisLead: "Төмендегі жоғары оқу орындары — бағыт, ресми серіктестік тізімі емес.",
+    unisTitle: "Грант пен стипендия",
+    unisItalic: "FIRST тәжірибесі өтінішті күшейтеді. Пайызды университет шешеді.",
+    unisLead:
+      "Төменде — нақты жолдар: FIRST стипендия каталогы және Қазақстан ЖОО гранттары. Бұл ресми серіктестік тізімі емес.",
     unis: [...SHARED_UNIS.kk],
     partnersKicker: "07",
-    partnersTitle: "Серіктестер",
-    partnersItalic: "Мектеп және FIRST экожүйесі.",
-    partnersLead: "Мектеп, FIRST және маусымдық демеушілер. Жаңа серіктестер осы бөлімде көрсетіледі.",
-    partners: ["K.E.R.N School", "FIRST", "BIOBUZZ · RTX", "Маусым серіктесі"],
+    partnersTitle: "FIRST серіктестері",
+    partnersItalic: "Халықаралық және Қазақстандағы демеушілер.",
+    partnersLead: "FIRST бағдарламасын қолдаған ұйымдар. Логотиптер — FIRST Kazakhstan сайтындағы ресми лента.",
+    partners: ["FIRST", "K.E.R.N School"],
     houston: "FIRST Championship · Houston",
     formKicker: "08",
     formTitle: "Өтініш нысаны",
@@ -338,7 +458,7 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
   },
   ru: {
     metaTitle: "K.E.R.N FTC · набор",
-    nav: { roles: "Роли", season: "Сезон", who: "Кто нужен", apply: "Заявка" },
+    nav: { programs: "FTC / FLL", roles: "Роли", season: "Сезон", who: "Кто нужен", apply: "Заявка" },
     apply: "Подать заявку",
     heroEyebrow: "K.E.R.N School · Астана",
     heroTitle: "Школьная команда FIRST Tech Challenge",
@@ -348,11 +468,38 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
     heroBody:
       "Заявки принимаются, рассматриваются, затем назначается собеседование. Мест ограниченное число.",
     ctaPrimary: "Подать заявку",
-    ctaSecondary: "О программе",
+    ctaSecondary: "FTC / FLL",
     seasonChip: "Новый сезон",
     introTitle: "K.E.R.N School FTC 2026–2027",
     introLead:
-      "Школьная команда собирает робота по правилам сезона, ведёт медиа и дизайн, проводит скриммидж и outreach. Заявки принимаются, рассматриваются, затем назначается собеседование.",
+      "Набираем учеников K.E.R.N в FIRST. В день соревнований здесь видно, что такое FTC и FLL. Заявки принимаются, рассматриваются, затем назначается собеседование.",
+    programsKicker: "01",
+    programsTitle: "FTC и FLL",
+    programsItalic: "Чтобы на площадке было понятно, что происходит.",
+    programsLead:
+      "У FIRST несколько программ по возрасту. Команда K.E.R.N работает в FTC. FLL — путь для младших классов.",
+    programs: [
+      {
+        name: "FIRST LEGO League Discover",
+        ages: "4–6 лет",
+        text: "Игра с LEGO. Первый шаг в STEM, без матчей.",
+      },
+      {
+        name: "FIRST LEGO League Explore",
+        ages: "6–10 лет",
+        text: "Подвижная модель, исследовательский постер, работа в команде.",
+      },
+      {
+        name: "FIRST LEGO League Challenge",
+        ages: "9–16 лет",
+        text: "Робот LEGO, тема сезона, защита перед судьями.",
+      },
+      {
+        name: "FIRST Tech Challenge",
+        ages: "12–18 лет",
+        text: "Металлический робот, Autonomous и TeleOp, матч на поле. Здесь работает K.E.R.N.",
+      },
+    ],
     whyKicker: "01",
     whyTitle: "Программа",
     whyItalic: "Части сезона FIRST Tech Challenge.",
@@ -412,7 +559,7 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
     pathItalic: "Три этапа.",
     pathLead: "Каждая заявка рассматривается. Приглашение дальше — по итогам отбора.",
     path: [
-      { n: "01", title: "Заявка", text: "Заполните форму полностью: школа, роль, опыт." },
+      { n: "01", title: "Заявка", text: "Заполните форму полностью: класс, роль, опыт." },
       { n: "02", title: "Отбор", text: "Команда читает заявки. Приглашаются не все." },
       { n: "03", title: "Собеседование", text: "Короткий разговор: роль, время, ответственность." },
     ],
@@ -430,15 +577,16 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
       { name: "Design", text: "Механический дизайн." },
     ],
     unisKicker: "06",
-    unisTitle: "Образовательный трек",
-    unisItalic: "Опыт FTC учитывается при поступлении.",
-    unisLead: "Перечисленные вузы — ориентир, а не список официальных партнёров.",
+    unisTitle: "Гранты и стипендии",
+    unisItalic: "Опыт FIRST усиливает заявку. Процент определяет вуз.",
+    unisLead:
+      "Ниже — реальные пути: каталог стипендий FIRST и гранты вузов Казахстана. Это не список официальных партнёров школы.",
     unis: [...SHARED_UNIS.ru],
     partnersKicker: "07",
-    partnersTitle: "Партнёры",
-    partnersItalic: "Школа и экосистема FIRST.",
-    partnersLead: "Школа, FIRST и сезонные спонсоры. Новые партнёры появляются в этом блоке.",
-    partners: ["K.E.R.N School", "FIRST", "BIOBUZZ · RTX", "Партнёр сезона"],
+    partnersTitle: "Партнёры FIRST",
+    partnersItalic: "Международные и казахстанские спонсоры.",
+    partnersLead: "Организации, которые поддерживают программы FIRST. Логотипы — с официальной ленты FIRST Kazakhstan.",
+    partners: ["FIRST", "K.E.R.N School"],
     houston: "FIRST Championship · Houston",
     formKicker: "08",
     formTitle: "Форма заявки",
@@ -509,7 +657,7 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
   },
   en: {
     metaTitle: "K.E.R.N FTC · recruitment",
-    nav: { roles: "Roles", season: "Season", who: "Who we need", apply: "Apply" },
+    nav: { programs: "FTC / FLL", roles: "Roles", season: "Season", who: "Who we need", apply: "Apply" },
     apply: "Submit application",
     heroEyebrow: "K.E.R.N School · Astana",
     heroTitle: "The school FIRST Tech Challenge team",
@@ -519,11 +667,38 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
     heroBody:
       "Applications are reviewed, then shortlisted candidates are invited to interview. Places are limited.",
     ctaPrimary: "Submit application",
-    ctaSecondary: "Programme",
+    ctaSecondary: "FTC / FLL",
     seasonChip: "New season",
     introTitle: "K.E.R.N School FTC 2026–2027",
     introLead:
-      "The school team builds a competition robot, runs media and design, and hosts scrimmage and outreach. Applications are reviewed; shortlisted candidates are invited to interview.",
+      "We recruit K.E.R.N students into FIRST. On match day this page shows what FTC and FLL are. Applications are reviewed; shortlisted candidates are invited to interview.",
+    programsKicker: "01",
+    programsTitle: "FTC and FLL",
+    programsItalic: "So the field makes sense on competition day.",
+    programsLead:
+      "FIRST runs several age programmes. The K.E.R.N team competes in FTC. FLL is the path for younger students.",
+    programs: [
+      {
+        name: "FIRST LEGO League Discover",
+        ages: "Ages 4–6",
+        text: "Play with LEGO. A first step into STEM, not a match.",
+      },
+      {
+        name: "FIRST LEGO League Explore",
+        ages: "Ages 6–10",
+        text: "A moving model, a research poster, and team work.",
+      },
+      {
+        name: "FIRST LEGO League Challenge",
+        ages: "Ages 9–16",
+        text: "A LEGO robot, a season theme, and a judged presentation.",
+      },
+      {
+        name: "FIRST Tech Challenge",
+        ages: "Ages 12–18",
+        text: "A metal robot, Autonomous and TeleOp, a field match. This is K.E.R.N.",
+      },
+    ],
     whyKicker: "01",
     whyTitle: "Programme",
     whyItalic: "The parts of a FIRST Tech Challenge season.",
@@ -583,7 +758,7 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
     pathItalic: "Three stages.",
     pathLead: "Every application is read. Further invitations follow the shortlist.",
     path: [
-      { n: "01", title: "Application", text: "Complete the form: school, role, experience." },
+      { n: "01", title: "Application", text: "Complete the form: grade, role, experience." },
       { n: "02", title: "Review", text: "The team reads applications. Not all candidates are invited." },
       { n: "03", title: "Interview", text: "A short conversation: role, time, responsibility." },
     ],
@@ -601,15 +776,16 @@ export const INVITE_COPY: Record<Locale, InviteCopy> = {
       { name: "Design", text: "Mechanical design." },
     ],
     unisKicker: "06",
-    unisTitle: "Academic path",
-    unisItalic: "FTC work can support later applications.",
-    unisLead: "The universities below are a reference, not a list of official partners.",
+    unisTitle: "Grants and scholarships",
+    unisItalic: "FIRST work strengthens an application. The university sets the award.",
+    unisLead:
+      "Real routes: the FIRST scholarship directory and Kazakh university grants. This is not a list of official school partners.",
     unis: [...SHARED_UNIS.en],
     partnersKicker: "07",
-    partnersTitle: "Partners",
-    partnersItalic: "The school and the FIRST programme.",
-    partnersLead: "The school, FIRST, and seasonal sponsors. New partners appear in this block.",
-    partners: ["K.E.R.N School", "FIRST", "BIOBUZZ · RTX", "Season partner"],
+    partnersTitle: "FIRST partners",
+    partnersItalic: "International and Kazakhstan sponsors.",
+    partnersLead: "Organisations that support FIRST programmes. Logos follow the FIRST Kazakhstan partner strip.",
+    partners: ["FIRST", "K.E.R.N School"],
     houston: "FIRST Championship · Houston",
     formKicker: "08",
     formTitle: "Application form",

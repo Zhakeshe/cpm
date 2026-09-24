@@ -44,7 +44,7 @@ export type RegistrationInput = z.infer<typeof registrationSchema>;
 export const inviteSchema = z.object({
   fullName: z.string().trim().min(3).max(80),
   grade: z.string().trim().min(1).max(40),
-  school: z.string().trim().min(2).max(120),
+  school: z.string().trim().max(120).optional(),
   city: z.string().trim().min(2).max(80),
   languages: z.string().trim().min(2).max(80),
   phone: z.string().trim().regex(PHONE_REGEX),

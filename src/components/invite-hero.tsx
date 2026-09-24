@@ -11,7 +11,13 @@ export function InviteHero() {
 
   useEffect(() => {
     const root = copy.current;
-    if (!root || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (
+      !root ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+      window.matchMedia("(pointer: coarse)").matches
+    ) {
+      return;
+    }
     const nodes = root.querySelectorAll(".invite-rise");
     const motion = animate(nodes, {
       opacity: [0, 1],
@@ -38,7 +44,7 @@ export function InviteHero() {
           <a href="#apply" className="invite-btn-gold">
             {t.ctaPrimary}
           </a>
-          <a href="#roles" className="invite-btn-ghost">
+          <a href="#programs" className="invite-btn-ghost">
             {t.ctaSecondary}
           </a>
         </div>

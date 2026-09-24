@@ -32,7 +32,6 @@ export function InviteForm() {
     defaultValues: {
       fullName: "",
       grade: "",
-      school: "",
       city: "Астана",
       languages: "",
       phone: "+7 ",
@@ -111,11 +110,6 @@ export function InviteForm() {
           {t.fields.grade}
           <input {...register("grade")} className={fieldClass} placeholder="10A" />
           <FieldError message={errors.grade ? t.errors.grade : undefined} />
-        </label>
-        <label>
-          {t.fields.school}
-          <input {...register("school")} className={fieldClass} />
-          <FieldError message={errors.school ? t.errors.school : undefined} />
         </label>
         <label>
           {t.fields.city}

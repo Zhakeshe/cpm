@@ -1,6 +1,7 @@
 "use client";
 
-import { InviteMarquee } from "@/components/invite-marquee";
+import { InviteLogoMarquee, InviteMarquee } from "@/components/invite-marquee";
+import { FIRST_PARTNER_LOGOS, KZ_PARTNER_LOGOS } from "@/lib/invite-media";
 import { useInviteLang } from "@/components/invite-i18n";
 
 export function InviteSeason() {
@@ -34,9 +35,21 @@ export function InviteSeason() {
             {t.unisTitle}
             <em>{t.unisItalic}</em>
           </h2>
+          <p className="mt-4 max-w-2xl text-[16px] leading-7 text-[var(--invite-mute)]">{t.unisLead}</p>
+        </div>
+        <div className="invite-grant-grid mx-auto mt-8 max-w-6xl px-4 sm:px-6">
+          {t.unis.map((item) => (
+            <article key={item.name} className="invite-grant-card">
+              <strong>{item.name}</strong>
+              <span>{item.place}</span>
+              <p>{item.grant}</p>
+            </article>
+          ))}
         </div>
         <div className="mt-7">
-          <InviteMarquee items={t.unis.map((item) => ({ title: item.name, note: item.place }))} />
+          <InviteMarquee
+            items={t.unis.map((item) => ({ title: item.name, note: item.place, grant: item.grant }))}
+          />
         </div>
       </section>
 
@@ -47,9 +60,13 @@ export function InviteSeason() {
             {t.partnersTitle}
             <em>{t.partnersItalic}</em>
           </h2>
+          <p className="mt-4 max-w-2xl text-[16px] leading-7 text-[var(--invite-mute)]">{t.partnersLead}</p>
         </div>
         <div className="mt-7">
-          <InviteMarquee items={t.partners.map((name) => ({ title: name }))} reverse />
+          <InviteLogoMarquee logos={FIRST_PARTNER_LOGOS} />
+        </div>
+        <div className="mt-4">
+          <InviteLogoMarquee logos={KZ_PARTNER_LOGOS} reverse />
         </div>
       </section>
     </div>
