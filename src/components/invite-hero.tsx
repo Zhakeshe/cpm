@@ -33,7 +33,7 @@ export function InviteHero() {
   return (
     <section className="invite-hero">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className="invite-hero-bg" src={withBase("/hero-field.jpg")} alt="" />
+      <img className="invite-hero-bg" src={withBase("/invite-hero.jpg")} alt="" />
       <div className="invite-hero-veil" />
       <div ref={copy} className="invite-hero-copy">
         <p className="invite-hero-eye invite-rise">{t.heroItalic}</p>

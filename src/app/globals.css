@@ -129,13 +129,6 @@ body {
   overflow: hidden;
 }
 
-@media (max-width: 639px) {
-  .invite-stage {
-    height: 78vh;
-    min-height: 440px;
-  }
-}
-
 .invite-bar {
   position: relative;
   z-index: 5;
@@ -237,13 +230,13 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 68% center;
+  object-position: 62% 42%;
 }
 
 .invite-hero-veil {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(8, 16, 32, 0.35) 0%, rgba(8, 16, 32, 0.72) 55%, rgba(8, 16, 32, 0.82) 100%);
+  background: linear-gradient(180deg, rgba(8, 16, 32, 0.18) 0%, rgba(8, 16, 32, 0.42) 48%, rgba(8, 16, 32, 0.78) 100%);
 }
 
 .invite-hero-copy {
@@ -895,13 +888,32 @@ body {
 .invite-teaser-veil {
   position: absolute;
   inset: 0;
-  background: rgb(8 12 20 / 0.72);
+  background: rgb(8 12 20 / 0.78);
+}
+
+.invite-teaser-sheet {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.55rem;
+  width: min(920px, 100%);
+}
+
+.invite-teaser-close {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.16);
+  color: #fff;
+  font-size: 28px;
+  line-height: 1;
 }
 
 .invite-teaser-box {
   position: relative;
-  z-index: 1;
-  width: min(920px, 100%);
+  width: 100%;
   aspect-ratio: 16 / 9;
   overflow: hidden;
   border-radius: 1rem;
@@ -1279,33 +1291,53 @@ body {
     overflow-x: clip;
   }
 
+  .invite-stage {
+    height: 88vh;
+    min-height: 560px;
+    max-height: none;
+  }
+
+  .invite-hero-bg {
+    object-position: 70% 38%;
+  }
+
   .invite-hero-copy {
     justify-content: flex-end;
-    padding: 4.25rem 1rem 4.4rem;
+    padding: 4.6rem 1rem 5.1rem;
   }
 
   .invite-hero-copy h1 {
-    font-size: clamp(1.55rem, 8.2vw, 2.15rem);
+    max-width: 14ch;
+    font-size: clamp(1.7rem, 8.6vw, 2.25rem);
   }
 
   .invite-hero-lead {
     margin-top: 0.85rem;
+    max-width: 28ch;
     font-size: 0.95rem;
     line-height: 1.55;
   }
 
   .invite-hero-actions {
-    margin-top: 1.25rem;
+    width: 100%;
+    margin-top: 1.15rem;
   }
 
   .invite-hero-actions a {
-    flex: 1 1 auto;
-    min-height: 44px;
-    padding: 0.72rem 1.05rem;
+    flex: 1 1 calc(50% - 0.4rem);
+    min-height: 46px;
+    padding: 0.72rem 0.7rem;
+    font-size: 13px;
   }
 
   .invite-scroll {
-    bottom: 0.85rem;
+    bottom: 0.7rem;
+    font-size: 11px;
+  }
+
+  .invite-season-chip {
+    margin-top: -18px;
+    padding: 0 1rem;
   }
 
   .invite-season-chip span {
@@ -1314,16 +1346,36 @@ body {
   }
 
   .invite-intro {
-    padding: 2.6rem 0 0.4rem;
+    padding: 2.4rem 0 0.2rem;
   }
 
   .invite-h2 {
     font-size: clamp(1.45rem, 7.4vw, 1.9rem);
   }
 
+  .invite-section > div,
+  .invite-close > div,
+  .invite-intro > div {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .invite-first-grid {
+    gap: 0.65rem;
+  }
+
+  .invite-first-grid article {
+    padding: 1rem 1rem 1.05rem;
+  }
+
   .invite-pkz-cover {
-    height: 176px;
+    height: 210px;
     padding: 1.15rem 1.05rem;
+  }
+
+  .invite-pkz-cover img {
+    width: 168px;
+    max-width: 58%;
   }
 
   .invite-pkz-body {
@@ -1334,7 +1386,26 @@ body {
   .invite-pkz-actions button {
     flex: 1 1 100%;
     justify-content: center;
-    min-height: 44px;
+    min-height: 46px;
+  }
+
+  .invite-teaser {
+    padding: 0.45rem;
+    padding-top: max(0.45rem, env(safe-area-inset-top));
+    padding-bottom: max(0.45rem, env(safe-area-inset-bottom));
+  }
+
+  .invite-teaser-sheet {
+    width: 100%;
+  }
+
+  .invite-teaser-close {
+    width: 44px;
+    height: 44px;
+  }
+
+  .invite-teaser-box {
+    border-radius: 0.7rem;
   }
 
   .invite-role-card {
@@ -1360,6 +1431,22 @@ body {
   }
 
   .invite-field {
+    min-height: 46px;
     font-size: 16px;
+  }
+
+  .invite-close > div {
+    padding-top: 2.4rem;
+    padding-bottom: 2.6rem;
+  }
+
+  .invite-close .invite-btn-gold {
+    min-height: 46px;
+    width: min(100%, 280px);
+  }
+
+  .invite-footer > div {
+    padding-top: 1.5rem;
+    padding-bottom: 1.7rem;
   }
 }

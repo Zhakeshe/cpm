@@ -59,13 +59,18 @@ export function InvitePrograms() {
       {teaser ? (
         <div className="invite-teaser" role="dialog" aria-modal="true" aria-label={t.programsTeaser}>
           <button type="button" className="invite-teaser-veil" onClick={() => setTeaser(null)} aria-label="Close" />
-          <div className="invite-teaser-box">
-            <iframe
-              src={`https://www.youtube-nocookie.com/embed/${teaser}?autoplay=1&rel=0`}
-              title={t.programsTeaser}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-            />
+          <div className="invite-teaser-sheet">
+            <button type="button" className="invite-teaser-close" onClick={() => setTeaser(null)}>
+              ×
+            </button>
+            <div className="invite-teaser-box">
+              <iframe
+                src={`https://www.youtube-nocookie.com/embed/${teaser}?autoplay=1&rel=0`}
+                title={t.programsTeaser}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            </div>
           </div>
         </div>
       ) : null}
