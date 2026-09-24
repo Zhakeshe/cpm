@@ -20,10 +20,9 @@ export function InviteHero() {
     }
     const nodes = root.querySelectorAll(".invite-rise");
     const motion = animate(nodes, {
-      opacity: [0, 1],
-      y: [18, 0],
-      delay: stagger(90),
-      duration: 780,
+      y: [12, 0],
+      delay: stagger(70),
+      duration: 620,
       ease: "out(3)",
     });
     return () => {
