@@ -62,7 +62,7 @@ export async function createQuote(
   if (refreshed) {
     await advanceOpenStage(db, {
       contactId: params.contactId,
-      slug: "thinking",
+      slug: "demo_done",
       actorId: params.managerId,
       contactForRules: refreshed,
     });
