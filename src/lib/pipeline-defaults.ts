@@ -9,18 +9,15 @@ export type VacuumStageDef = {
   requiredFields: string[];
 };
 
-/** Пелесос сату воронкасы — лид → байланыс нәтижесі → демо → төлем / бас тарту. */
+/** Клиент карточкасындағы сатылар — қолжазба тізімі. */
 export const VACUUM_PIPELINE_STAGES: VacuumStageDef[] = [
   { slug: "new", name: "Новый лид", order: 1, requiredFields: [] },
-  { slug: "contacted", name: "Первый контакт", order: 2, requiredFields: [] },
-  { slug: "callback", name: "Перезвонить", order: 3, requiredFields: [] },
-  { slug: "demo", name: "Запись на демо", order: 4, requiredFields: [] },
-  { slug: "demo_done", name: "Демо проведено", order: 5, requiredFields: [] },
-  { slug: "disconnected", name: "Отключено!", order: 6, requiredFields: [] },
-  { slug: "tnb", name: "ТНБ", order: 7, requiredFields: [] },
-  { slug: "no_answer", name: "Телефон не берет", order: 8, requiredFields: [] },
-  { slug: "paid", name: "Оплатил", order: 9, isWon: true, requiredFields: ["dealAmount"] },
-  { slug: "lost", name: "Отказ", order: 10, isLost: true, requiredFields: [] },
+  { slug: "demo", name: "Demo", order: 2, requiredFields: [] },
+  { slug: "not_needed", name: "Керек емес", order: 3, isLost: true, requiredFields: [] },
+  { slug: "tnb", name: "ТНБ", order: 4, requiredFields: [] },
+  { slug: "disconnected", name: "ОТКЛ", order: 5, requiredFields: [] },
+  { slug: "thinking", name: "Ойланатын", order: 6, requiredFields: [] },
+  { slug: "later_call", name: "Потом звонда", order: 7, requiredFields: [] },
 ];
 
 export const MANAGER_BLOCKED_PATHS = [
@@ -72,7 +69,7 @@ export async function ensureVacuumPipeline(db: PrismaClient) {
     where: { pipelineId: pipeline.id, slug: { notIn: keep } },
   });
   const fallback = await db.pipelineStage.findFirst({
-    where: { pipelineId: pipeline.id, slug: "demo_done" },
+    where: { pipelineId: pipeline.id, slug: "new" },
   });
   for (const old of stale) {
     if (fallback) {
