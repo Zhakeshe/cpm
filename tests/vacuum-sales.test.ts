@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { totpCode, verifyTotp, generateTotpSecret } from "../src/lib/totp";
 import { quoteTotal, vacuumDefaults } from "../src/lib/quotes";
+import { CONTRACT_GIFTS, CONTRACT_PRICES } from "../src/components/ContactContract";
 import { contactWhere, parseContactFilters } from "../src/lib/contact-filters";
 
 describe("totp", () => {
@@ -19,6 +20,13 @@ describe("quotes", () => {
 
   it("ships a default vacuum lineup", () => {
     expect(vacuumDefaults().some((p) => p.sku === "QC-PRO400")).toBe(true);
+  });
+});
+
+describe("paper contract sheet", () => {
+  it("offers the handwritten prices and gifts", () => {
+    expect(CONTRACT_PRICES).toEqual([850000, 682000, 582000]);
+    expect(CONTRACT_GIFTS.map((g) => g.id)).toEqual(["iron", "steam", "booster"]);
   });
 });
 

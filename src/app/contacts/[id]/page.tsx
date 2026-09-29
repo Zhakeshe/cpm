@@ -7,7 +7,6 @@ import { TagChips } from "@/components/TagChips";
 import { useI18n } from "@/components/I18nProvider";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
 
 type Stage = { id: string; name: string; requiredFields: string[]; isWon?: boolean; isLost?: boolean };
 
@@ -35,7 +34,6 @@ type Contact = {
   company?: { id: string; name: string } | null;
   pipelineStage?: { id: string; name: string } | null;
   tags?: Array<{ tag: { id: string; name: string; color: string } }>;
-  quotes?: Array<{ id: string; number: string; total: string | number; status: string }>;
   payments?: Array<{ id: string; amount: string | number; method: string }>;
   files?: Array<{ id: string; fileName: string; size: number }>;
   activities: Array<{ id: string; title: string; createdAt: string }>;
@@ -345,13 +343,9 @@ export default function ContactPage() {
             </div>
           </div>
 
+          {((c.payments || []).length > 0 || (c.files || []).length > 0) && (
           <div className="card p-5">
-            <div className="font-medium mb-2">{t("quotes.title")}</div>
-            {(c.quotes || []).map((q) => (
-              <Link key={q.id} href={`/quotes/${q.id}`} className="block text-sm border-t border-[#243049] py-2 text-[#93c5fd]">
-                {q.number} · {Number(q.total)} ₸ · {t(`quoteStatus.${q.status}`, q.status)}
-              </Link>
-            ))}
+            <div className="font-medium mb-2">{t("payments.title")}</div>
             {(c.payments || []).map((p) => (
               <div key={p.id} className="text-sm border-t border-[#243049] py-2">
                 {Number(p.amount)} ₸ · {t(`payments.${p.method}`, p.method)}
@@ -363,6 +357,7 @@ export default function ContactPage() {
               </a>
             ))}
           </div>
+          )}
 
           <div className="card p-6">
             <div className="font-medium mb-3">{t("contact.recordings")}</div>
