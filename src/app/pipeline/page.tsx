@@ -12,8 +12,9 @@ type Card = {
   lastName: string;
   phoneDisplay: string;
   source: string;
-  dealAmount: string | number;
   lastContactAt: string | null;
+  city?: string | null;
+  address?: string | null;
   manager?: { name: string };
   tasks?: Array<{ dueAt: string; description: string }>;
 };
@@ -113,7 +114,7 @@ export default function PipelinePage() {
                   <div className="text-xs mt-2">
                     {t(`sources.${c.source}`, c.source)} · {c.manager?.name}
                   </div>
-                  <div className="text-xs mt-1">{t("pipeline.amount", { amount: Number(c.dealAmount || 0) })}</div>
+                  <div className="text-xs mt-1">{[c.city, c.address].filter(Boolean).join(", ") || t("contact.address")}</div>
                   <div className="text-xs muted mt-1">
                     {c.tasks?.[0] ? t("pipeline.task", { task: c.tasks[0].description }) : t("pipeline.noTask")}
                   </div>

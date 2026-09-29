@@ -16,6 +16,8 @@ type Contact = {
   phoneDisplay: string;
   source: string;
   dealAmount: string | number;
+  address?: string | null;
+  city?: string | null;
   manager?: { name: string };
   pipelineStage?: { name: string };
   company?: { name: string } | null;
@@ -44,14 +46,13 @@ function LeadsInner() {
   const [tags, setTags] = useState<Array<{ id: string; name: string }>>([]);
   const [views, setViews] = useState<Array<{ id: string; name: string; filters: Record<string, string> }>>([]);
   const [selected, setSelected] = useState<string[]>([]);
-  const [form, setForm] = useState({ firstName: "", phone: "", source: "MANUAL", comment: "" });
+  const [form, setForm] = useState({ firstName: "", phone: "", source: "MANUAL", comment: "", city: "", address: "" });
   const [filters, setFilters] = useState({
     q: params.get("q") || "",
     stage: params.get("stage") || "",
     manager: params.get("manager") || "",
     source: params.get("source") || "",
     tag: params.get("tag") || "",
-    company: params.get("company") || "",
     from: "",
     to: "",
     archived: "",
@@ -103,7 +104,7 @@ function LeadsInner() {
       setError(t("leads.createFailed"));
       return;
     }
-    setForm({ firstName: "", phone: "", source: "MANUAL", comment: "" });
+    setForm({ firstName: "", phone: "", source: "MANUAL", comment: "", city: "", address: "" });
     await load();
   }
 
@@ -156,7 +157,7 @@ function LeadsInner() {
         </div>
         )}
       </div>
-      <form onSubmit={create} className="card p-4 mb-4 grid md:grid-cols-5 gap-3">
+      <form onSubmit={create} className="card p-4 mb-4 grid md:grid-cols-6 gap-3">
         <input placeholder={t("common.name")} value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
         <input placeholder={t("common.phone")} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
         <select value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })}>
@@ -166,8 +167,10 @@ function LeadsInner() {
             </option>
           ))}
         </select>
+        <input placeholder={t("contact.city")} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+        <input placeholder={t("contact.address")} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
         <input placeholder={t("common.comment")} value={form.comment} onChange={(e) => setForm({ ...form, comment: e.target.value })} />
-        <button className="rounded-xl bg-[#2563eb]">{t("common.create")}</button>
+        <button className="rounded-xl bg-[#2563eb] md:col-span-6">{t("common.create")}</button>
       </form>
       <div className="card p-4 mb-4 grid md:grid-cols-4 xl:grid-cols-8 gap-2">
         <input placeholder={t("common.search")} value={filters.q} onChange={(e) => setFilters({ ...filters, q: e.target.value })} />
@@ -258,7 +261,7 @@ function LeadsInner() {
               {isAdmin && <th className="text-left p-3">{t("common.manager")}</th>}
               <th className="text-left p-3">{t("common.stage")}</th>
               <th className="text-left p-3">{t("leads.tag")}</th>
-              <th className="text-left p-3">{t("common.amount")}</th>
+              <th className="text-left p-3">{t("contact.address")}</th>
             </tr>
           </thead>
           <tbody>
@@ -273,14 +276,13 @@ function LeadsInner() {
                   <Link href={`/contacts/${c.id}`} className="text-[#93c5fd]">
                     {c.firstName} {c.lastName}
                   </Link>
-                  {c.company?.name ? <div className="muted text-xs">{c.company.name}</div> : null}
                 </td>
                 <td className="p-3">{c.phoneDisplay}</td>
                 <td className="p-3">{t(`sources.${c.source}`, c.source)}</td>
                 {isAdmin && <td className="p-3">{c.manager?.name || t("common.dash")}</td>}
                 <td className="p-3">{c.pipelineStage?.name || t("common.dash")}</td>
                 <td className="p-3">{(c.tags || []).map((x) => x.tag.name).join(", ")}</td>
-                <td className="p-3">{Number(c.dealAmount || 0)}</td>
+                <td className="p-3">{[c.city, c.address].filter(Boolean).join(", ") || t("common.dash")}</td>
               </tr>
             ))}
           </tbody>

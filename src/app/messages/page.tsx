@@ -16,7 +16,8 @@ type Contact = {
   pipelineStage?: { name: string } | null;
   manager?: { id: string; name: string } | null;
   comment?: string;
-  dealAmount?: string | number;
+  city?: string | null;
+  address?: string | null;
   source?: string;
 };
 
@@ -433,7 +434,7 @@ function MessagesInbox() {
               <div>{t("messages.source", { source: t(`sources.${thread.contact.source}`, thread.contact.source || "") })}</div>
               <div>{t("messages.manager", { name: thread.contact.manager?.name || t("common.dash") })}</div>
               <div>{t("messages.stage", { name: thread.contact.pipelineStage?.name || t("common.dash") })}</div>
-              <div>{t("messages.amount", { amount: Number(thread.contact.dealAmount || 0) })}</div>
+              <div>{t("pipeline.amount", { amount: [thread.contact.city, thread.contact.address].filter(Boolean).join(", ") || t("common.dash") })}</div>
               <div className="muted">{thread.contact.comment}</div>
               <div className="pt-2">
                 <QuickActions

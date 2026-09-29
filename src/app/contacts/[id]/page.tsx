@@ -178,9 +178,7 @@ export default function ContactPage() {
                 <h1 className="text-2xl font-semibold">
                   {c.firstName} {c.lastName}
                 </h1>
-                <div className="muted">
-                  {c.phoneDisplay} · {c.email}
-                </div>
+                <div className="muted">{c.phoneDisplay}</div>
               </div>
               <button type="button" className="rounded-xl bg-[#16a34a] px-4 py-2 h-fit" disabled={calling} onClick={sipCall}>
                 {calling ? t("contact.sipCalling") : t("contact.sipCall")}
@@ -215,20 +213,12 @@ export default function ContactPage() {
               </label>
               <div>{t("contact.manager", { name: c.manager?.name || t("common.dash") })}</div>
               <label>
-                {t("contact.amount")}
-                <input value={String(c.dealAmount)} onChange={(e) => setC({ ...c, dealAmount: e.target.value })} />
-              </label>
-              <label>
-                {t("common.email")}
-                <input value={c.email || ""} onChange={(e) => setC({ ...c, email: e.target.value })} />
+                {t("contact.city")}
+                <input value={c.city || ""} onChange={(e) => setC({ ...c, city: e.target.value })} />
               </label>
               <label>
                 {t("contact.altPhone")}
                 <input value={c.altPhone || ""} onChange={(e) => setC({ ...c, altPhone: e.target.value })} />
-              </label>
-              <label>
-                {t("contact.city")}
-                <input value={c.city || ""} onChange={(e) => setC({ ...c, city: e.target.value })} />
               </label>
               <label className="md:col-span-2">
                 {t("contact.address")}
@@ -243,8 +233,6 @@ export default function ContactPage() {
                 onClick={() =>
                   patch({
                     comment: c.comment,
-                    dealAmount: Number(c.dealAmount),
-                    email: c.email,
                     altPhone: c.altPhone,
                     city: c.city,
                     address: c.address,
@@ -357,7 +345,7 @@ export default function ContactPage() {
         </div>
 
         <div className="space-y-4">
-        <ContactSales contactId={c.id} customFields={c.customFields || {}} tags={c.tags || []} companyId={c.company?.id} onChange={load} />
+        <ContactSales contactId={c.id} customFields={c.customFields || {}} tags={c.tags || []} onChange={load} />
         <div className="card p-6">
           <div className="font-medium mb-4">{t("contact.timeline")}</div>
           <form onSubmit={addNote} className="mb-4 space-y-2">

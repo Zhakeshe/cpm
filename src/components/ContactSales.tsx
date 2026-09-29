@@ -7,26 +7,22 @@ import { useI18n } from "@/components/I18nProvider";
 type Field = { key: string; name: string; fieldType: string; options: string[] };
 type Tag = { id: string; name: string; color: string };
 type Product = { id: string; name: string; price: string | number };
-type Company = { id: string; name: string };
 
 export function ContactSales({
   contactId,
   customFields,
   tags,
-  companyId,
   onChange,
 }: {
   contactId: string;
   customFields: Record<string, unknown>;
   tags: Array<{ tag: Tag }>;
-  companyId?: string | null;
   onChange: () => void;
 }) {
   const { t } = useI18n();
   const [fields, setFields] = useState<Field[]>([]);
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const [companies, setCompanies] = useState<Company[]>([]);
   const [values, setValues] = useState(customFields);
   const [items, setItems] = useState<Array<{ productId?: string; title: string; qty: number; unitPrice: number }>>([]);
   const [pay, setPay] = useState({ amount: "", method: "CASH" });
@@ -41,7 +37,6 @@ export function ContactSales({
     fetch("/api/custom-fields").then((r) => r.json()).then(setFields);
     fetch("/api/tags").then((r) => r.json()).then(setAllTags);
     fetch("/api/products").then((r) => r.json()).then(setProducts);
-    fetch("/api/companies").then((r) => r.json()).then(setCompanies);
     fetch("/api/contacts").then((r) => r.json()).then((rows) => setDupes(rows.filter((x: { id: string }) => x.id !== contactId).slice(0, 40)));
   }, [contactId]);
 
@@ -49,7 +44,7 @@ export function ContactSales({
     await fetch("/api/contacts", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: contactId, customFields: values, companyId }),
+      body: JSON.stringify({ id: contactId, customFields: values }),
     });
     onChange();
   }
@@ -80,27 +75,6 @@ export function ContactSales({
             );
           })}
         </div>
-      </div>
-
-      <div className="card p-5 space-y-2">
-        <div className="font-medium">{t("contact.company")}</div>
-        <select
-          value={companyId || ""}
-          onChange={(e) =>
-            fetch("/api/contacts", {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ id: contactId, companyId: e.target.value }),
-            }).then(onChange)
-          }
-        >
-          <option value="">{t("common.dash")}</option>
-          {companies.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
       </div>
 
       <div className="card p-5 space-y-2">

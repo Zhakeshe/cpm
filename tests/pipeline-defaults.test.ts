@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { isManagerBlockedPath, VACUUM_PIPELINE_STAGES } from "../src/lib/pipeline-defaults";
+import { LEAD_TAGS } from "../src/lib/catalog";
 
 describe("vacuum funnel", () => {
   it("keeps the handwritten client-card stages", () => {
@@ -13,8 +14,20 @@ describe("vacuum funnel", () => {
       "ОТКЛ",
       "Ойланатын",
       "Потом звонда",
+      "Первый клиент",
     ]);
     expect(VACUUM_PIPELINE_STAGES.find((s) => s.slug === "not_needed")?.isLost).toBe(true);
+    expect(VACUUM_PIPELINE_STAGES.find((s) => s.slug === "first_client")?.name).toBe("Первый клиент");
+  });
+
+  it("keeps the manager tags from the handwritten list", () => {
+    expect(LEAD_TAGS.map((t) => t.name)).toEqual([
+      "демо шыкты",
+      "керек емес",
+      "багасын былейын деп едым",
+      "Кешке зв",
+      "потом звондау керек",
+    ]);
   });
 
   it("blocks admin pages for managers", () => {

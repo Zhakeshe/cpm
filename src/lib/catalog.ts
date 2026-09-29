@@ -1,6 +1,14 @@
 import type { PrismaClient } from "@prisma/client";
 import { vacuumDefaults } from "./quotes";
 
+export const LEAD_TAGS = [
+  { name: "демо шыкты", color: "#2563eb" },
+  { name: "керек емес", color: "#64748b" },
+  { name: "багасын былейын деп едым", color: "#f59e0b" },
+  { name: "Кешке зв", color: "#8b5cf6" },
+  { name: "потом звондау керек", color: "#10b981" },
+];
+
 export async function seedVacuumCatalog(db: PrismaClient) {
   for (const product of vacuumDefaults()) {
     await db.product.upsert({
@@ -9,17 +17,10 @@ export async function seedVacuumCatalog(db: PrismaClient) {
       create: product,
     });
   }
-  const tags = [
-    { name: "ыстық", color: "#ef4444" },
-    { name: "қайта қоңырау", color: "#f59e0b" },
-    { name: "кепілдік", color: "#10b981" },
-    { name: "B2B", color: "#6366f1" },
-    { name: "бөліп төлеу", color: "#8b5cf6" },
-    { name: "демо өтті", color: "#2563eb" },
-  ];
-  for (const tag of tags) {
+  for (const tag of LEAD_TAGS) {
     await db.tag.upsert({ where: { name: tag.name }, update: { color: tag.color }, create: tag });
   }
+  await db.tag.deleteMany({ where: { name: { notIn: LEAD_TAGS.map((t) => t.name) } } });
   const fields = [
     { key: "rooms", name: "Бөлме саны", fieldType: "text", options: [] as string[], required: false },
     { key: "pets", name: "Үй жануары", fieldType: "select", options: ["жоқ", "мысық", "ит", "басқа"], required: false },
@@ -40,5 +41,5 @@ export async function seedVacuumCatalog(db: PrismaClient) {
       data: { name: "3 күн тиілмесе — қайта қоңырау", enabled: true, staleDays: 3, action: "CREATE_TASK", taskType: "FOLLOW_UP" },
     });
   }
-  return { products: vacuumDefaults().length, tags: tags.length, fields: fields.length };
+  return { products: vacuumDefaults().length, tags: LEAD_TAGS.length, fields: fields.length };
 }
