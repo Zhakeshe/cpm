@@ -37,6 +37,8 @@ export type IngestContactInput = {
   email?: string;
   source: ContactSource;
   comment?: string;
+  city?: string;
+  address?: string;
   campaign?: string;
   adName?: string;
   formName?: string;
@@ -145,6 +147,8 @@ export async function ingestContact(db: Db, input: IngestContactInput): Promise<
       managerId: assigned?.id,
       pipelineStageId: firstStage?.id,
       comment: input.comment || "",
+      city: input.city || "",
+      address: input.address || "",
       lastContactAt: new Date(),
     },
   });

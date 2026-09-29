@@ -2,6 +2,7 @@
 
 import { AppShell } from "@/components/AppShell";
 import { ExportButton } from "@/components/ExportButton";
+import { ManagerFilter } from "@/components/ManagerFilter";
 import { useI18n } from "@/components/I18nProvider";
 import { useCallback, useEffect, useState } from "react";
 import { useRealtime } from "@/lib/use-realtime";
@@ -25,11 +26,13 @@ const RESULTS = ["CONTACTED", "NO_ANSWER", "CALLBACK", "INTERESTED", "DEMO_BOOKE
 export default function CallsPage() {
   const { t, localeTag } = useI18n();
   const [calls, setCalls] = useState<Call[]>([]);
+  const [manager, setManager] = useState("");
   const [modal, setModal] = useState<Call | null>(null);
   const [callbackAt, setCallbackAt] = useState("");
   const load = useCallback(async () => {
-    setCalls(await fetch("/api/calls").then((r) => r.json()));
-  }, []);
+    const qs = manager ? `?manager=${encodeURIComponent(manager)}` : "";
+    setCalls(await fetch(`/api/calls${qs}`).then((r) => r.json()));
+  }, [manager]);
 
   useEffect(() => {
     load();
@@ -55,7 +58,12 @@ export default function CallsPage() {
     <AppShell>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold">{t("calls.title")}</h1>
-        <ExportButton href="/api/export/calls" />
+        <div className="flex gap-3 items-end">
+          <div className="w-48">
+            <ManagerFilter value={manager} onChange={setManager} />
+          </div>
+          <ExportButton href="/api/export/calls" />
+        </div>
       </div>
       <div className="card overflow-hidden">
         <table className="w-full text-sm">

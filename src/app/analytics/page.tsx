@@ -2,6 +2,7 @@
 
 import { AppShell } from "@/components/AppShell";
 import { ExportButton } from "@/components/ExportButton";
+import { ManagerFilter } from "@/components/ManagerFilter";
 import { useI18n } from "@/components/I18nProvider";
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -37,15 +38,18 @@ type AnalyticsResponse = {
 export default function AnalyticsPage() {
   const { t } = useI18n();
   const [preset, setPreset] = useState("week");
+  const [manager, setManager] = useState("");
   const [custom, setCustom] = useState({ from: "", to: "" });
   const [data, setData] = useState<AnalyticsResponse | null>(null);
   useEffect(() => {
-    const qs =
+    const qs = new URLSearchParams(
       preset === "custom" && custom.from && custom.to
-        ? `preset=custom&from=${custom.from}&to=${custom.to}`
-        : `preset=${preset}`;
+        ? { preset: "custom", from: custom.from, to: custom.to }
+        : { preset },
+    );
+    if (manager) qs.set("managerId", manager);
     fetch(`/api/analytics?${qs}`).then((r) => r.json()).then(setData);
-  }, [preset, custom]);
+  }, [preset, custom, manager]);
   const s = data?.stats || {};
   const leadsSeries = (s.byDay || []).map((d) => ({ label: dayLabel(d.day), value: Number(d.count) }));
   const salesSeries = (s.salesByDay || []).map((d) => ({ label: dayLabel(d.day), value: Number(d.amount) }));
@@ -67,6 +71,7 @@ export default function AnalyticsPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold">{t("analytics.title")}</h1>
         <div className="flex gap-2 items-center">
+          <ManagerFilter value={manager} onChange={setManager} />
           <select value={preset} onChange={(e) => setPreset(e.target.value)} className="w-auto">
             <option value="today">{t("analytics.today")}</option>
             <option value="yesterday">{t("analytics.yesterday")}</option>

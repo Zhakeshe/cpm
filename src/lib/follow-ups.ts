@@ -155,6 +155,6 @@ export async function scheduleFollowUp(
     body: description,
     data: { taskId: task.id, contactId: params.contactId },
   });
-  await advanceOpenStage(db, { contactId: params.contactId, slug: "callback", actorId: params.creatorId });
+  await advanceOpenStage(db, { contactId: params.contactId, slug: "later_call", actorId: params.creatorId });
   return task;
 }

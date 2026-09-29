@@ -3,10 +3,10 @@
 import { AppShell } from "@/components/AppShell";
 import { QuickActions } from "@/components/QuickActions";
 import { ContactSales } from "@/components/ContactSales";
+import { TagChips } from "@/components/TagChips";
 import { useI18n } from "@/components/I18nProvider";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
 
 type Stage = { id: string; name: string; requiredFields: string[]; isWon?: boolean; isLost?: boolean };
 
@@ -34,7 +34,6 @@ type Contact = {
   company?: { id: string; name: string } | null;
   pipelineStage?: { id: string; name: string } | null;
   tags?: Array<{ tag: { id: string; name: string; color: string } }>;
-  quotes?: Array<{ id: string; number: string; total: string | number; status: string }>;
   payments?: Array<{ id: string; amount: string | number; method: string }>;
   files?: Array<{ id: string; fileName: string; size: number }>;
   activities: Array<{ id: string; title: string; createdAt: string }>;
@@ -56,6 +55,7 @@ export default function ContactPage() {
   const [reason, setReason] = useState("");
   const [note, setNote] = useState("");
   const [calling, setCalling] = useState(false);
+  const [allTags, setAllTags] = useState<Array<{ id: string; name: string; color: string }>>([]);
 
   const load = useCallback(async () => {
     setC(await fetch(`/api/contacts/${params.id}`).then((r) => r.json()));
@@ -72,6 +72,9 @@ export default function ContactPage() {
     fetch("/api/auth/me")
       .then((r) => r.json())
       .then(setMe);
+    fetch("/api/tags")
+      .then((r) => r.json())
+      .then((data) => setAllTags(Array.isArray(data) ? data : []));
   }, [load]);
 
   const fieldName = (f: string) => t(`fields.${f}`, f);
@@ -178,9 +181,7 @@ export default function ContactPage() {
                 <h1 className="text-2xl font-semibold">
                   {c.firstName} {c.lastName}
                 </h1>
-                <div className="muted">
-                  {c.phoneDisplay} · {c.email}
-                </div>
+                <div className="muted">{c.phoneDisplay}</div>
               </div>
               <button type="button" className="rounded-xl bg-[#16a34a] px-4 py-2 h-fit" disabled={calling} onClick={sipCall}>
                 {calling ? t("contact.sipCalling") : t("contact.sipCall")}
@@ -215,25 +216,31 @@ export default function ContactPage() {
               </label>
               <div>{t("contact.manager", { name: c.manager?.name || t("common.dash") })}</div>
               <label>
-                {t("contact.amount")}
-                <input value={String(c.dealAmount)} onChange={(e) => setC({ ...c, dealAmount: e.target.value })} />
-              </label>
-              <label>
-                {t("common.email")}
-                <input value={c.email || ""} onChange={(e) => setC({ ...c, email: e.target.value })} />
+                {t("contact.city")}
+                <input value={c.city || ""} onChange={(e) => setC({ ...c, city: e.target.value })} />
               </label>
               <label>
                 {t("contact.altPhone")}
                 <input value={c.altPhone || ""} onChange={(e) => setC({ ...c, altPhone: e.target.value })} />
               </label>
-              <label>
-                {t("contact.city")}
-                <input value={c.city || ""} onChange={(e) => setC({ ...c, city: e.target.value })} />
-              </label>
               <label className="md:col-span-2">
                 {t("contact.address")}
                 <input value={c.address || ""} onChange={(e) => setC({ ...c, address: e.target.value })} />
               </label>
+              <div className="md:col-span-2 space-y-2">
+                <div className="text-sm">{t("contact.tags")}</div>
+                <TagChips
+                  tags={allTags}
+                  selectedIds={(c.tags || []).map((x) => x.tag.id)}
+                  onToggle={(tag, on) =>
+                    fetch("/api/tags", {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ contactId: c.id, tagId: tag.id, remove: on }),
+                    }).then(load)
+                  }
+                />
+              </div>
             </div>
 
             <textarea className="mt-3" rows={3} value={c.comment} onChange={(e) => setC({ ...c, comment: e.target.value })} />
@@ -243,8 +250,6 @@ export default function ContactPage() {
                 onClick={() =>
                   patch({
                     comment: c.comment,
-                    dealAmount: Number(c.dealAmount),
-                    email: c.email,
                     altPhone: c.altPhone,
                     city: c.city,
                     address: c.address,
@@ -304,8 +309,23 @@ export default function ContactPage() {
                 <div key={task.id} className="text-sm border-t border-[#243049] py-2">
                   <div>{task.description}</div>
                   <div className="muted text-xs">
-                    {t(`taskTypes.${task.type}`, task.type)} · {new Date(task.dueAt).toLocaleString(localeTag)} · {task.status}
+                    {t(`taskTypes.${task.type}`, task.type)} · {new Date(task.dueAt).toLocaleString(localeTag, { timeZone: "Asia/Almaty" })} · {task.status}
                   </div>
+                  {task.status === "OPEN" && (
+                    <button
+                      type="button"
+                      className="chip mt-1"
+                      onClick={() =>
+                        fetch("/api/tasks", {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ id: task.id, status: "DONE" }),
+                        }).then(load)
+                      }
+                    >
+                      {t("tasks.markDone")}
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -323,13 +343,9 @@ export default function ContactPage() {
             </div>
           </div>
 
+          {((c.payments || []).length > 0 || (c.files || []).length > 0) && (
           <div className="card p-5">
-            <div className="font-medium mb-2">{t("quotes.title")}</div>
-            {(c.quotes || []).map((q) => (
-              <Link key={q.id} href={`/quotes/${q.id}`} className="block text-sm border-t border-[#243049] py-2 text-[#93c5fd]">
-                {q.number} · {Number(q.total)} ₸ · {t(`quoteStatus.${q.status}`, q.status)}
-              </Link>
-            ))}
+            <div className="font-medium mb-2">{t("payments.title")}</div>
             {(c.payments || []).map((p) => (
               <div key={p.id} className="text-sm border-t border-[#243049] py-2">
                 {Number(p.amount)} ₸ · {t(`payments.${p.method}`, p.method)}
@@ -341,6 +357,7 @@ export default function ContactPage() {
               </a>
             ))}
           </div>
+          )}
 
           <div className="card p-6">
             <div className="font-medium mb-3">{t("contact.recordings")}</div>
@@ -357,7 +374,18 @@ export default function ContactPage() {
         </div>
 
         <div className="space-y-4">
-        <ContactSales contactId={c.id} customFields={c.customFields || {}} tags={c.tags || []} companyId={c.company?.id} onChange={load} />
+        <ContactSales
+          contactId={c.id}
+          clientName={`${c.firstName} ${c.lastName}`.trim()}
+          phone={c.phoneDisplay}
+          address={[c.city, c.address].filter(Boolean).join(", ")}
+          managerId={c.manager?.id}
+          managerName={c.manager?.name || t("common.dash")}
+          customFields={c.customFields || {}}
+          dealAmount={c.dealAmount}
+          tasks={c.tasks || []}
+          onChange={load}
+        />
         <div className="card p-6">
           <div className="font-medium mb-4">{t("contact.timeline")}</div>
           <form onSubmit={addNote} className="mb-4 space-y-2">

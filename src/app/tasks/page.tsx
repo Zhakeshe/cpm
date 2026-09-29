@@ -1,7 +1,8 @@
 "use client";
 
 import { AppShell } from "@/components/AppShell";
-import { useEffect, useMemo, useState } from "react";
+import { ManagerFilter } from "@/components/ManagerFilter";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { addDays, isBefore, isSameDay, startOfDay } from "date-fns";
 import { useI18n } from "@/components/I18nProvider";
 
@@ -17,14 +18,20 @@ type Task = {
 export default function TasksPage() {
   const { t, localeTag } = useI18n();
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [manager, setManager] = useState("");
   const [contacts, setContacts] = useState<Array<{ id: string; firstName: string; lastName: string }>>([]);
   const [form, setForm] = useState({ type: "CALL", description: "", dueAt: "", contactId: "" });
+  const loadTasks = useCallback(async () => {
+    const qs = manager ? `?manager=${encodeURIComponent(manager)}` : "";
+    setTasks(await fetch(`/api/tasks${qs}`).then((r) => r.json()));
+  }, [manager]);
+
   useEffect(() => {
-    fetch("/api/tasks").then((r) => r.json()).then(setTasks);
+    loadTasks();
     fetch("/api/contacts")
       .then((r) => r.json())
       .then((rows) => setContacts(Array.isArray(rows) ? rows : []));
-  }, []);
+  }, [loadTasks]);
   const groups = useMemo(() => {
     const now = new Date();
     const today = startOfDay(now);
@@ -51,7 +58,7 @@ export default function TasksPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...form, contactId: form.contactId || undefined }),
     });
-    setTasks(await fetch("/api/tasks").then((r) => r.json()));
+    await loadTasks();
   }
   async function done(id: string) {
     await fetch("/api/tasks", {
@@ -59,7 +66,7 @@ export default function TasksPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, status: "DONE" }),
     });
-    setTasks(await fetch("/api/tasks").then((r) => r.json()));
+    await loadTasks();
   }
 
   const labels: Record<string, string> = {
@@ -73,6 +80,9 @@ export default function TasksPage() {
   return (
     <AppShell>
       <h1 className="text-2xl font-semibold mb-4">{t("tasks.title")}</h1>
+      <div className="card p-4 mb-4 max-w-xs">
+        <ManagerFilter value={manager} onChange={setManager} />
+      </div>
       <form onSubmit={create} className="card p-4 mb-6 grid md:grid-cols-5 gap-3">
         <select value={form.contactId} onChange={(e) => setForm({ ...form, contactId: e.target.value })}>
           <option value="">{t("meetings.pickClient")}</option>

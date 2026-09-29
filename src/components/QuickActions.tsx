@@ -87,9 +87,11 @@ export function QuickActions({ contactId, onDone, compact }: Props) {
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-2">
-        <button className="chip" type="button" onClick={() => setPanel(panel === "quote" ? null : "quote")}>
-          <FileText size={14} /> {t("quickActions.quote")}
-        </button>
+        {!compact && (
+          <button className="chip" type="button" onClick={() => setPanel(panel === "quote" ? null : "quote")}>
+            <FileText size={14} /> {t("quickActions.quote")}
+          </button>
+        )}
         <button className="chip" type="button" onClick={() => setPanel(panel === "demo" ? null : "demo")}>
           <CalendarPlus size={14} /> {t("quickActions.demo")}
         </button>
@@ -111,7 +113,7 @@ export function QuickActions({ contactId, onDone, compact }: Props) {
       {message && <div className="text-xs text-[#34d399]">{message}</div>}
       {error && <div className="text-xs text-[#f87171]">{error}</div>}
 
-      {panel === "quote" && (
+      {panel === "quote" && !compact && (
         <div className="card p-3 space-y-2">
           <div className="text-xs muted">{t("quickActions.quoteHint")}</div>
           <div className="flex flex-wrap gap-2">

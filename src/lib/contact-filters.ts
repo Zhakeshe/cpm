@@ -1,5 +1,16 @@
 import type { ContactSource, Prisma } from "@prisma/client";
 
+/** Sales team works in Kazakhstan; calendar-day filters use Almaty, not UTC midnight. */
+const CRM_TZ_OFFSET = "+05:00";
+
+export function createdAtRange(from?: string, to?: string): { gte?: Date; lte?: Date } | undefined {
+  if (!from && !to) return undefined;
+  return {
+    ...(from ? { gte: new Date(`${from}T00:00:00${CRM_TZ_OFFSET}`) } : {}),
+    ...(to ? { lte: new Date(`${to}T23:59:59.999${CRM_TZ_OFFSET}`) } : {}),
+  };
+}
+
 export type ContactFilterInput = {
   q?: string;
   stageId?: string;
@@ -30,8 +41,8 @@ export function parseContactFilters(params: URLSearchParams): ContactFilterInput
     tagId: params.get("tag") || undefined,
     companyId: params.get("company") || undefined,
     status: params.get("status") || undefined,
-    from: params.get("from") || undefined,
-    to: params.get("to") || undefined,
+    from: params.get("date") || params.get("from") || undefined,
+    to: params.get("date") || params.get("to") || undefined,
     minAmount: num("minAmount"),
     maxAmount: num("maxAmount"),
     archived: params.get("archived") === "1",
@@ -57,14 +68,8 @@ export function contactWhere(filters: ContactFilterInput, scopedManagerId?: stri
       },
     });
   }
-  if (filters.from || filters.to) {
-    and.push({
-      createdAt: {
-        ...(filters.from ? { gte: new Date(filters.from) } : {}),
-        ...(filters.to ? { lte: new Date(`${filters.to}T23:59:59`) } : {}),
-      },
-    });
-  }
+  const createdAt = createdAtRange(filters.from, filters.to);
+  if (createdAt) and.push({ createdAt });
   const q = filters.q?.trim();
   if (q) {
     const digits = q.replace(/\D/g, "");
@@ -77,7 +82,11 @@ export function contactWhere(filters: ContactFilterInput, scopedManagerId?: stri
         { comment: { contains: q, mode: "insensitive" } },
         { address: { contains: q, mode: "insensitive" } },
         { city: { contains: q, mode: "insensitive" } },
-        ...(digits ? [{ phoneNormalized: { contains: digits } }, { altPhone: { contains: digits } }] : []),
+        { phoneDisplay: { contains: q, mode: "insensitive" } },
+        { pipelineStage: { name: { contains: q, mode: "insensitive" } } },
+        { manager: { is: { name: { contains: q, mode: "insensitive" } } } },
+        { tags: { some: { tag: { name: { contains: q, mode: "insensitive" } } } } },
+        ...(digits ? [{ phoneNormalized: { contains: digits } }, { altPhone: { contains: digits } }, { whatsappNumber: { contains: digits } }] : []),
       ],
     });
   }

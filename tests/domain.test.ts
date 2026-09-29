@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { displayPhone, normalizePhone, phonesMatch } from "../src/lib/phone";
 import { eligibleManagers, pickRoundRobinManager, shouldReassignExistingContact } from "../src/lib/assignment";
-import { canSeeAllRecords, canManageSettings, scopeManagerId } from "../src/lib/rbac";
+import { canSeeAllRecords, canManageSettings, requestedManagerId, scopeManagerId } from "../src/lib/rbac";
 import { placeholdersOf, renderTemplate } from "../src/lib/templates";
 import { whatsappMediaGraphBody } from "../src/lib/whatsapp";
 import { dueAtForPreset, followUpReason, isOnFollowUpQueue } from "../src/lib/follow-ups";
@@ -52,6 +52,9 @@ describe("rbac", () => {
     expect(canManageSettings("MANAGER")).toBe(false);
     expect(scopeManagerId("MANAGER", "u1")).toBe("u1");
     expect(scopeManagerId("ADMIN", "u1")).toBeUndefined();
+    expect(requestedManagerId("ADMIN", "admin", "mgr1")).toBe("mgr1");
+    expect(requestedManagerId("MANAGER", "u1", "mgr1")).toBe("u1");
+    expect(requestedManagerId("ADMIN", "admin", "")).toBeUndefined();
   });
 });
 
