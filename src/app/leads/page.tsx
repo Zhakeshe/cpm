@@ -2,6 +2,7 @@
 
 import { AppShell } from "@/components/AppShell";
 import { ExportButton } from "@/components/ExportButton";
+import { ManagerFilter } from "@/components/ManagerFilter";
 import { TagChips } from "@/components/TagChips";
 import { useI18n } from "@/components/I18nProvider";
 import Link from "next/link";
@@ -41,7 +42,6 @@ export default function LeadsPage() {
   const [rows, setRows] = useState<Contact[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [stages, setStages] = useState<Array<{ id: string; name: string }>>([]);
-  const [managers, setManagers] = useState<Array<{ id: string; name: string; role: string }>>([]);
   const [form, setForm] = useState({
     firstName: "",
     phone: "",
@@ -84,9 +84,6 @@ export default function LeadsPage() {
     fetch("/api/tags")
       .then((r) => r.json())
       .then((data) => setTags(Array.isArray(data) ? data : []));
-    fetch("/api/users")
-      .then((r) => r.json())
-      .then((data) => setManagers(Array.isArray(data) ? data.filter((u: { role: string }) => u.role === "MANAGER" || u.role === "OPERATOR") : []));
   }, []);
 
   useRealtime({ "lead:new": () => load() });
@@ -141,22 +138,13 @@ export default function LeadsPage() {
         </div>
         <button className="rounded-xl bg-[#2563eb] md:col-span-6">{t("common.create")}</button>
       </form>
-      <div className={`card p-4 mb-4 grid gap-2 ${isAdmin ? "md:grid-cols-5" : "md:grid-cols-4"}`}>
+      <div className="card p-4 mb-4 grid md:grid-cols-5 gap-2">
         <input className="md:col-span-2" placeholder={t("common.search")} value={filters.q} onChange={(e) => setFilters({ ...filters, q: e.target.value })} />
         <label className="text-xs muted">
           {t("common.date")}
           <input type="date" className="mt-1" value={filters.date} onChange={(e) => setFilters({ ...filters, date: e.target.value })} />
         </label>
-        {isAdmin && (
-          <select value={filters.manager} onChange={(e) => setFilters({ ...filters, manager: e.target.value })}>
-            <option value="">{t("common.manager")}</option>
-            {managers.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-              </option>
-            ))}
-          </select>
-        )}
+        <ManagerFilter value={filters.manager} onChange={(manager) => setFilters({ ...filters, manager })} />
         <select value={filters.stage} onChange={(e) => setFilters({ ...filters, stage: e.target.value })}>
           <option value="">{t("common.stage")}</option>
           {stages.map((s) => (
@@ -175,7 +163,7 @@ export default function LeadsPage() {
               <th className="text-left p-3">{t("common.date")}</th>
               <th className="text-left p-3">{t("common.phone")}</th>
               <th className="text-left p-3">{t("common.source")}</th>
-              {isAdmin && <th className="text-left p-3">{t("common.manager")}</th>}
+              <th className="text-left p-3">{t("common.manager")}</th>
               <th className="text-left p-3">{t("common.stage")}</th>
               <th className="text-left p-3">{t("leads.tag")}</th>
               <th className="text-left p-3">{t("contact.address")}</th>
@@ -203,7 +191,7 @@ export default function LeadsPage() {
                 </td>
                 <td className="p-3 whitespace-nowrap">{c.phoneDisplay.replace(/\s/g, "")}</td>
                 <td className="p-3">{t(`sources.${c.source}`, c.source)}</td>
-                {isAdmin && <td className="p-3">{c.manager?.name || t("common.dash")}</td>}
+                <td className="p-3">{c.manager?.name || t("common.dash")}</td>
                 <td className="p-3">{c.pipelineStage?.name || t("common.dash")}</td>
                 <td className="p-3">
                   <TagChips tags={(c.tags || []).map((x) => x.tag)} selectedIds={(c.tags || []).map((x) => x.tag.id)} />

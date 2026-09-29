@@ -1,6 +1,7 @@
 "use client";
 
 import { AppShell } from "@/components/AppShell";
+import { ManagerFilter } from "@/components/ManagerFilter";
 import { useI18n } from "@/components/I18nProvider";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -23,13 +24,15 @@ const PRESETS = ["today", "tomorrow", "in3days"] as const;
 export default function FollowUpsPage() {
   const { t, localeTag } = useI18n();
   const [items, setItems] = useState<Item[]>([]);
+  const [manager, setManager] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
   const load = useCallback(async () => {
-    const data = await fetch("/api/follow-ups").then((r) => r.json());
+    const qs = manager ? `?manager=${encodeURIComponent(manager)}` : "";
+    const data = await fetch(`/api/follow-ups${qs}`).then((r) => r.json());
     setItems(Array.isArray(data.items) ? data.items : []);
-  }, []);
+  }, [manager]);
 
   useEffect(() => {
     load();
@@ -54,7 +57,10 @@ export default function FollowUpsPage() {
   return (
     <AppShell>
       <h1 className="text-2xl font-semibold mb-2">{t("followUps.title")}</h1>
-      <p className="muted text-sm mb-6">{t("followUps.hint")}</p>
+      <p className="muted text-sm mb-4">{t("followUps.hint")}</p>
+      <div className="card p-4 mb-4 max-w-xs">
+        <ManagerFilter value={manager} onChange={setManager} />
+      </div>
       {error && <div className="text-sm text-[#f87171] mb-3">{error}</div>}
       {notice && <div className="text-sm text-[#34d399] mb-3">{notice}</div>}
       {items.length === 0 && <div className="card p-6 muted">{t("followUps.empty")}</div>}

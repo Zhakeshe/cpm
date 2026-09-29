@@ -1,6 +1,7 @@
 "use client";
 
 import { AppShell } from "@/components/AppShell";
+import { ManagerFilter } from "@/components/ManagerFilter";
 import { useI18n } from "@/components/I18nProvider";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -26,12 +27,14 @@ const WON_REASONS = ["paid_full", "installment", "repeat"];
 export default function PipelinePage() {
   const { t } = useI18n();
   const [stages, setStages] = useState<Stage[]>([]);
+  const [manager, setManager] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState<{ contactId: string; stage: Stage } | null>(null);
   const [reason, setReason] = useState("");
   const load = useCallback(async () => {
-    setStages(await fetch("/api/pipeline").then((r) => r.json()));
-  }, []);
+    const qs = manager ? `?manager=${encodeURIComponent(manager)}` : "";
+    setStages(await fetch(`/api/pipeline${qs}`).then((r) => r.json()));
+  }, [manager]);
 
   useEffect(() => {
     load();
@@ -83,7 +86,10 @@ export default function PipelinePage() {
   return (
     <AppShell>
       <h1 className="text-2xl font-semibold mb-2">{t("pipeline.title")}</h1>
-      <p className="muted text-sm mb-6 max-w-3xl">{t("pipeline.howItWorks")}</p>
+      <p className="muted text-sm mb-4 max-w-3xl">{t("pipeline.howItWorks")}</p>
+      <div className="card p-4 mb-4 max-w-xs">
+        <ManagerFilter value={manager} onChange={setManager} />
+      </div>
       {error && <div className="card px-4 py-2 mb-4 text-sm text-[#fbbf24]">{error}</div>}
       <div className="flex gap-4 overflow-x-auto pb-4">
         {stages.map((stage) => (
