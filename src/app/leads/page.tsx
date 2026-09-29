@@ -20,6 +20,7 @@ type Contact = {
   manager?: { name: string };
   pipelineStage?: { name: string };
   tags?: Array<{ tag: Tag }>;
+  createdAt?: string;
 };
 
 const SOURCES = [
@@ -36,7 +37,7 @@ const SOURCES = [
 ];
 
 export default function LeadsPage() {
-  const { t } = useI18n();
+  const { t, localeTag } = useI18n();
   const [rows, setRows] = useState<Contact[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [stages, setStages] = useState<Array<{ id: string; name: string }>>([]);
@@ -49,7 +50,7 @@ export default function LeadsPage() {
     address: "",
     tagIds: [] as string[],
   });
-  const [filters, setFilters] = useState({ q: "", stage: "", source: "" });
+  const [filters, setFilters] = useState({ q: "", stage: "", source: "", from: "", to: "" });
   const [error, setError] = useState("");
   const [role, setRole] = useState("MANAGER");
   const isAdmin = role === "ADMIN" || role === "SUPERVISOR";
@@ -59,6 +60,8 @@ export default function LeadsPage() {
     if (filters.q) qs.set("q", filters.q);
     if (filters.stage) qs.set("stage", filters.stage);
     if (filters.source) qs.set("source", filters.source);
+    if (filters.from) qs.set("from", filters.from);
+    if (filters.to) qs.set("to", filters.to);
     return qs.toString();
   }, [filters]);
 
@@ -135,7 +138,7 @@ export default function LeadsPage() {
         </div>
         <button className="rounded-xl bg-[#2563eb] md:col-span-6">{t("common.create")}</button>
       </form>
-      <div className="card p-4 mb-4 grid md:grid-cols-3 gap-2">
+      <div className="card p-4 mb-4 grid md:grid-cols-5 gap-2">
         <input placeholder={t("common.search")} value={filters.q} onChange={(e) => setFilters({ ...filters, q: e.target.value })} />
         <select value={filters.stage} onChange={(e) => setFilters({ ...filters, stage: e.target.value })}>
           <option value="">{t("common.stage")}</option>
@@ -153,6 +156,14 @@ export default function LeadsPage() {
             </option>
           ))}
         </select>
+        <label className="text-xs muted">
+          {t("leads.from")}
+          <input type="date" className="mt-1" value={filters.from} onChange={(e) => setFilters({ ...filters, from: e.target.value })} />
+        </label>
+        <label className="text-xs muted">
+          {t("leads.to")}
+          <input type="date" className="mt-1" value={filters.to} onChange={(e) => setFilters({ ...filters, to: e.target.value })} />
+        </label>
       </div>
       {error && <div className="text-sm text-[#f87171] mb-3">{error}</div>}
       <div className="card overflow-x-auto">
@@ -160,6 +171,7 @@ export default function LeadsPage() {
           <thead className="bg-[#182235] text-[#93a0bb]">
             <tr>
               <th className="text-left p-3">{t("common.client")}</th>
+              <th className="text-left p-3">{t("common.date")}</th>
               <th className="text-left p-3">{t("common.phone")}</th>
               <th className="text-left p-3">{t("common.source")}</th>
               {isAdmin && <th className="text-left p-3">{t("common.manager")}</th>}
@@ -175,6 +187,18 @@ export default function LeadsPage() {
                   <Link href={`/contacts/${c.id}`} className="text-[#93c5fd]">
                     {c.firstName} {c.lastName}
                   </Link>
+                </td>
+                <td className="p-3 whitespace-nowrap">
+                  {c.createdAt
+                    ? new Date(c.createdAt).toLocaleString(localeTag, {
+                        timeZone: "Asia/Almaty",
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : t("common.dash")}
                 </td>
                 <td className="p-3">{c.phoneDisplay}</td>
                 <td className="p-3">{t(`sources.${c.source}`, c.source)}</td>

@@ -94,6 +94,8 @@
     "importFailed": "Не удалось импортировать CSV. Нужны колонки first_name и phone.",
     "importResult": "Создано: {created} · уже были: {duplicates} · ошибок: {errors}",
     "tag": "Тег",
+    "from": "С даты",
+    "to": "По дату",
     "activeOnly": "Активные",
     "archived": "Архив",
     "bulkStage": "Этап выбранным",

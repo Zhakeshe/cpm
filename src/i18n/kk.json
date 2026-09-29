@@ -94,6 +94,8 @@
     "importFailed": "CSV импортталмады. first_name және phone бағандары керек.",
     "importResult": "Құрылды: {created} · бар еді: {duplicates} · қате: {errors}",
     "tag": "Тег",
+    "from": "Күннен",
+    "to": "Күнге дейін",
     "activeOnly": "Белсенді",
     "archived": "Архив",
     "bulkStage": "Таңдалғанға кезең",

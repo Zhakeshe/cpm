@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
         tags: { include: { tag: true } },
         tasks: { where: { status: "OPEN" }, take: 1, orderBy: { dueAt: "asc" } },
       },
-      orderBy: { updatedAt: "desc" },
+      orderBy: { createdAt: "desc" },
       take: 200,
     });
     return NextResponse.json(contacts);

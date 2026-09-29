@@ -29,6 +29,20 @@ describe("contact filters", () => {
     expect(where.AND).toEqual(expect.arrayContaining([{ pipelineStageId: "stg-new" }, { archivedAt: null }]));
   });
 
+  it("filters createdAt by Almaty calendar days", () => {
+    const filters = parseContactFilters(new URLSearchParams("from=2026-09-29&to=2026-09-29"));
+    const where = contactWhere(filters);
+    expect(where.AND).toEqual(
+      expect.arrayContaining([
+        {
+          createdAt: {
+            gte: new Date("2026-09-29T00:00:00+05:00"),
+            lte: new Date("2026-09-29T23:59:59.999+05:00"),
+          },
+        },
+      ]),
+    );
+  });
   it("builds a scoped archived-safe where", () => {
     const filters = parseContactFilters(new URLSearchParams("q=Алия&source=WEBSITE&minAmount=10000"));
     const where = contactWhere(filters, "mgr1");
