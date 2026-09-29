@@ -3,6 +3,7 @@
 import { AppShell } from "@/components/AppShell";
 import { QuickActions } from "@/components/QuickActions";
 import { ContactSales } from "@/components/ContactSales";
+import { TagChips } from "@/components/TagChips";
 import { useI18n } from "@/components/I18nProvider";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
@@ -56,6 +57,7 @@ export default function ContactPage() {
   const [reason, setReason] = useState("");
   const [note, setNote] = useState("");
   const [calling, setCalling] = useState(false);
+  const [allTags, setAllTags] = useState<Array<{ id: string; name: string; color: string }>>([]);
 
   const load = useCallback(async () => {
     setC(await fetch(`/api/contacts/${params.id}`).then((r) => r.json()));
@@ -72,6 +74,9 @@ export default function ContactPage() {
     fetch("/api/auth/me")
       .then((r) => r.json())
       .then(setMe);
+    fetch("/api/tags")
+      .then((r) => r.json())
+      .then((data) => setAllTags(Array.isArray(data) ? data : []));
   }, [load]);
 
   const fieldName = (f: string) => t(`fields.${f}`, f);
@@ -224,6 +229,20 @@ export default function ContactPage() {
                 {t("contact.address")}
                 <input value={c.address || ""} onChange={(e) => setC({ ...c, address: e.target.value })} />
               </label>
+              <div className="md:col-span-2 space-y-2">
+                <div className="text-sm">{t("contact.tags")}</div>
+                <TagChips
+                  tags={allTags}
+                  selectedIds={(c.tags || []).map((x) => x.tag.id)}
+                  onToggle={(tag, on) =>
+                    fetch("/api/tags", {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ contactId: c.id, tagId: tag.id, remove: on }),
+                    }).then(load)
+                  }
+                />
+              </div>
             </div>
 
             <textarea className="mt-3" rows={3} value={c.comment} onChange={(e) => setC({ ...c, comment: e.target.value })} />
@@ -345,7 +364,7 @@ export default function ContactPage() {
         </div>
 
         <div className="space-y-4">
-        <ContactSales contactId={c.id} customFields={c.customFields || {}} tags={c.tags || []} onChange={load} />
+        <ContactSales contactId={c.id} customFields={c.customFields || {}} onChange={load} />
         <div className="card p-6">
           <div className="font-medium mb-4">{t("contact.timeline")}</div>
           <form onSubmit={addNote} className="mb-4 space-y-2">

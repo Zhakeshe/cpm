@@ -52,6 +52,7 @@ const createSchema = z.object({
   comment: z.string().optional(),
   city: z.string().optional(),
   address: z.string().optional(),
+  tagIds: z.array(z.string()).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -74,6 +75,13 @@ export async function POST(req: NextRequest) {
       await prisma.contact.update({
         where: { id: ingest.contactId },
         data: { managerId: user.id },
+      });
+    }
+    const tagIds = [...new Set(body.tagIds || [])];
+    if (tagIds.length) {
+      await prisma.contactTag.createMany({
+        data: tagIds.map((tagId) => ({ contactId: ingest.contactId, tagId })),
+        skipDuplicates: true,
       });
     }
     const contact = await prisma.contact.findUnique({

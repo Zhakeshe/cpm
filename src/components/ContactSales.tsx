@@ -5,23 +5,19 @@ import Link from "next/link";
 import { useI18n } from "@/components/I18nProvider";
 
 type Field = { key: string; name: string; fieldType: string; options: string[] };
-type Tag = { id: string; name: string; color: string };
 type Product = { id: string; name: string; price: string | number };
 
 export function ContactSales({
   contactId,
   customFields,
-  tags,
   onChange,
 }: {
   contactId: string;
   customFields: Record<string, unknown>;
-  tags: Array<{ tag: Tag }>;
   onChange: () => void;
 }) {
   const { t } = useI18n();
   const [fields, setFields] = useState<Field[]>([]);
-  const [allTags, setAllTags] = useState<Tag[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [values, setValues] = useState(customFields);
   const [items, setItems] = useState<Array<{ productId?: string; title: string; qty: number; unitPrice: number }>>([]);
@@ -35,7 +31,6 @@ export function ContactSales({
 
   useEffect(() => {
     fetch("/api/custom-fields").then((r) => r.json()).then(setFields);
-    fetch("/api/tags").then((r) => r.json()).then(setAllTags);
     fetch("/api/products").then((r) => r.json()).then(setProducts);
     fetch("/api/contacts").then((r) => r.json()).then((rows) => setDupes(rows.filter((x: { id: string }) => x.id !== contactId).slice(0, 40)));
   }, [contactId]);
@@ -51,32 +46,6 @@ export function ContactSales({
 
   return (
     <div className="space-y-4">
-      <div className="card p-5 space-y-2">
-        <div className="font-medium">{t("contact.tags")}</div>
-        <div className="flex flex-wrap gap-2">
-          {allTags.map((tag) => {
-            const on = tags.some((x) => x.tag.id === tag.id);
-            return (
-              <button
-                key={tag.id}
-                type="button"
-                className="chip"
-                style={{ background: on ? tag.color : undefined }}
-                onClick={() =>
-                  fetch("/api/tags", {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ contactId, tagId: tag.id, remove: on }),
-                  }).then(onChange)
-                }
-              >
-                {tag.name}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
       <div className="card p-5 space-y-2">
         <div className="font-medium">{t("contact.custom")}</div>
         {fields.map((f) => (

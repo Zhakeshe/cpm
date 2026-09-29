@@ -23,6 +23,12 @@ describe("quotes", () => {
 });
 
 describe("contact filters", () => {
+  it("maps stage query param onto pipelineStageId", () => {
+    const filters = parseContactFilters(new URLSearchParams("stage=stg-new"));
+    const where = contactWhere(filters);
+    expect(where.AND).toEqual(expect.arrayContaining([{ pipelineStageId: "stg-new" }, { archivedAt: null }]));
+  });
+
   it("builds a scoped archived-safe where", () => {
     const filters = parseContactFilters(new URLSearchParams("q=Алия&source=WEBSITE&minAmount=10000"));
     const where = contactWhere(filters, "mgr1");

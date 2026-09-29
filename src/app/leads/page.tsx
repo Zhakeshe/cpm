@@ -2,6 +2,7 @@
 
 import { AppShell } from "@/components/AppShell";
 import { ExportButton } from "@/components/ExportButton";
+import { TagChips } from "@/components/TagChips";
 import { useI18n } from "@/components/I18nProvider";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -38,23 +39,48 @@ export default function LeadsPage() {
   const { t } = useI18n();
   const [rows, setRows] = useState<Contact[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
-  const [form, setForm] = useState({ firstName: "", phone: "", source: "MANUAL", comment: "", city: "", address: "" });
+  const [stages, setStages] = useState<Array<{ id: string; name: string }>>([]);
+  const [form, setForm] = useState({
+    firstName: "",
+    phone: "",
+    source: "MANUAL",
+    comment: "",
+    city: "",
+    address: "",
+    tagIds: [] as string[],
+  });
+  const [filters, setFilters] = useState({ q: "", stage: "", source: "" });
   const [error, setError] = useState("");
   const [role, setRole] = useState("MANAGER");
   const isAdmin = role === "ADMIN" || role === "SUPERVISOR";
 
+  const query = useCallback(() => {
+    const qs = new URLSearchParams();
+    if (filters.q) qs.set("q", filters.q);
+    if (filters.stage) qs.set("stage", filters.stage);
+    if (filters.source) qs.set("source", filters.source);
+    return qs.toString();
+  }, [filters]);
+
   const load = useCallback(async () => {
-    const data = await fetch("/api/contacts").then((r) => r.json());
+    const data = await fetch(`/api/contacts?${query()}`).then((r) => r.json());
     setRows(Array.isArray(data) ? data : []);
-  }, []);
+  }, [query]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   useEffect(() => {
-    fetch("/api/auth/me").then((r) => r.json()).then((u) => setRole(u.role || "MANAGER"));
-    fetch("/api/tags").then((r) => r.json()).then((data) => setTags(Array.isArray(data) ? data : []));
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((u) => setRole(u.role || "MANAGER"));
+    fetch("/api/pipeline")
+      .then((r) => r.json())
+      .then((data) => setStages(Array.isArray(data) ? data : []));
+    fetch("/api/tags")
+      .then((r) => r.json())
+      .then((data) => setTags(Array.isArray(data) ? data : []));
   }, []);
 
   useRealtime({ "lead:new": () => load() });
@@ -71,16 +97,7 @@ export default function LeadsPage() {
       setError(t("leads.createFailed"));
       return;
     }
-    setForm({ firstName: "", phone: "", source: "MANUAL", comment: "", city: "", address: "" });
-    await load();
-  }
-
-  async function toggleTag(contactId: string, tag: Tag, on: boolean) {
-    await fetch("/api/tags", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contactId, tagId: tag.id, remove: on }),
-    });
+    setForm({ firstName: "", phone: "", source: "MANUAL", comment: "", city: "", address: "", tagIds: [] });
     await load();
   }
 
@@ -103,8 +120,40 @@ export default function LeadsPage() {
         <input placeholder={t("contact.city")} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
         <input placeholder={t("contact.address")} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
         <input placeholder={t("common.comment")} value={form.comment} onChange={(e) => setForm({ ...form, comment: e.target.value })} />
+        <div className="md:col-span-6 space-y-2">
+          <div className="text-sm muted">{t("contact.tags")}</div>
+          <TagChips
+            tags={tags}
+            selectedIds={form.tagIds}
+            onToggle={(tag, on) =>
+              setForm({
+                ...form,
+                tagIds: on ? form.tagIds.filter((id) => id !== tag.id) : [...form.tagIds, tag.id],
+              })
+            }
+          />
+        </div>
         <button className="rounded-xl bg-[#2563eb] md:col-span-6">{t("common.create")}</button>
       </form>
+      <div className="card p-4 mb-4 grid md:grid-cols-3 gap-2">
+        <input placeholder={t("common.search")} value={filters.q} onChange={(e) => setFilters({ ...filters, q: e.target.value })} />
+        <select value={filters.stage} onChange={(e) => setFilters({ ...filters, stage: e.target.value })}>
+          <option value="">{t("common.stage")}</option>
+          {stages.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+        <select value={filters.source} onChange={(e) => setFilters({ ...filters, source: e.target.value })}>
+          <option value="">{t("common.source")}</option>
+          {SOURCES.map((s) => (
+            <option key={s} value={s}>
+              {t(`sources.${s}`)}
+            </option>
+          ))}
+        </select>
+      </div>
       {error && <div className="text-sm text-[#f87171] mb-3">{error}</div>}
       <div className="card overflow-x-auto">
         <table className="w-full text-sm">
@@ -132,22 +181,7 @@ export default function LeadsPage() {
                 {isAdmin && <td className="p-3">{c.manager?.name || t("common.dash")}</td>}
                 <td className="p-3">{c.pipelineStage?.name || t("common.dash")}</td>
                 <td className="p-3">
-                  <div className="flex flex-wrap gap-1">
-                    {tags.map((tag) => {
-                      const on = (c.tags || []).some((x) => x.tag.id === tag.id);
-                      return (
-                        <button
-                          key={tag.id}
-                          type="button"
-                          className="chip text-xs"
-                          style={{ background: on ? tag.color : undefined }}
-                          onClick={() => toggleTag(c.id, tag, on)}
-                        >
-                          {tag.name}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <TagChips tags={(c.tags || []).map((x) => x.tag)} selectedIds={(c.tags || []).map((x) => x.tag.id)} />
                 </td>
                 <td className="p-3">{[c.city, c.address].filter(Boolean).join(", ") || t("common.dash")}</td>
               </tr>
