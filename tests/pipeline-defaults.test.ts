@@ -5,7 +5,7 @@ import { LEAD_TAGS } from "../src/lib/catalog";
 describe("vacuum funnel", () => {
   it("keeps the handwritten client-card stages", () => {
     expect(VACUUM_PIPELINE_STAGES.filter((s) => s.isWon)).toHaveLength(0);
-    expect(VACUUM_PIPELINE_STAGES.filter((s) => s.isLost)).toHaveLength(1);
+    expect(VACUUM_PIPELINE_STAGES.filter((s) => s.isLost)).toHaveLength(0);
     expect(VACUUM_PIPELINE_STAGES.map((s) => s.name)).toEqual([
       "Новый лид",
       "Demo",
@@ -16,7 +16,7 @@ describe("vacuum funnel", () => {
       "Потом звонда",
       "Первый клиент",
     ]);
-    expect(VACUUM_PIPELINE_STAGES.find((s) => s.slug === "not_needed")?.isLost).toBe(true);
+    expect(VACUUM_PIPELINE_STAGES.find((s) => s.slug === "not_needed")?.isLost).toBeFalsy();
     expect(VACUUM_PIPELINE_STAGES.find((s) => s.slug === "first_client")?.name).toBe("Первый клиент");
   });
 

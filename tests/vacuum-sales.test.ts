@@ -30,8 +30,9 @@ describe("paper contract sheet", () => {
   });
 
   it("uses the first price marked as needed", () => {
-    expect(chosenDealAmount({ "850000": "skip", "687000": "need", "582000": "skip" })).toBe(687000);
-    expect(chosenDealAmount({ "850000": "skip", "687000": "skip", "582000": "skip" })).toBe(0);
+    expect(chosenDealAmount(687000)).toBe(687000);
+    expect(chosenDealAmount(null)).toBe(0);
+    expect(chosenDealAmount(100)).toBe(0);
   });
 });
 
