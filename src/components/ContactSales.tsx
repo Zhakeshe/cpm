@@ -41,14 +41,6 @@ export function ContactSales({
 
   return (
     <div className="space-y-4">
-      <ContactContract
-        contactId={contactId}
-        clientName={clientName}
-        managerName={managerName}
-        customFields={customFields}
-        dealAmount={dealAmount}
-        onChange={onChange}
-      />
       <ContactTaskForm
         contactId={contactId}
         clientName={clientName}
@@ -56,6 +48,14 @@ export function ContactSales({
         address={address}
         managerId={managerId}
         tasks={tasks}
+        onChange={onChange}
+      />
+      <ContactContract
+        contactId={contactId}
+        clientName={clientName}
+        managerName={managerName}
+        customFields={customFields}
+        dealAmount={dealAmount}
         onChange={onChange}
       />
 
