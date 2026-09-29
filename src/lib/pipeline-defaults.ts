@@ -16,9 +16,8 @@ export const VACUUM_PIPELINE_STAGES: VacuumStageDef[] = [
   { slug: "not_needed", name: "Керек емес", order: 3, requiredFields: [] },
   { slug: "tnb", name: "ТНБ", order: 4, requiredFields: [] },
   { slug: "disconnected", name: "ОТКЛ", order: 5, requiredFields: [] },
-  { slug: "thinking", name: "Ойланатын", order: 6, requiredFields: [] },
+  { slug: "thinking", name: "Ойланамын", order: 6, requiredFields: [] },
   { slug: "later_call", name: "Потом звонда", order: 7, requiredFields: [] },
-  { slug: "first_client", name: "Первый клиент", order: 8, requiredFields: [] },
 ];
 
 export const MANAGER_BLOCKED_PATHS = [

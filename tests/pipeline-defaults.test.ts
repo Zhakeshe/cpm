@@ -12,12 +12,11 @@ describe("vacuum funnel", () => {
       "Керек емес",
       "ТНБ",
       "ОТКЛ",
-      "Ойланатын",
+      "Ойланамын",
       "Потом звонда",
-      "Первый клиент",
     ]);
     expect(VACUUM_PIPELINE_STAGES.find((s) => s.slug === "not_needed")?.isLost).toBeFalsy();
-    expect(VACUUM_PIPELINE_STAGES.find((s) => s.slug === "first_client")?.name).toBe("Первый клиент");
+    expect(VACUUM_PIPELINE_STAGES.some((s) => s.slug === "first_client")).toBe(false);
   });
 
   it("keeps the manager tags from the handwritten list", () => {
