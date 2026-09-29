@@ -50,7 +50,7 @@ export default function LeadsPage() {
     address: "",
     tagIds: [] as string[],
   });
-  const [filters, setFilters] = useState({ q: "", stage: "", source: "", from: "", to: "" });
+  const [filters, setFilters] = useState({ q: "", stage: "", date: "" });
   const [error, setError] = useState("");
   const [role, setRole] = useState("MANAGER");
   const isAdmin = role === "ADMIN" || role === "SUPERVISOR";
@@ -59,9 +59,7 @@ export default function LeadsPage() {
     const qs = new URLSearchParams();
     if (filters.q) qs.set("q", filters.q);
     if (filters.stage) qs.set("stage", filters.stage);
-    if (filters.source) qs.set("source", filters.source);
-    if (filters.from) qs.set("from", filters.from);
-    if (filters.to) qs.set("to", filters.to);
+    if (filters.date) qs.set("date", filters.date);
     return qs.toString();
   }, [filters]);
 
@@ -138,8 +136,12 @@ export default function LeadsPage() {
         </div>
         <button className="rounded-xl bg-[#2563eb] md:col-span-6">{t("common.create")}</button>
       </form>
-      <div className="card p-4 mb-4 grid md:grid-cols-6 gap-2">
+      <div className="card p-4 mb-4 grid md:grid-cols-4 gap-2">
         <input className="md:col-span-2" placeholder={t("common.search")} value={filters.q} onChange={(e) => setFilters({ ...filters, q: e.target.value })} />
+        <label className="text-xs muted">
+          {t("common.date")}
+          <input type="date" className="mt-1" value={filters.date} onChange={(e) => setFilters({ ...filters, date: e.target.value })} />
+        </label>
         <select value={filters.stage} onChange={(e) => setFilters({ ...filters, stage: e.target.value })}>
           <option value="">{t("common.stage")}</option>
           {stages.map((s) => (
@@ -148,22 +150,6 @@ export default function LeadsPage() {
             </option>
           ))}
         </select>
-        <select value={filters.source} onChange={(e) => setFilters({ ...filters, source: e.target.value })}>
-          <option value="">{t("common.source")}</option>
-          {SOURCES.map((s) => (
-            <option key={s} value={s}>
-              {t(`sources.${s}`)}
-            </option>
-          ))}
-        </select>
-        <label className="text-xs muted">
-          {t("leads.from")}
-          <input type="date" className="mt-1" value={filters.from} onChange={(e) => setFilters({ ...filters, from: e.target.value })} />
-        </label>
-        <label className="text-xs muted">
-          {t("leads.to")}
-          <input type="date" className="mt-1" value={filters.to} onChange={(e) => setFilters({ ...filters, to: e.target.value })} />
-        </label>
       </div>
       {error && <div className="text-sm text-[#f87171] mb-3">{error}</div>}
       <div className="card overflow-x-auto">
@@ -200,7 +186,7 @@ export default function LeadsPage() {
                       })
                     : t("common.dash")}
                 </td>
-                <td className="p-3">{c.phoneDisplay}</td>
+                <td className="p-3 whitespace-nowrap">{c.phoneDisplay.replace(/\s/g, "")}</td>
                 <td className="p-3">{t(`sources.${c.source}`, c.source)}</td>
                 {isAdmin && <td className="p-3">{c.manager?.name || t("common.dash")}</td>}
                 <td className="p-3">{c.pipelineStage?.name || t("common.dash")}</td>

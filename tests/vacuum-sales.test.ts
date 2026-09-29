@@ -30,7 +30,7 @@ describe("contact filters", () => {
   });
 
   it("filters createdAt by Almaty calendar days", () => {
-    const filters = parseContactFilters(new URLSearchParams("from=2026-09-29&to=2026-09-29"));
+    const filters = parseContactFilters(new URLSearchParams("date=2026-09-29"));
     const where = contactWhere(filters);
     expect(where.AND).toEqual(
       expect.arrayContaining([
@@ -40,6 +40,20 @@ describe("contact filters", () => {
             lte: new Date("2026-09-29T23:59:59.999+05:00"),
           },
         },
+      ]),
+    );
+  });
+
+  it("searches phone, address, and tags", () => {
+    const filters = parseContactFilters(new URLSearchParams("q=Алматы"));
+    const where = contactWhere(filters);
+    const or = (where.AND as object[]).find((x) => "OR" in x) as { OR: object[] };
+    expect(or.OR).toEqual(
+      expect.arrayContaining([
+        { address: { contains: "Алматы", mode: "insensitive" } },
+        { city: { contains: "Алматы", mode: "insensitive" } },
+        { phoneDisplay: { contains: "Алматы", mode: "insensitive" } },
+        { tags: { some: { tag: { name: { contains: "Алматы", mode: "insensitive" } } } } },
       ]),
     );
   });
