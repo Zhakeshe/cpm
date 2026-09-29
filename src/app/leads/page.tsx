@@ -138,8 +138,8 @@ export default function LeadsPage() {
         </div>
         <button className="rounded-xl bg-[#2563eb] md:col-span-6">{t("common.create")}</button>
       </form>
-      <div className="card p-4 mb-4 grid md:grid-cols-5 gap-2">
-        <input placeholder={t("common.search")} value={filters.q} onChange={(e) => setFilters({ ...filters, q: e.target.value })} />
+      <div className="card p-4 mb-4 grid md:grid-cols-6 gap-2">
+        <input className="md:col-span-2" placeholder={t("common.search")} value={filters.q} onChange={(e) => setFilters({ ...filters, q: e.target.value })} />
         <select value={filters.stage} onChange={(e) => setFilters({ ...filters, stage: e.target.value })}>
           <option value="">{t("common.stage")}</option>
           {stages.map((s) => (
