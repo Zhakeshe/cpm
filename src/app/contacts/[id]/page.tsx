@@ -3,6 +3,7 @@
 import { AppShell } from "@/components/AppShell";
 import { QuickActions } from "@/components/QuickActions";
 import { ContactSales } from "@/components/ContactSales";
+import { ContactTaskForm } from "@/components/ContactTaskForm";
 import { TagChips } from "@/components/TagChips";
 import { useI18n } from "@/components/I18nProvider";
 import { useCallback, useEffect, useState } from "react";
@@ -264,6 +265,9 @@ export default function ContactPage() {
                 {c.archivedAt ? t("leads.activeOnly") : t("leads.archive")}
               </button>
             </div>
+            <div className="mt-4 card p-4">
+              <ContactTaskForm contactId={c.id} tasks={c.tasks || []} onChange={load} />
+            </div>
             {pendingStage && (
               <div className="mt-4 card p-3 space-y-2">
                 <div className="text-sm">{t("pipeline.pickReason")}</div>
@@ -313,6 +317,21 @@ export default function ContactPage() {
                   <div className="muted text-xs">
                     {t(`taskTypes.${task.type}`, task.type)} · {new Date(task.dueAt).toLocaleString(localeTag)} · {task.status}
                   </div>
+                  {task.status === "OPEN" && (
+                    <button
+                      type="button"
+                      className="chip mt-1"
+                      onClick={() =>
+                        fetch("/api/tasks", {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ id: task.id, status: "DONE" }),
+                        }).then(load)
+                      }
+                    >
+                      {t("tasks.markDone")}
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -364,7 +383,7 @@ export default function ContactPage() {
         </div>
 
         <div className="space-y-4">
-        <ContactSales contactId={c.id} customFields={c.customFields || {}} onChange={load} />
+        <ContactSales contactId={c.id} onChange={load} />
         <div className="card p-6">
           <div className="font-medium mb-4">{t("contact.timeline")}</div>
           <form onSubmit={addNote} className="mb-4 space-y-2">

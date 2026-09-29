@@ -4,72 +4,29 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useI18n } from "@/components/I18nProvider";
 
-type Field = { key: string; name: string; fieldType: string; options: string[] };
 type Product = { id: string; name: string; price: string | number };
 
 export function ContactSales({
   contactId,
-  customFields,
   onChange,
 }: {
   contactId: string;
-  customFields: Record<string, unknown>;
   onChange: () => void;
 }) {
   const { t } = useI18n();
-  const [fields, setFields] = useState<Field[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const [values, setValues] = useState(customFields);
   const [items, setItems] = useState<Array<{ productId?: string; title: string; qty: number; unitPrice: number }>>([]);
   const [pay, setPay] = useState({ amount: "", method: "CASH" });
   const [mergeId, setMergeId] = useState("");
   const [dupes, setDupes] = useState<Array<{ id: string; firstName: string; phoneDisplay: string }>>([]);
 
   useEffect(() => {
-    setValues(customFields);
-  }, [customFields]);
-
-  useEffect(() => {
-    fetch("/api/custom-fields").then((r) => r.json()).then(setFields);
     fetch("/api/products").then((r) => r.json()).then(setProducts);
     fetch("/api/contacts").then((r) => r.json()).then((rows) => setDupes(rows.filter((x: { id: string }) => x.id !== contactId).slice(0, 40)));
   }, [contactId]);
 
-  async function saveFields() {
-    await fetch("/api/contacts", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: contactId, customFields: values }),
-    });
-    onChange();
-  }
-
   return (
     <div className="space-y-4">
-      <div className="card p-5 space-y-2">
-        <div className="font-medium">{t("contact.custom")}</div>
-        {fields.map((f) => (
-          <label key={f.key} className="text-sm block">
-            {f.name}
-            {f.fieldType === "select" ? (
-              <select className="mt-1" value={String(values[f.key] || "")} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })}>
-                <option value="">{t("common.dash")}</option>
-                {(f.options || []).map((o) => (
-                  <option key={o} value={o}>
-                    {o}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input className="mt-1" value={String(values[f.key] || "")} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} />
-            )}
-          </label>
-        ))}
-        <button type="button" className="rounded-xl bg-[#2563eb] px-3 py-2 text-sm" onClick={saveFields}>
-          {t("common.save")}
-        </button>
-      </div>
-
       <div className="card p-5 space-y-2">
         <div className="font-medium">{t("quotes.new")}</div>
         {items.map((item, idx) => (
