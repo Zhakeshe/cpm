@@ -23,6 +23,12 @@ describe("quotes", () => {
 });
 
 describe("contact filters", () => {
+  it("maps manager query param", () => {
+    const filters = parseContactFilters(new URLSearchParams("manager=mgr1"));
+    const where = contactWhere(filters);
+    expect(where.AND).toEqual(expect.arrayContaining([{ managerId: "mgr1" }, { archivedAt: null }]));
+  });
+
   it("maps stage query param onto pipelineStageId", () => {
     const filters = parseContactFilters(new URLSearchParams("stage=stg-new"));
     const where = contactWhere(filters);

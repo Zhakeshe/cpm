@@ -41,6 +41,7 @@ export default function LeadsPage() {
   const [rows, setRows] = useState<Contact[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [stages, setStages] = useState<Array<{ id: string; name: string }>>([]);
+  const [managers, setManagers] = useState<Array<{ id: string; name: string; role: string }>>([]);
   const [form, setForm] = useState({
     firstName: "",
     phone: "",
@@ -50,7 +51,7 @@ export default function LeadsPage() {
     address: "",
     tagIds: [] as string[],
   });
-  const [filters, setFilters] = useState({ q: "", stage: "", date: "" });
+  const [filters, setFilters] = useState({ q: "", stage: "", date: "", manager: "" });
   const [error, setError] = useState("");
   const [role, setRole] = useState("MANAGER");
   const isAdmin = role === "ADMIN" || role === "SUPERVISOR";
@@ -60,6 +61,7 @@ export default function LeadsPage() {
     if (filters.q) qs.set("q", filters.q);
     if (filters.stage) qs.set("stage", filters.stage);
     if (filters.date) qs.set("date", filters.date);
+    if (filters.manager) qs.set("manager", filters.manager);
     return qs.toString();
   }, [filters]);
 
@@ -82,6 +84,9 @@ export default function LeadsPage() {
     fetch("/api/tags")
       .then((r) => r.json())
       .then((data) => setTags(Array.isArray(data) ? data : []));
+    fetch("/api/users")
+      .then((r) => r.json())
+      .then((data) => setManagers(Array.isArray(data) ? data.filter((u: { role: string }) => u.role === "MANAGER" || u.role === "OPERATOR") : []));
   }, []);
 
   useRealtime({ "lead:new": () => load() });
@@ -136,12 +141,22 @@ export default function LeadsPage() {
         </div>
         <button className="rounded-xl bg-[#2563eb] md:col-span-6">{t("common.create")}</button>
       </form>
-      <div className="card p-4 mb-4 grid md:grid-cols-4 gap-2">
+      <div className={`card p-4 mb-4 grid gap-2 ${isAdmin ? "md:grid-cols-5" : "md:grid-cols-4"}`}>
         <input className="md:col-span-2" placeholder={t("common.search")} value={filters.q} onChange={(e) => setFilters({ ...filters, q: e.target.value })} />
         <label className="text-xs muted">
           {t("common.date")}
           <input type="date" className="mt-1" value={filters.date} onChange={(e) => setFilters({ ...filters, date: e.target.value })} />
         </label>
+        {isAdmin && (
+          <select value={filters.manager} onChange={(e) => setFilters({ ...filters, manager: e.target.value })}>
+            <option value="">{t("common.manager")}</option>
+            {managers.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+        )}
         <select value={filters.stage} onChange={(e) => setFilters({ ...filters, stage: e.target.value })}>
           <option value="">{t("common.stage")}</option>
           {stages.map((s) => (
