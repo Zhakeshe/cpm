@@ -34,9 +34,6 @@ type Contact = {
   company?: { id: string; name: string } | null;
   pipelineStage?: { id: string; name: string } | null;
   tags?: Array<{ tag: { id: string; name: string; color: string } }>;
-  payments?: Array<{ id: string; amount: string | number; method: string }>;
-  files?: Array<{ id: string; fileName: string; size: number }>;
-  activities: Array<{ id: string; title: string; createdAt: string }>;
   calls: Array<{ id: string; direction: string; duration: number; recordingUrl?: string | null; status: string }>;
   tasks: Array<{ id: string; description: string; dueAt: string; status: string; type: string }>;
   meetings: Array<{ id: string; startsAt: string; status: string; format: string }>;
@@ -53,7 +50,6 @@ export default function ContactPage() {
   const [problem, setProblem] = useState("");
   const [pendingStage, setPendingStage] = useState<Stage | null>(null);
   const [reason, setReason] = useState("");
-  const [note, setNote] = useState("");
   const [calling, setCalling] = useState(false);
   const [allTags, setAllTags] = useState<Array<{ id: string; name: string; color: string }>>([]);
 
@@ -110,22 +106,6 @@ export default function ContactPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ contactId: params.id, managerId }),
     });
-    await load();
-  }
-
-  async function addNote(e: React.FormEvent) {
-    e.preventDefault();
-    if (!note.trim()) return;
-    const res = await fetch(`/api/contacts/${params.id}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: note }),
-    });
-    if (!res.ok) {
-      setProblem(t("contact.noteFailed"));
-      return;
-    }
-    setNote("");
     await load();
   }
 
@@ -343,22 +323,6 @@ export default function ContactPage() {
             </div>
           </div>
 
-          {((c.payments || []).length > 0 || (c.files || []).length > 0) && (
-          <div className="card p-5">
-            <div className="font-medium mb-2">{t("payments.title")}</div>
-            {(c.payments || []).map((p) => (
-              <div key={p.id} className="text-sm border-t border-[#243049] py-2">
-                {Number(p.amount)} ₸ · {t(`payments.${p.method}`, p.method)}
-              </div>
-            ))}
-            {(c.files || []).map((f) => (
-              <a key={f.id} className="block text-sm text-[#93c5fd] border-t border-[#243049] py-2" href={`/api/contacts/${c.id}/files/${f.id}`}>
-                {f.fileName}
-              </a>
-            ))}
-          </div>
-          )}
-
           <div className="card p-6">
             <div className="font-medium mb-3">{t("contact.recordings")}</div>
             {c.calls.length === 0 && <div className="muted text-sm">{t("contact.noCalls")}</div>}
@@ -386,21 +350,6 @@ export default function ContactPage() {
           tasks={c.tasks || []}
           onChange={load}
         />
-        <div className="card p-6">
-          <div className="font-medium mb-4">{t("contact.timeline")}</div>
-          <form onSubmit={addNote} className="mb-4 space-y-2">
-            <textarea rows={3} placeholder={t("contact.notePlaceholder")} value={note} onChange={(e) => setNote(e.target.value)} />
-            <button className="rounded-xl bg-[#2563eb] px-3 py-2 text-sm">{t("contact.addNote")}</button>
-          </form>
-          <div className="space-y-3">
-            {c.activities.map((a) => (
-              <div key={a.id} className="text-sm">
-                <div className="muted text-xs">{new Date(a.createdAt).toLocaleString(localeTag)}</div>
-                <div>{a.title}</div>
-              </div>
-            ))}
-          </div>
-        </div>
         </div>
       </div>
     </AppShell>
