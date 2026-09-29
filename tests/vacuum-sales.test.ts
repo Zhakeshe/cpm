@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { totpCode, verifyTotp, generateTotpSecret } from "../src/lib/totp";
 import { quoteTotal, vacuumDefaults } from "../src/lib/quotes";
-import { CONTRACT_GIFTS, CONTRACT_PRICES } from "../src/components/ContactContract";
+import { CONTRACT_GIFTS, CONTRACT_PRICES, chosenDealAmount } from "../src/components/ContactContract";
 import { contactWhere, parseContactFilters } from "../src/lib/contact-filters";
 
 describe("totp", () => {
@@ -25,8 +25,14 @@ describe("quotes", () => {
 
 describe("paper contract sheet", () => {
   it("offers the handwritten prices and gifts", () => {
-    expect(CONTRACT_PRICES).toEqual([850000, 682000, 582000]);
-    expect(CONTRACT_GIFTS.map((g) => g.id)).toEqual(["iron", "steam", "booster"]);
+    expect(CONTRACT_PRICES).toEqual([850000, 687000, 582000]);
+    expect(CONTRACT_GIFTS.map((g) => g.id)).toEqual(["iron", "steam", "stain"]);
+  });
+
+  it("uses the first price marked as needed", () => {
+    expect(chosenDealAmount(687000)).toBe(687000);
+    expect(chosenDealAmount(null)).toBe(0);
+    expect(chosenDealAmount(100)).toBe(0);
   });
 });
 

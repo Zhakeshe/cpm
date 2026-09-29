@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import { useI18n } from "@/components/I18nProvider";
 
-export const CONTRACT_PRICES = [850000, 682000, 582000];
+export const CONTRACT_PRICES = [850000, 687000, 582000];
 export const CONTRACT_GIFTS = [
   { id: "iron", key: "contract.iron" },
   { id: "steam", key: "contract.steam" },
-  { id: "booster", key: "contract.booster" },
+  { id: "stain", key: "contract.stain" },
 ] as const;
 
 function formatPrice(n: number) {
@@ -15,22 +15,44 @@ function formatPrice(n: number) {
 }
 
 type Draft = {
-  done: boolean | null;
+  bought: boolean | null;
   price: number | null;
-  dealer: string;
   gifts: string[];
+  dealer: string;
 };
 
+export function chosenDealAmount(price: number | null) {
+  return price && CONTRACT_PRICES.includes(price) ? price : 0;
+}
+
 function fromFields(custom: Record<string, unknown>, dealAmount: string | number): Draft {
-  const gifts = Array.isArray(custom.gifts) ? (custom.gifts as string[]) : [];
-  const priceRaw = custom.contractPrice ?? dealAmount;
-  const price = Number(priceRaw);
-  return {
-    done: typeof custom.contractDone === "boolean" ? custom.contractDone : null,
-    price: CONTRACT_PRICES.includes(price) ? price : null,
-    dealer: String(custom.dealer || ""),
-    gifts,
-  };
+  const rawPrices = custom.priceNeeds && typeof custom.priceNeeds === "object" ? (custom.priceNeeds as Record<string, unknown>) : {};
+  const fromNeeds = CONTRACT_PRICES.find((p) => rawPrices[String(p)] === "need");
+  const listed = Number(custom.contractPrice ?? dealAmount);
+  const price = fromNeeds ?? (CONTRACT_PRICES.includes(listed) ? listed : null);
+
+  const rawGifts = custom.giftNeeds && typeof custom.giftNeeds === "object" ? (custom.giftNeeds as Record<string, unknown>) : {};
+  const oldList = Array.isArray(custom.gifts) ? (custom.gifts as string[]) : [];
+  const gifts = CONTRACT_GIFTS.map((g) => g.id).filter((id) => {
+    const legacy = id === "stain" ? "booster" : id;
+    return rawGifts[id] === "need" || rawGifts[legacy] === "need" || oldList.includes(id) || oldList.includes(legacy);
+  });
+
+  const bought = typeof custom.bought === "boolean" ? custom.bought : typeof custom.contractDone === "boolean" ? custom.contractDone : null;
+
+  return { bought, price, gifts, dealer: String(custom.dealer || "") };
+}
+
+function Tick({
+  checked,
+  onChange,
+}: {
+  checked: boolean;
+  onChange: () => void;
+}) {
+  return (
+    <input type="checkbox" checked={checked} onChange={onChange} />
+  );
 }
 
 export function ContactContract({
@@ -57,28 +79,25 @@ export function ContactContract({
     setDraft(fromFields(customFields, dealAmount));
   }, [customFields, dealAmount]);
 
-  function toggleGift(id: string) {
-    setDraft((prev) => ({
-      ...prev,
-      gifts: prev.gifts.includes(id) ? prev.gifts.filter((g) => g !== id) : [...prev.gifts, id],
-    }));
-  }
-
   async function save() {
     setBusy(true);
     setNotice("");
+    const price = chosenDealAmount(draft.price);
     const res = await fetch("/api/contacts", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         id: contactId,
-        dealAmount: draft.price ?? 0,
+        dealAmount: price,
         customFields: {
           ...customFields,
-          contractDone: draft.done,
-          contractPrice: draft.price,
+          bought: draft.bought,
+          contractDone: draft.bought,
+          contractPrice: price || null,
           dealer: draft.dealer,
           gifts: draft.gifts,
+          priceNeeds: Object.fromEntries(CONTRACT_PRICES.map((p) => [String(p), p === draft.price ? "need" : null])),
+          giftNeeds: Object.fromEntries(CONTRACT_GIFTS.map((g) => [g.id, draft.gifts.includes(g.id) ? "need" : null])),
         },
       }),
     });
@@ -95,37 +114,37 @@ export function ContactContract({
         {t("contract.client")}
         <input className="mt-1" value={clientName} readOnly />
       </label>
-      <div className="flex gap-2">
-        <button
-          type="button"
-          className={`chip ${draft.done === true ? "bg-[#16a34a]" : ""}`}
-          onClick={() => setDraft({ ...draft, done: true })}
-        >
-          {t("contract.conducted")}
-        </button>
-        <button
-          type="button"
-          className={`chip ${draft.done === false ? "bg-[#64748b]" : ""}`}
-          onClick={() => setDraft({ ...draft, done: false })}
-        >
-          {t("contract.notConducted")}
-        </button>
+
+      <div className="space-y-2">
+        <label className="flex items-center justify-between gap-2 text-sm">
+          <span>{t("contract.acquired")}</span>
+          <Tick
+            checked={draft.bought === true}
+            onChange={() => setDraft({ ...draft, bought: draft.bought === true ? null : true })}
+          />
+        </label>
+        <label className="flex items-center justify-between gap-2 text-sm">
+          <span>{t("contract.notAcquired")}</span>
+          <Tick
+            checked={draft.bought === false}
+            onChange={() => setDraft({ ...draft, bought: draft.bought === false ? null : false })}
+          />
+        </label>
       </div>
-      <div>
-        <div className="text-sm mb-1">{t("contract.price")}</div>
-        <div className="flex flex-col gap-1">
-          {CONTRACT_PRICES.map((p) => (
-            <button
-              key={p}
-              type="button"
-              className={`chip text-left ${draft.price === p ? "bg-[#1d4ed8]" : ""}`}
-              onClick={() => setDraft({ ...draft, price: p })}
-            >
-              {formatPrice(p)}
-            </button>
-          ))}
-        </div>
+
+      <div className="space-y-2">
+        <div className="text-sm">{t("contract.price")}</div>
+        {CONTRACT_PRICES.map((p) => (
+          <label key={p} className="flex items-center justify-between gap-2 border-t border-[#243049] pt-2 text-sm">
+            <span>{formatPrice(p)}</span>
+            <Tick
+              checked={draft.price === p}
+              onChange={() => setDraft({ ...draft, price: draft.price === p ? null : p })}
+            />
+          </label>
+        ))}
       </div>
+
       <label className="text-sm block">
         {t("contract.dealer")}
         <input className="mt-1" value={draft.dealer} onChange={(e) => setDraft({ ...draft, dealer: e.target.value })} />
@@ -134,21 +153,25 @@ export function ContactContract({
         {t("contract.manager")}
         <input className="mt-1" value={managerName || t("common.dash")} readOnly />
       </label>
-      <div>
-        <div className="text-sm mb-1">{t("contract.gift")}</div>
-        <div className="flex flex-wrap gap-2">
-          {CONTRACT_GIFTS.map((g) => (
-            <button
-              key={g.id}
-              type="button"
-              className={`chip ${draft.gifts.includes(g.id) ? "bg-[#1d4ed8]" : ""}`}
-              onClick={() => toggleGift(g.id)}
-            >
-              {t(g.key)}
-            </button>
-          ))}
-        </div>
+
+      <div className="space-y-2">
+        <div className="text-sm">{t("contract.gift")}</div>
+        {CONTRACT_GIFTS.map((g) => (
+          <label key={g.id} className="flex items-center justify-between gap-2 border-t border-[#243049] pt-2 text-sm">
+            <span>{t(g.key)}</span>
+            <Tick
+              checked={draft.gifts.includes(g.id)}
+              onChange={() =>
+                setDraft({
+                  ...draft,
+                  gifts: draft.gifts.includes(g.id) ? draft.gifts.filter((id) => id !== g.id) : [...draft.gifts, g.id],
+                })
+              }
+            />
+          </label>
+        ))}
       </div>
+
       <button type="button" className="rounded-xl bg-[#2563eb] px-3 py-2 text-sm w-full" disabled={busy} onClick={save}>
         {t("common.save")}
       </button>

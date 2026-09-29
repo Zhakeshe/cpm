@@ -13,12 +13,11 @@ export type VacuumStageDef = {
 export const VACUUM_PIPELINE_STAGES: VacuumStageDef[] = [
   { slug: "new", name: "Новый лид", order: 1, requiredFields: [] },
   { slug: "demo", name: "Demo", order: 2, requiredFields: [] },
-  { slug: "not_needed", name: "Керек емес", order: 3, isLost: true, requiredFields: [] },
+  { slug: "not_needed", name: "Керек емес", order: 3, requiredFields: [] },
   { slug: "tnb", name: "ТНБ", order: 4, requiredFields: [] },
   { slug: "disconnected", name: "ОТКЛ", order: 5, requiredFields: [] },
-  { slug: "thinking", name: "Ойланатын", order: 6, requiredFields: [] },
+  { slug: "thinking", name: "Ойланамын", order: 6, requiredFields: [] },
   { slug: "later_call", name: "Потом звонда", order: 7, requiredFields: [] },
-  { slug: "first_client", name: "Первый клиент", order: 8, requiredFields: [] },
 ];
 
 export const MANAGER_BLOCKED_PATHS = [
@@ -64,6 +63,15 @@ export async function ensureVacuumPipeline(db: PrismaClient) {
         isLost: Boolean(s.isLost),
         requiredFields: s.requiredFields,
       },
+    });
+  }
+  const notNeeded = await db.pipelineStage.findFirst({
+    where: { pipelineId: pipeline.id, slug: "not_needed" },
+  });
+  if (notNeeded) {
+    await db.contact.updateMany({
+      where: { pipelineStageId: notNeeded.id, status: "LOST" },
+      data: { status: "IN_PROGRESS", outcomeReason: null, closedAt: null },
     });
   }
   const stale = await db.pipelineStage.findMany({
