@@ -6,9 +6,16 @@ import { useI18n } from "@/components/I18nProvider";
 type Task = { id: string; description: string; dueAt: string; status: string; type: string };
 
 function todayYmd() {
-  const d = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Almaty",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+function formatDue(iso: string, localeTag: string) {
+  return new Date(iso).toLocaleString(localeTag, { timeZone: "Asia/Almaty" });
 }
 
 export function ContactTaskForm({
@@ -107,7 +114,7 @@ export function ContactTaskForm({
         <div key={task.id} className="flex justify-between gap-2 text-sm border-t border-[#243049] pt-2">
           <div>
             <div>{task.description}</div>
-            <div className="muted text-xs">{new Date(task.dueAt).toLocaleString(localeTag)}</div>
+            <div className="muted text-xs">{formatDue(task.dueAt, localeTag)}</div>
           </div>
           <button type="button" className="chip shrink-0" onClick={() => done(task.id)}>
             {t("tasks.markDone")}

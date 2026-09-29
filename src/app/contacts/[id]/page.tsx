@@ -309,7 +309,7 @@ export default function ContactPage() {
                 <div key={task.id} className="text-sm border-t border-[#243049] py-2">
                   <div>{task.description}</div>
                   <div className="muted text-xs">
-                    {t(`taskTypes.${task.type}`, task.type)} · {new Date(task.dueAt).toLocaleString(localeTag)} · {task.status}
+                    {t(`taskTypes.${task.type}`, task.type)} · {new Date(task.dueAt).toLocaleString(localeTag, { timeZone: "Asia/Almaty" })} · {task.status}
                   </div>
                   {task.status === "OPEN" && (
                     <button
