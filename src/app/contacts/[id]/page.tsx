@@ -3,7 +3,6 @@
 import { AppShell } from "@/components/AppShell";
 import { QuickActions } from "@/components/QuickActions";
 import { ContactSales } from "@/components/ContactSales";
-import { ContactTaskForm } from "@/components/ContactTaskForm";
 import { TagChips } from "@/components/TagChips";
 import { useI18n } from "@/components/I18nProvider";
 import { useCallback, useEffect, useState } from "react";
@@ -265,9 +264,6 @@ export default function ContactPage() {
                 {c.archivedAt ? t("leads.activeOnly") : t("leads.archive")}
               </button>
             </div>
-            <div className="mt-4 card p-4">
-              <ContactTaskForm contactId={c.id} tasks={c.tasks || []} onChange={load} />
-            </div>
             {pendingStage && (
               <div className="mt-4 card p-3 space-y-2">
                 <div className="text-sm">{t("pipeline.pickReason")}</div>
@@ -383,7 +379,18 @@ export default function ContactPage() {
         </div>
 
         <div className="space-y-4">
-        <ContactSales contactId={c.id} onChange={load} />
+        <ContactSales
+          contactId={c.id}
+          clientName={`${c.firstName} ${c.lastName}`.trim()}
+          phone={c.phoneDisplay}
+          address={[c.city, c.address].filter(Boolean).join(", ")}
+          managerId={c.manager?.id}
+          managerName={c.manager?.name || t("common.dash")}
+          customFields={c.customFields || {}}
+          dealAmount={c.dealAmount}
+          tasks={c.tasks || []}
+          onChange={load}
+        />
         <div className="card p-6">
           <div className="font-medium mb-4">{t("contact.timeline")}</div>
           <form onSubmit={addNote} className="mb-4 space-y-2">

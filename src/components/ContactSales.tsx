@@ -1,75 +1,63 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useI18n } from "@/components/I18nProvider";
-
-type Product = { id: string; name: string; price: string | number };
+import { ContactContract } from "@/components/ContactContract";
+import { ContactTaskForm } from "@/components/ContactTaskForm";
 
 export function ContactSales({
   contactId,
+  clientName,
+  phone,
+  address,
+  managerId,
+  managerName,
+  customFields,
+  dealAmount,
+  tasks,
   onChange,
 }: {
   contactId: string;
+  clientName: string;
+  phone: string;
+  address: string;
+  managerId?: string | null;
+  managerName: string;
+  customFields: Record<string, unknown>;
+  dealAmount: string | number;
+  tasks: Array<{ id: string; description: string; dueAt: string; status: string; type: string }>;
   onChange: () => void;
 }) {
   const { t } = useI18n();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [items, setItems] = useState<Array<{ productId?: string; title: string; qty: number; unitPrice: number }>>([]);
-  const [pay, setPay] = useState({ amount: "", method: "CASH" });
   const [mergeId, setMergeId] = useState("");
   const [dupes, setDupes] = useState<Array<{ id: string; firstName: string; phoneDisplay: string }>>([]);
+  const [pay, setPay] = useState({ amount: "", method: "CASH" });
 
   useEffect(() => {
-    fetch("/api/products").then((r) => r.json()).then(setProducts);
-    fetch("/api/contacts").then((r) => r.json()).then((rows) => setDupes(rows.filter((x: { id: string }) => x.id !== contactId).slice(0, 40)));
+    fetch("/api/contacts")
+      .then((r) => r.json())
+      .then((rows) => setDupes(Array.isArray(rows) ? rows.filter((x: { id: string }) => x.id !== contactId).slice(0, 40) : []));
   }, [contactId]);
 
   return (
     <div className="space-y-4">
-      <div className="card p-5 space-y-2">
-        <div className="font-medium">{t("quotes.new")}</div>
-        {items.map((item, idx) => (
-          <div key={idx} className="grid grid-cols-3 gap-2">
-            <input value={item.title} onChange={(e) => setItems(items.map((x, i) => (i === idx ? { ...x, title: e.target.value } : x)))} />
-            <input type="number" value={item.qty} onChange={(e) => setItems(items.map((x, i) => (i === idx ? { ...x, qty: Number(e.target.value) } : x)))} />
-            <input type="number" value={item.unitPrice} onChange={(e) => setItems(items.map((x, i) => (i === idx ? { ...x, unitPrice: Number(e.target.value) } : x)))} />
-          </div>
-        ))}
-        <select
-          onChange={(e) => {
-            const p = products.find((x) => x.id === e.target.value);
-            if (!p) return;
-            setItems([...items, { productId: p.id, title: p.name, qty: 1, unitPrice: Number(p.price) }]);
-          }}
-        >
-          <option value="">{t("quotes.addProduct")}</option>
-          {products.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name} · {Number(p.price)}
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          className="rounded-xl bg-[#2563eb] px-3 py-2 text-sm"
-          onClick={async () => {
-            if (!items.length) return;
-            await fetch("/api/quotes", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ contactId, items }),
-            });
-            setItems([]);
-            onChange();
-          }}
-        >
-          {t("quotes.create")}
-        </button>
-        <Link href="/quotes" className="text-sm text-[#93c5fd] block">
-          {t("nav.quotes")}
-        </Link>
-      </div>
+      <ContactContract
+        contactId={contactId}
+        clientName={clientName}
+        managerName={managerName}
+        customFields={customFields}
+        dealAmount={dealAmount}
+        onChange={onChange}
+      />
+      <ContactTaskForm
+        contactId={contactId}
+        clientName={clientName}
+        phone={phone}
+        address={address}
+        managerId={managerId}
+        tasks={tasks}
+        onChange={onChange}
+      />
 
       <div className="card p-5 space-y-2">
         <div className="font-medium">{t("payments.title")}</div>

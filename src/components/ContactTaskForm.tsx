@@ -1,70 +1,57 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useI18n } from "@/components/I18nProvider";
 
 type Task = { id: string; description: string; dueAt: string; status: string; type: string };
 
-function localInput(d: Date) {
+function todayYmd() {
+  const d = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function presetDue(kind: "today" | "evening" | "tomorrow" | "in3days") {
-  const due = new Date();
-  if (kind === "today") {
-    due.setHours(due.getHours() + 3, 0, 0, 0);
-    return due;
-  }
-  if (kind === "evening") {
-    due.setHours(18, 0, 0, 0);
-    if (due.getTime() <= Date.now()) due.setDate(due.getDate() + 1);
-    return due;
-  }
-  if (kind === "tomorrow") {
-    due.setDate(due.getDate() + 1);
-    due.setHours(10, 0, 0, 0);
-    return due;
-  }
-  due.setDate(due.getDate() + 3);
-  due.setHours(10, 0, 0, 0);
-  return due;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 export function ContactTaskForm({
   contactId,
+  clientName,
+  phone,
+  address,
+  managerId,
   tasks,
   onChange,
 }: {
   contactId: string;
+  clientName: string;
+  phone: string;
+  address: string;
+  managerId?: string | null;
   tasks: Task[];
   onChange: () => void;
 }) {
   const { t, localeTag } = useI18n();
-  const [description, setDescription] = useState(t("contact.laterCall"));
-  const [dueAt, setDueAt] = useState(localInput(presetDue("tomorrow")));
+  const [date, setDate] = useState(todayYmd);
+  const [comment, setComment] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
-  function pickWhen(kind: "today" | "evening" | "tomorrow" | "in3days") {
-    setDueAt(localInput(presetDue(kind)));
-    if (kind === "evening") setDescription(t("contact.eveningCall"));
-    else setDescription(t("contact.laterCall"));
-  }
+  const open = useMemo(() => tasks.filter((x) => x.status === "OPEN"), [tasks]);
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
-    if (!description.trim() || !dueAt) return;
     setBusy(true);
     setError("");
+    setNotice("");
+    const due = date ? new Date(`${date}T10:00:00+05:00`) : new Date();
     const res = await fetch("/api/tasks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contactId,
+        managerId: managerId || undefined,
         type: "CALL",
-        description: description.trim(),
-        dueAt: new Date(dueAt).toISOString(),
+        description: comment.trim() || t("contact.laterCall"),
+        dueAt: due.toISOString(),
       }),
     });
     setBusy(false);
@@ -72,6 +59,8 @@ export function ContactTaskForm({
       setError(t("contact.taskFailed"));
       return;
     }
+    setComment("");
+    setNotice(t("contact.taskSaved"));
     onChange();
   }
 
@@ -84,52 +73,47 @@ export function ContactTaskForm({
     onChange();
   }
 
-  const open = tasks.filter((x) => x.status === "OPEN");
-
   return (
-    <div className="space-y-3">
-      <div className="font-medium">{t("contact.addTask")}</div>
+    <div className="card p-5 space-y-3">
+      <div className="font-medium">{t("contact.taskSheet")}</div>
       <form onSubmit={create} className="space-y-2">
-        <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t("contact.laterCall")} />
-        <div className="flex flex-wrap gap-2">
-          <button type="button" className="chip" onClick={() => pickWhen("today")}>
-            {t("followUps.today")}
-          </button>
-          <button type="button" className="chip" onClick={() => pickWhen("evening")}>
-            {t("contact.eveningCall")}
-          </button>
-          <button type="button" className="chip" onClick={() => pickWhen("tomorrow")}>
-            {t("followUps.tomorrow")}
-          </button>
-          <button type="button" className="chip" onClick={() => pickWhen("in3days")}>
-            {t("followUps.in3days")}
-          </button>
-        </div>
-        <label className="text-xs muted block">
-          {t("contact.taskDue")}
-          <input type="datetime-local" className="mt-1" value={dueAt} onChange={(e) => setDueAt(e.target.value)} />
+        <label className="text-sm block">
+          {t("common.date")}
+          <input type="date" className="mt-1" value={date} onChange={(e) => setDate(e.target.value)} />
         </label>
-        <button className="rounded-xl bg-[#2563eb] px-3 py-2 text-sm" disabled={busy}>
-          {t("common.create")}
+        <label className="text-sm block">
+          {t("common.client")}
+          <input className="mt-1" value={clientName} readOnly />
+        </label>
+        <label className="text-sm block">
+          {t("common.phone")}
+          <input className="mt-1" value={phone} readOnly />
+        </label>
+        <label className="text-sm block">
+          {t("contact.address")}
+          <input className="mt-1" value={address || t("common.dash")} readOnly />
+        </label>
+        <label className="text-sm block">
+          {t("common.comment")}
+          <textarea className="mt-1" rows={3} value={comment} onChange={(e) => setComment(e.target.value)} placeholder={t("contact.laterCall")} />
+        </label>
+        <button className="rounded-xl bg-[#2563eb] px-3 py-2 text-sm w-full" disabled={busy}>
+          {t("common.save")}
         </button>
       </form>
       {error && <div className="text-sm text-[#f87171]">{error}</div>}
-      <div className="space-y-2">
-        {open.length === 0 && <div className="muted text-sm">{t("contact.noTasks")}</div>}
-        {open.map((task) => (
-          <div key={task.id} className="flex justify-between gap-2 text-sm border-t border-[#243049] pt-2">
-            <div>
-              <div>{task.description}</div>
-              <div className="muted text-xs">
-                {t(`taskTypes.${task.type}`, task.type)} · {new Date(task.dueAt).toLocaleString(localeTag)}
-              </div>
-            </div>
-            <button type="button" className="chip shrink-0" onClick={() => done(task.id)}>
-              {t("tasks.markDone")}
-            </button>
+      {notice && <div className="text-sm text-[#34d399]">{notice}</div>}
+      {open.map((task) => (
+        <div key={task.id} className="flex justify-between gap-2 text-sm border-t border-[#243049] pt-2">
+          <div>
+            <div>{task.description}</div>
+            <div className="muted text-xs">{new Date(task.dueAt).toLocaleString(localeTag)}</div>
           </div>
-        ))}
-      </div>
+          <button type="button" className="chip shrink-0" onClick={() => done(task.id)}>
+            {t("tasks.markDone")}
+          </button>
+        </div>
+      ))}
     </div>
   );
 }
