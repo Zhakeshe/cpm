@@ -118,7 +118,10 @@ export default function ContactPage() {
       return;
     }
     setPendingStage(null);
-    patch({ pipelineStageId: stageId });
+    setC((prev) => (prev ? { ...prev, pipelineStage: { id: stage.id, name: stage.name } } : prev));
+    void patch({ pipelineStageId: stageId }).then((ok) => {
+      if (!ok) load();
+    });
   }
 
   async function sipCall() {
