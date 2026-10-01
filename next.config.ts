@@ -16,7 +16,16 @@ const nextConfig: NextConfig = {
   output: "standalone",
   serverExternalPackages: ["bullmq", "ioredis", "@prisma/client"],
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      // Only this authenticated phone document can be framed by its own CRM.
+      // Apply to errors/middleware responses too so failures are visible in the phone.
+      { source: "/api/sip/widget", headers: [
+        { key: "X-Frame-Options", value: "SAMEORIGIN" },
+        { key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
+        { key: "Cache-Control", value: "private, no-store" },
+      ] },
+    ];
   },
 };
 

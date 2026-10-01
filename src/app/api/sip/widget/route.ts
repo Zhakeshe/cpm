@@ -27,6 +27,7 @@ export async function GET() {
   } catch (error) {
     const response = jsonError(error);
     response.headers.set("Cache-Control", "no-store");
+    response.headers.set("X-Frame-Options", "SAMEORIGIN");
     return response;
   }
 }
