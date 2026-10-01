@@ -10,6 +10,7 @@ import { ratioPct } from "../src/lib/tracking-analytics";
 
 describe("tracking tokens", () => {
   it("extracts qc: token from WhatsApp prefill", () => {
+    expect(parseTrackToken("qc:ab12cd34")).toBe("ab12cd34");
     expect(parseTrackToken("Сәлем! Instagram-нан жазып тұрмын qc:ab12cd34")).toBe("ab12cd34");
     expect(parseTrackToken("hello QC:DEADBEEF extra")).toBe("deadbeef");
     expect(parseTrackToken("just a message")).toBeNull();
@@ -33,8 +34,8 @@ describe("tracking tokens", () => {
   it("keeps {token} placeholder on every default channel", () => {
     expect(newTrackToken()).toMatch(/^[a-f0-9]{8}$/);
     for (const ch of DEFAULT_TRACKING_CHANNELS) {
-      expect(ch.waPrefill).toContain("{token}");
-      expect(ch.greeting.length).toBeGreaterThan(10);
+      expect(ch.waPrefill).toBe("qc:{token}");
+      expect(ch.greeting).toBe("");
     }
     const slugs = DEFAULT_TRACKING_CHANNELS.map((c) => c.slug);
     expect(slugs).toEqual(["instagram", "tiktok", "facebook", "youtube", "site", "ads"]);
