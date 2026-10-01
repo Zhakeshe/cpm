@@ -208,7 +208,11 @@ export function zadarmaCallbackParameters(params: { callbackEndpoint: string; to
   if (!/^[1-9]\d{7,14}$/.test(corporate)) throw new ZadarmaError("ZADARMA_NOT_CONFIGURED", 503);
   if (to === corporate || to === params.callbackEndpoint) throw new ZadarmaError("INVALID_DESTINATION", 400);
   // CallerID is configured on the provider SIP/PBX account, not a callback parameter.
-  return { from: params.callbackEndpoint, to, sip: params.callbackEndpoint };
+  // Explicit operator-requested domestic dialing mode; canonical CRM numbers stay international.
+  const dialMode = process.env.ZADARMA_DESTINATION_FORMAT || "international";
+  if (dialMode !== "international" && dialMode !== "kz-domestic") throw new ZadarmaError("ZADARMA_NOT_CONFIGURED", 503);
+  const dialDestination = dialMode === "kz-domestic" && /^7[67]\d{9}$/.test(to) ? `8${to.slice(1)}` : to;
+  return { from: params.callbackEndpoint, to: dialDestination, sip: params.callbackEndpoint };
 }
 
 export async function zadarmaCallback(params: { managerId: string; sipAccount: string; callbackEndpoint: string; toNumber: string }) {

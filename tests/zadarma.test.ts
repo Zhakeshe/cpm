@@ -86,7 +86,7 @@ describe("zadarma notify mapping", () => {
   });
 });
 
-beforeEach(() => vi.stubEnv("SIP_CORPORATE_NUMBER", "+77172696753"));
+beforeEach(() => { vi.stubEnv("SIP_CORPORATE_NUMBER", "+77172696753"); vi.stubEnv("ZADARMA_DESTINATION_FORMAT", "international"); });
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 describe("documented callback contract", () => {
@@ -143,4 +143,18 @@ it("deduplicates exact deliveries without dropping INTERNAL/record notifications
   expect(zadarmaWebhookEventId({ ...start, event: "NOTIFY_INTERNAL", internal: "107" })).not.toBe(zadarmaWebhookEventId(start));
   expect(zadarmaWebhookEventId({ ...start, event: "NOTIFY_RECORD", call_id_with_rec: "rec-1" }))
     .not.toBe(zadarmaWebhookEventId({ ...start, event: "NOTIFY_RECORD", call_id_with_rec: "rec-2" }));
+});
+
+ it.each(["+7 776 201 07 02", "87762010702", "77762010702"])("explicit domestic mode dials %s with 8", (input) => {
+  vi.stubEnv("ZADARMA_DESTINATION_FORMAT", "kz-domestic");
+  expect(zadarmaCallbackParameters({ callbackEndpoint: "158925", toNumber: input })).toEqual({ from: "158925", sip: "158925", to: "87762010702" });
+});
+it("domestic mode keeps corporate-number protection and foreign destinations", () => {
+  vi.stubEnv("ZADARMA_DESTINATION_FORMAT", "kz-domestic");
+  expect(() => zadarmaCallbackParameters({ callbackEndpoint: "158925", toNumber: "87172696753" })).toThrow("INVALID_DESTINATION");
+  expect(zadarmaCallbackParameters({ callbackEndpoint: "158925", toNumber: "+49 30 12345678" }).to).toBe("493012345678");
+});
+it("rejects an unknown destination mode", () => {
+  vi.stubEnv("ZADARMA_DESTINATION_FORMAT", "typo");
+  expect(() => zadarmaCallbackParameters({ callbackEndpoint: "158925", toNumber: "77762010702" })).toThrow("ZADARMA_NOT_CONFIGURED");
 });
