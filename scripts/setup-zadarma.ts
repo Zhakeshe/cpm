@@ -1,84 +1,48 @@
 import { PrismaClient } from "@prisma/client";
 import { z } from "zod";
-import { ZADARMA_DEFAULTS } from "../src/lib/zadarma";
-
-const extensionsSchema = z.record(z.string().regex(/^\d+$/), z.object({
-  username: z.string().regex(/^\d+-\d+$/),
-  password: z.string().min(1),
-}));
+import { serverSipAccounts } from "../src/lib/sip-config";
 
 async function main() {
-  // Credentials are supplied through an ignored .env.local, never a source file.
-  let extensions: z.infer<typeof extensionsSchema>;
+  const accounts = serverSipAccounts();
+  let mapping: Record<string, string>;
   try {
-    extensions = extensionsSchema.parse(JSON.parse(process.env.SIP_EXTENSIONS_JSON || ""));
+    mapping = z.record(z.string().min(1), z.string().regex(/^\d+$/))
+      .parse(JSON.parse(process.env.SIP_USER_MAPPING_JSON || ""));
   } catch {
-    throw new Error("Set SIP_EXTENSIONS_JSON to an object of extension: { username, password } entries.");
+    throw new Error("Set SIP_USER_MAPPING_JSON to an explicit user ID -> logical CRM extension mapping.");
   }
-  const numbers = Object.keys(extensions).sort((a, b) => Number(a) - Number(b));
-  if (!numbers.length) throw new Error("At least one SIP extension is required.");
-  for (const number of numbers) {
-    if (!extensions[number].username.endsWith(`-${number}`)) {
-      throw new Error(`SIP login does not match extension ${number}.`);
-    }
+  if (!Object.keys(mapping).length || new Set(Object.values(mapping)).size !== Object.values(mapping).length) {
+    throw new Error("Mapping must contain unique explicit assignments.");
   }
   const prisma = new PrismaClient();
   try {
     const assignments = await prisma.$transaction(async (db) => {
-      const managers = await db.user.findMany({
-        where: { role: "MANAGER", isActive: true },
-        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-        take: numbers.length,
-        select: { id: true, email: true },
-      });
-      if (managers.length < numbers.length) {
-        throw new Error(`Need ${numbers.length} active managers; found ${managers.length}. No settings changed.`);
+      const result = [];
+      for (const [userId, logicalExtension] of Object.entries(mapping)) {
+        const account = accounts[logicalExtension];
+        if (!account) throw new Error("SIP_ACCOUNT_NOT_CONFIGURED");
+        const user = await db.user.findUnique({ where: { id: userId }, select: { id: true, isActive: true } });
+        if (!user?.isActive) throw new Error("Every mapped user must exist and be active.");
+        const other = await db.user.findFirst({ where: {
+          id: { not: userId }, OR: [{ sipExtension: logicalExtension }, { sipUsername: account.username }],
+        } });
+        if (other) throw new Error("Assignment already owned by another user. Resolve explicitly; no users changed.");
+        result.push({ userId, logicalExtension, sipAccount: account.username });
       }
-      const assignments = managers.map((manager, index) => ({
-        ...manager, extension: numbers[index], username: extensions[numbers[index]].username,
-      }));
-      if (process.argv.includes("--dry-run")) return assignments;
-
-      // Remove previous owners so two users cannot register the same extension.
-      await db.user.updateMany({
-        where: { OR: [
-          { sipExtension: { in: numbers } },
-          { sipUsername: { in: assignments.map((a) => a.username) } },
-        ] },
-        data: { sipExtension: null, sipUsername: null },
-      });
-      for (const assignment of assignments) {
-        await db.user.update({
-          where: { id: assignment.id },
-          data: { sipExtension: assignment.extension, sipUsername: assignment.username },
-        });
+      if (!process.argv.includes("--dry-run")) {
+        for (const a of result) await db.user.update({ where: { id: a.userId }, data: {
+          sipExtension: a.logicalExtension, sipUsername: a.sipAccount,
+        } });
       }
-      const existing = await db.integration.findUnique({ where: { type: "TELEPHONY" } });
-      const previous = (existing?.config || {}) as Record<string, unknown>;
-      const config = {
-        ...previous,
-        wsUrl: process.env.SIP_WS_URL || ZADARMA_DEFAULTS.wsUrl,
-        domain: process.env.SIP_DOMAIN || ZADARMA_DEFAULTS.domain,
-        extensions,
-      };
-      await db.integration.upsert({
-        where: { type: "TELEPHONY" },
-        create: { type: "TELEPHONY", status: "DISCONNECTED", config },
-        update: { status: "DISCONNECTED", config, lastError: null },
-      });
-      return assignments;
+      return result;
     });
-    for (const assignment of assignments) {
-      console.log(`${assignment.email}: extension ${assignment.extension}, SIP login ${assignment.username}`);
-    }
-    console.log(process.argv.includes("--dry-run") ? "Preview only; no settings changed." : "Saved. Refresh CRM to register the softphone; SIP registration has not been verified.");
-  } finally {
-    await prisma.$disconnect();
-  }
+    for (const a of assignments) console.log(a);
+    console.log(process.argv.includes("--dry-run") ? "Preview only; no settings changed." : "Explicit assignments saved. Passwords remain in server env.");
+  } finally { await prisma.$disconnect(); }
 }
 
-main().catch((error) => {
-  // Database error details can contain connection strings or submitted credentials.
-  console.error(error instanceof Error && !error.name.startsWith("Prisma") ? error.message : "Zadarma setup failed. Check database access.");
+main().catch(() => {
+  // Never print database errors or Zod payloads containing credentials.
+  console.error("Zadarma setup failed. Check explicit mapping, account configuration and existing owners; no partial assignments saved.");
   process.exitCode = 1;
 });

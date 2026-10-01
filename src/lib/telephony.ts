@@ -1,19 +1,21 @@
 import crypto from "crypto";
-import type { PrismaClient } from "@prisma/client";
+import type { PrismaClient, Prisma } from "@prisma/client";
 import { ingestContact } from "./contacts";
-import { notifyUser } from "./notifications";
-import { emitToUser, emitToAdmins } from "./realtime";
+import { notifyUser as persistNotification } from "./notifications";
+import { emitToUser as publishToUser, emitToAdmins as publishToAdmins } from "./realtime";
 import { normalizePhone } from "./phone";
-import { zadarmaCallback, zadarmaCredentials } from "./zadarma";
+import { zadarmaCallback } from "./zadarma";
+import { serverSipAccounts } from "./sip-config";
 
 export type TelephonyWebhook = {
   event: "call.started" | "call.answered" | "call.ended" | "call.recording";
   callId: string;
-  direction: "INBOUND" | "OUTBOUND";
+  direction?: "INBOUND" | "OUTBOUND";
   from: string;
   to: string;
   corporateNumber?: string;
   managerExtension?: string;
+  providerInternal?: string;
   status?: "RINGING" | "ANSWERED" | "MISSED" | "BUSY" | "FAILED" | "NO_ANSWER";
   startedAt?: string;
   answeredAt?: string;
@@ -33,9 +35,35 @@ export function verifySipSecret(header: string | null, secret: string) {
   }
 }
 
-export async function handleTelephonyEvent(db: PrismaClient, event: TelephonyWebhook) {
+export async function handleTelephonyEvent(client: PrismaClient, event: TelephonyWebhook) {
+  const publications: Array<() => void> = [];
+  const result = await client.$transaction(async (tx) => {
+    // Serialize events for ONE provider call, never calls across the CRM.
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${event.callId}, 0))`;
+    return handleLockedEvent(tx, event, publications);
+  });
+  for (const publish of publications) publish();
+  return result;
+}
+
+async function handleLockedEvent(tx: Prisma.TransactionClient, incoming: TelephonyWebhook, publications: Array<() => void>) {
+  const emitToUser = (...args: Parameters<typeof publishToUser>) => publications.push(() => publishToUser(...args));
+  const emitToAdmins = (...args: Parameters<typeof publishToAdmins>) => publications.push(() => publishToAdmins(...args));
+  const notifyUser = async (db: PrismaClient, data: Parameters<typeof persistNotification>[1]) => {
+    const notification = await persistNotification(db, data, false);
+    emitToUser(data.userId, "notification", {
+      id: notification.id, type: notification.type, title: notification.title, body: notification.body,
+    });
+  };
+  const db = tx as PrismaClient;
+  const existing = await db.call.findUnique({ where: { externalCallId: incoming.callId } });
+  if (!incoming.direction && !existing) throw new Error("TELEPHONY_AWAITING_START");
+  const event = { ...incoming, direction: incoming.direction || existing!.direction };
+  // Late start/answer notifications must not resurrect an ended call.
+  if (existing?.endedAt && (event.event === "call.started" || event.event === "call.answered")) {
+    return { call: existing, ingest: null };
+  }
   if (event.event === "call.recording") {
-    const existing = await db.call.findUnique({ where: { externalCallId: event.callId } });
     if (!existing || !event.recordingUrl) return { call: existing, ingest: null };
     await db.call.update({ where: { id: existing.id }, data: { recordingUrl: event.recordingUrl } });
     const rec = await db.callRecording.findFirst({ where: { callId: existing.id } });
@@ -44,35 +72,45 @@ export async function handleTelephonyEvent(db: PrismaClient, event: TelephonyWeb
     return { call: existing, ingest: null };
   }
 
-  const customerNumber = event.direction === "INBOUND" ? event.from : event.to;
+  const customerNumber = existing
+    ? (existing.direction === "INBOUND" ? existing.fromNumber : existing.toNumber)
+    : event.direction === "INBOUND" ? event.from : event.to;
   const ingest = await ingestContact(db, {
     phone: customerNumber,
     firstName: "Звонок",
     source: "PHONE_CALL",
   });
 
-  let managerId = ingest.managerId;
+  let managerId = existing?.managerId || (event.direction === "INBOUND" ? ingest.managerId : null);
+  if (event.providerInternal) {
+    const accounts = serverSipAccounts();
+    const account = Object.values(accounts).find((a) => (a.pbxExtension || a.username) === event.providerInternal);
+    const bySip = await db.user.findMany({ where: { isActive: true, OR: [
+      { sipUsername: account?.username || event.providerInternal },
+      ...(account ? Object.entries(accounts).filter(([, a]) => a === account).map(([logicalExtension]) => ({ sipExtension: logicalExtension, OR: [{ sipUsername: null }, { sipUsername: account.username }] })) : []),
+    ] }, take: 2 });
+    if (bySip.length === 1) managerId = bySip[0].id;
+  }
   if (event.managerExtension) {
     const byExt = await db.user.findFirst({ where: { sipExtension: event.managerExtension } });
     if (byExt) managerId = byExt.id;
   }
 
-  const existing = await db.call.findUnique({ where: { externalCallId: event.callId } });
   const status = event.status || (event.event === "call.ended" ? "ANSWERED" : "RINGING");
 
   const data = {
     contactId: ingest.contactId,
     managerId,
-    direction: event.direction,
-    fromNumber: normalizePhone(event.from) || event.from,
-    toNumber: normalizePhone(event.to) || event.to,
-    corporateNumber: event.corporateNumber || process.env.SIP_CORPORATE_NUMBER || "",
-    status,
-    startedAt: event.startedAt ? new Date(event.startedAt) : new Date(),
+    direction: existing?.direction || event.direction,
+    fromNumber: existing?.fromNumber || normalizePhone(event.from) || event.from,
+    toNumber: existing?.toNumber || normalizePhone(event.to) || event.to,
+    corporateNumber: event.corporateNumber || existing?.corporateNumber || process.env.SIP_CORPORATE_NUMBER || "",
+    status: event.event === "call.started" && existing?.answeredAt ? existing.status : status,
+    startedAt: existing?.startedAt || (event.startedAt ? new Date(event.startedAt) : new Date()),
     answeredAt: event.answeredAt ? new Date(event.answeredAt) : undefined,
     endedAt: event.endedAt ? new Date(event.endedAt) : undefined,
-    duration: event.duration || 0,
-    answerDuration: event.answerDuration || 0,
+    duration: event.duration ?? existing?.duration ?? 0,
+    answerDuration: event.answerDuration ?? existing?.answerDuration ?? 0,
     recordingUrl: event.recordingUrl,
   };
 
@@ -107,31 +145,34 @@ export async function handleTelephonyEvent(db: PrismaClient, event: TelephonyWeb
         payload: { callId: call.id },
       },
     });
+  }
+
+  if (event.event === "call.started" && (!existing || managerId !== existing.managerId)) {
     if (managerId) {
-      await notifyUser(db, {
+      if (event.direction === "INBOUND") await notifyUser(db, {
         userId: managerId,
         type: "INCOMING_CALL",
         title: "Входящий звонок",
         body: customerNumber,
         data: { contactId: ingest.contactId, callId: call.id },
       });
-      emitToUser(managerId, "call:incoming", { callId: call.id, contactId: ingest.contactId });
+      emitToUser(managerId, callRealtimeEvent(event.direction), { callId: call.id, contactId: ingest.contactId, direction: event.direction });
       if (ingest.createdContact) {
         emitToUser(managerId, "lead:new", { contactId: ingest.contactId });
       }
     }
-    emitToAdmins("call:incoming", { callId: call.id, contactId: ingest.contactId });
+    emitToAdmins(callRealtimeEvent(event.direction), { callId: call.id, contactId: ingest.contactId, direction: event.direction });
     if (ingest.createdContact) {
       emitToAdmins("lead:new", { contactId: ingest.contactId });
     }
   }
 
-  if (event.event === "call.ended") {
+  if (event.event === "call.ended" || event.event === "call.answered") {
     if (managerId) emitToUser(managerId, "call:updated", { callId: call.id });
     emitToAdmins("call:updated", { callId: call.id });
   }
 
-  if (event.event === "call.ended" && (status === "MISSED" || status === "NO_ANSWER") && managerId) {
+  if (!existing?.endedAt && event.direction === "INBOUND" && event.event === "call.ended" && (status === "MISSED" || status === "NO_ANSWER") && managerId) {
     await notifyUser(db, {
       userId: managerId,
       type: "MISSED_CALL",
@@ -144,23 +185,10 @@ export async function handleTelephonyEvent(db: PrismaClient, event: TelephonyWeb
   return { call, ingest };
 }
 
-export async function originateCall(params: { fromExtension: string; toNumber: string }) {
-  if (zadarmaCredentials().configured) {
-    return zadarmaCallback(params);
-  }
-  const url = process.env.SIP_ORIGINATE_URL;
-  const token = process.env.SIP_API_TOKEN;
-  if (!url) {
-    return { mocked: true, callId: `local-${crypto.randomUUID()}` };
-  }
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token || ""}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ from: params.fromExtension, to: params.toNumber }),
-  });
-  if (!res.ok) throw new Error(`SIP originate failed: ${await res.text()}`);
-  return res.json();
+export function callRealtimeEvent(direction: "INBOUND" | "OUTBOUND") {
+  return direction === "INBOUND" ? "call:incoming" : "call:outgoing";
+}
+
+export async function originateCall(params: Parameters<typeof zadarmaCallback>[0]) {
+  return zadarmaCallback(params);
 }

@@ -7,6 +7,7 @@ import { useI18n } from "@/components/I18nProvider";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { useRealtime } from "@/lib/use-realtime";
 
 type Stage = { id: string; name: string; requiredFields: string[]; isWon?: boolean; isLost?: boolean };
 
@@ -56,6 +57,20 @@ export default function ContactPage() {
   const [reason, setReason] = useState("");
   const [note, setNote] = useState("");
   const [calling, setCalling] = useState(false);
+  const [callState, setCallState] = useState<"idle" | "pending" | "started">("idle");
+  useEffect(() => {
+    if (callState === "idle") return;
+    const timer = setTimeout(() => setCallState("idle"), 45000);
+    return () => clearTimeout(timer);
+  }, [callState]);
+  useRealtime({
+    "call:outgoing": (event: { contactId?: string }) => {
+      if (event.contactId !== params.id) return;
+      setCallState("started");
+      setNotice(t("contact.sipStarted"));
+    },
+    "call:updated": () => { void load(); },
+  });
 
   const load = useCallback(async () => {
     setC(await fetch(`/api/contacts/${params.id}`).then((r) => r.json()));
@@ -141,18 +156,27 @@ export default function ContactPage() {
   async function sipCall() {
     setProblem("");
     setCalling(true);
-    const res = await fetch("/api/calls", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contactId: c?.id }),
-    });
-    setCalling(false);
-    if (!res.ok) {
+    setNotice("");
+    try {
+      const res = await fetch("/api/calls", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contactId: c?.id }),
+      });
+      const result = await res.json();
+      if (!res.ok || !result.accepted) {
+        setProblem(t(`contact.callErrors.${result.error}`, t("contact.sipCallFailed")));
+        return;
+      }
+      setCallState((state) => state === "started" ? state : "pending");
+      setNotice(t("contact.sipAccepted"));
+      // Acceptance starts the callback to the manager, not a confirmed client call.
+      await load();
+    } catch {
       setProblem(t("contact.sipCallFailed"));
-      return;
+    } finally {
+      setCalling(false);
     }
-    setNotice(t("contact.sipCalling"));
-    load();
   }
 
   async function confirmOutcome() {
@@ -182,8 +206,8 @@ export default function ContactPage() {
                   {c.phoneDisplay} · {c.email}
                 </div>
               </div>
-              <button type="button" className="rounded-xl bg-[#16a34a] px-4 py-2 h-fit" disabled={calling} onClick={sipCall}>
-                {calling ? t("contact.sipCalling") : t("contact.sipCall")}
+              <button type="button" className="rounded-xl bg-[#16a34a] px-4 py-2 h-fit" disabled={calling || callState === "pending"} onClick={sipCall}>
+                {calling || callState === "pending" ? t("contact.sipCalling") : callState === "started" ? t("contact.sipStarted") : t("contact.sipCall")}
               </button>
             </div>
 

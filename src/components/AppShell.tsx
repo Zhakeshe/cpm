@@ -84,7 +84,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       setToast(n.title);
       setTimeout(() => setToast(null), 6000);
     },
-    "call:incoming": (payload: { contactId?: string }) => {
+    "call:outgoing": () => {
+      setToast(t("contact.sipStarted"));
+      setTimeout(() => setToast(null), 6000);
+    },
+    "call:incoming": (payload: { contactId?: string; direction?: string }) => {
+      if (payload.direction === "OUTBOUND") return;
       setIncoming(payload);
       setTimeout(() => setIncoming(null), 20000);
     },

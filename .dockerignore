@@ -6,3 +6,7 @@ dist
 *.log
 backups
 *.tsbuildinfo
+
+# Keep all environment credentials outside git and Docker build context.
+.env.*
+!.env.example

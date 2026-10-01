@@ -10,6 +10,7 @@ export async function notifyUser(
     body: string;
     data?: object;
   },
+  publish = true,
 ) {
   const n = await db.notification.create({
     data: {
@@ -20,7 +21,7 @@ export async function notifyUser(
       data: data.data || {},
     },
   });
-  emitToUser(data.userId, "notification", {
+  if (publish) emitToUser(data.userId, "notification", {
     id: n.id,
     type: n.type,
     title: n.title,

@@ -37,6 +37,7 @@ export default function CallsPage() {
 
   useRealtime({
     "call:incoming": () => load(),
+    "call:outgoing": () => load(),
     "call:updated": () => load(),
   });
 

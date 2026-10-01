@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { jsonError, requireUser } from "@/lib/api";
 import { canListenAllRecordings, scopeManagerId } from "@/lib/rbac";
-import { originateCall, handleTelephonyEvent } from "@/lib/telephony";
+import { originateCall } from "@/lib/telephony";
 import { z } from "zod";
+import { resolveOutboundSipAccount } from "@/lib/sip-config";
+import { ZadarmaError } from "@/lib/zadarma";
 
 export async function GET() {
   try {
@@ -37,21 +39,17 @@ export async function POST(req: NextRequest) {
     const contact = await prisma.contact.findUnique({ where: { id: body.contactId } });
     if (!contact) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
     const manager = await prisma.user.findUnique({ where: { id: user.id } });
-    const result = await originateCall({
-      fromExtension: manager?.sipExtension || "101",
-      toNumber: contact.phoneNormalized,
-    });
-    const handled = await handleTelephonyEvent(prisma, {
-      event: "call.started",
-      callId: String(result.callId),
-      direction: "OUTBOUND",
-      from: manager?.sipExtension || "101",
-      to: contact.phoneNormalized,
-      managerExtension: manager?.sipExtension || undefined,
-      status: "RINGING",
-    });
-    return NextResponse.json({ call: handled.call, mocked: result.mocked });
+    if (scopeManagerId(user.role, user.id) && contact.managerId !== user.id) {
+      return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+    }
+    if (!manager?.isActive) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+    const account = resolveOutboundSipAccount(manager);
+    const result = await originateCall({ managerId: user.id, ...account, toNumber: contact.phoneNormalized });
+    return NextResponse.json(result, { status: 202 });
   } catch (err) {
+    if (err instanceof ZadarmaError || (err as Error).message === "SIP_ACCOUNT_NOT_CONFIGURED") {
+      return NextResponse.json({ error: (err as Error).message }, { status: (err as { status?: number }).status || 502 });
+    }
     return jsonError(err);
   }
 }

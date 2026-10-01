@@ -17,8 +17,8 @@ export async function GET() {
     });
     const integration = await prisma.integration.findUnique({ where: { type: "TELEPHONY" } });
     const config = (integration?.config || {}) as SipSettings;
-    const wsUrl = config.wsUrl || process.env.SIP_WS_URL || ZADARMA_DEFAULTS.wsUrl;
-    const domain = config.domain || process.env.SIP_DOMAIN || ZADARMA_DEFAULTS.domain;
+    const wsUrl = process.env.SIP_WS_URL || config.wsUrl || ZADARMA_DEFAULTS.wsUrl;
+    const domain = process.env.SIP_DOMAIN || config.domain || ZADARMA_DEFAULTS.domain;
     const extension = me?.sipExtension || "";
     const account = resolveSipAccount(config, extension, me?.sipUsername);
 
@@ -26,7 +26,7 @@ export async function GET() {
       return NextResponse.json({
         enabled: false,
         reason: !extension ? "NO_EXTENSION" : "NOT_CONFIGURED",
-      });
+      }, { headers: { "Cache-Control": "no-store" } });
     }
 
     return NextResponse.json({
@@ -38,6 +38,8 @@ export async function GET() {
       displayName: user.name,
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (err) {
-    return jsonError(err);
+    const response = jsonError(err);
+    response.headers.set("Cache-Control", "no-store");
+    return response;
   }
 }

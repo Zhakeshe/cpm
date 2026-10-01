@@ -14,8 +14,8 @@ docker compose up -d --build
 
 - CRM: `http://YOUR_SERVER_IP`
 - Health: `http://YOUR_SERVER_IP/api/health`
-- Локальный seed: `admin@crm.local` / `Admin123!` — на проде сразу смените
-- Менеджеры (seed): `manager1@crm.local` … `manager5@crm.local` / `Manager123!`
+- Локальный seed: `admin@crm.local` / `<LOCAL_DEMO_PASSWORD>` — на проде сразу смените
+- Менеджеры (seed): `manager1@crm.local` … `manager5@crm.local` / `<LOCAL_DEMO_PASSWORD>`
 
 Внутренние порты Postgres/Redis/MinIO наружу не публикуются.
 
@@ -47,7 +47,7 @@ Webhook: `https://quantum.ushqn.com/api/webhooks/wazzup`
 В Meta App укажите:
 
 - Callback: `https://quantum.ushqn.com/api/webhooks/whatsapp`
-- Verify token: `quantum_waba_verify_2026` (`WHATSAPP_VERIFY_TOKEN`)
+- Verify token: `<server WHATSAPP_VERIFY_TOKEN>` (`WHATSAPP_VERIFY_TOKEN`)
 - Подписка: `messages`
 
 Для Lead Ads:
@@ -61,44 +61,7 @@ Webhook: `https://quantum.ushqn.com/api/webhooks/wazzup`
 
 ## SIP / Zadarma
 
-Виртуальная АТС — **Zadarma**. WhatsApp остаётся на Wazzup до верификации Meta.
-
-В `.env` на сервере (ключи из кабинета Zadarma → Настройки → Интеграции и API):
-
-- `ZADARMA_USER_KEY`
-- `ZADARMA_SECRET`
-- `SIP_WS_URL=wss://pbx.zadarma.com:8089/ws`
-- `SIP_DOMAIN=pbx.zadarma.com`
-
-Для АТС `593615` используйте внутренние **100–102** с SIP-логинами `593615-100`, `593615-101`, `593615-102`. Внутренний номер нужен для маршрутизации и callback, полный логин — для регистрации софтфона. Включите **WebRTC** в кабинете Zadarma.
-
-В CRM: Настройки → Zadarma SIP (JSON) поддерживается формат:
-
-```json
-{
-  "100": { "username": "593615-100", "password": "<пароль внутреннего 100>" },
-  "101": { "username": "593615-101", "password": "<пароль внутреннего 101>" },
-  "102": { "username": "593615-102", "password": "<пароль внутреннего 102>" }
-}
-```
-
-Для автоматического назначения первых трёх активных менеджеров добавьте этот JSON одной строкой в `SIP_EXTENSIONS_JSON` в серверном `.env` (не в git). Скрипт также сохраняет настройки софтфона и снимает прежние назначения этих трёх номеров, включая назначения администраторам. Остальные настройки интеграций сохраняются. При нехватке менеджеров изменения не выполняются.
-
-После сборки нового образа:
-
-```bash
-docker compose run --rm --no-deps app npm run zadarma:setup -- --dry-run
-docker compose run --rm --no-deps app npm run zadarma:setup
-```
-
-Обновите страницу CRM у менеджеров и проверьте регистрацию софтфона. Скрипт не проверяет подключение к АТС. Для click-to-call и уведомлений нужны API-ключи ниже; SIP-пароль не заменяет `ZADARMA_SECRET`.
-
-Уведомления PBX: `https://quantum.ushqn.com/api/webhooks/telephony`  
-(в кабинете Zadarma поле «Уведомления о звонках АТС», должен открываться `zd_echo`).
-
-Click-to-call с карточки клиента идёт через `GET /v1/request/callback/`. Софтфон в браузере регистрируется по WebSocket.
-
-После правок `.env`: `docker compose up -d app worker`.
+См. [ZADARMA.md](ZADARMA.md): явное назначение реальных SIP accounts, server-only credentials, настройки provider CallerID/PBX, безопасное развёртывание и тесты. Legacy `SIP_EXTENSIONS_JSON`, `SIP_ORIGINATE_URL`, `SIP_API_TOKEN` не используются. Ранее сохранённые в Integration пароли не читаются и не возвращаются через настройки; перенесите необходимые credentials в server env. Данные БД автоматически не удаляются.
 
 ## HTTPS
 

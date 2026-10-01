@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jsonError, requireAdmin, requireUser } from "@/lib/api";
 import { prisma } from "@/lib/db";
+import { publicSipSettings } from "@/lib/sip-config";
 import { canManageSettings } from "@/lib/rbac";
 
 export async function GET() {
@@ -17,7 +18,7 @@ export async function GET() {
     ]);
     const appUrl = (process.env.APP_URL || "").replace(/\/$/, "");
     return NextResponse.json({
-      integrations,
+      integrations: integrations.map((i) => i.type === "TELEPHONY" ? { ...i, config: publicSipSettings((i.config || {}) as object) } : i),
       sla: sla?.value || { enabled: false, minutes: 10, action: "NOTIFY_MANAGER" },
       hours: hours?.value || { timezone: "Asia/Almaty", start: "10:00", end: "19:00", offDays: [0] },
       routing: routing?.value || {
@@ -43,6 +44,13 @@ export async function PUT(req: NextRequest) {
   try {
     const user = await requireAdmin();
     const body = await req.json();
+    if (body.integration?.type === "TELEPHONY") {
+      const config = body.integration.config || {};
+      if (Object.keys(config).some((key) => !["wsUrl", "domain"].includes(key))) {
+        return NextResponse.json({ error: "SIP_CREDENTIALS_SERVER_ENV_ONLY" }, { status: 400 });
+      }
+      body.integration.config = publicSipSettings(config);
+    }
     if (body.sla) {
       await prisma.systemSetting.upsert({
         where: { key: "lead_sla" },

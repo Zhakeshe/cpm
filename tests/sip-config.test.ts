@@ -1,23 +1,30 @@
-import { describe, expect, it } from "vitest";
-import { resolveSipAccount } from "../src/lib/sip-config";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { resolveSipAccount, resolveOutboundSipAccount, sipLoginSchema, serverSipAccounts, publicSipSettings } from "../src/lib/sip-config";
 
-describe("SIP registration credentials", () => {
-  it("uses the complete PBX login while retaining the short routing extension", () => {
-    expect(resolveSipAccount({ extensions: {
-      "101": { username: "593615-101", password: "test-only" },
-    } }, "101", "101")).toEqual({ username: "593615-101", password: "test-only" });
+afterEach(() => vi.unstubAllEnvs());
+describe("explicit SIP accounts", () => {
+  it.each(["158925", "200223", "943999", "593615-101"])("accepts real login %s", (login) => {
+    expect(sipLoginSchema.safeParse(login).success).toBe(true);
   });
-
-  it("keeps legacy password-only settings compatible with the user's SIP login", () => {
-    expect(resolveSipAccount({ extensions: { "101": "test-only" } }, "101", "593615-101"))
-      .toEqual({ username: "593615-101", password: "test-only" });
-    expect(resolveSipAccount({ extensions: { "101": "test-only" } }, "101"))
-      .toEqual({ username: "101", password: "test-only" });
+  it("never substitutes the CRM extension when no real account exists", () => {
+    expect(() => resolveOutboundSipAccount({ sipExtension: "101", sipUsername: null }, {})).toThrow("SIP_ACCOUNT_NOT_CONFIGURED");
+    expect(resolveOutboundSipAccount({ sipExtension: "101", sipUsername: null }, { "101": { username: "158925" } }))
+      .toEqual({ sipAccount: "158925", callbackEndpoint: "158925" });
   });
-
-  it("does not register unconfigured extensions", () => {
-    expect(resolveSipAccount({}, "101")).toBeNull();
-    expect(resolveSipAccount({ extensions: { "101": { username: "593615-101", password: "" } } }, "101"))
-      .toBeNull();
+  it("uses a provider PBX routing ID only when explicitly configured", () => {
+    expect(resolveOutboundSipAccount({ sipExtension: "101", sipUsername: null }, { "101": { username: "593615-107", pbxExtension: "107" } }))
+      .toEqual({ sipAccount: "593615-107", callbackEndpoint: "107" });
+  });
+  it("rejects stale user/account mismatches and duplicate assignments", () => {
+    expect(() => resolveOutboundSipAccount({ sipExtension: "101", sipUsername: "943999" }, { "101": { username: "158925" } })).toThrow();
+    vi.stubEnv("SIP_ACCOUNTS_JSON", '{"101":{"username":"158925"},"102":{"username":"158925"}}');
+    expect(() => serverSipAccounts()).toThrow("SIP_ACCOUNT_NOT_CONFIGURED");
+  });
+  it("returns only the current extension's env password, never DB credentials or extension fallback", () => {
+    vi.stubEnv("SIP_ACCOUNTS_JSON", '{"101":{"username":"158925","password":"test-only"},"102":{"username":"200223","password":"other"}}');
+    expect(resolveSipAccount({}, "101", null)).toEqual({ username: "158925", password: "test-only" });
+    expect(resolveSipAccount({}, "103", null)).toBeNull();
+    expect(resolveSipAccount({}, "101", "200223")).toBeNull();
+    expect(publicSipSettings({ extensions: { "101": { password: "secret" } } })).not.toHaveProperty("extensions");
   });
 });
