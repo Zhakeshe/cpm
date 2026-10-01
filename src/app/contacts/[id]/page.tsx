@@ -7,6 +7,8 @@ import { useI18n } from "@/components/I18nProvider";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { RecordingPlayer } from "@/components/RecordingPlayer";
+import { requestZadarmaCall } from "@/lib/call-controls";
 import { useRealtime } from "@/lib/use-realtime";
 
 type Stage = { id: string; name: string; requiredFields: string[]; isWon?: boolean; isLost?: boolean };
@@ -158,22 +160,13 @@ export default function ContactPage() {
     setCalling(true);
     setNotice("");
     try {
-      const res = await fetch("/api/calls", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contactId: c?.id }),
-      });
-      const result = await res.json();
-      if (!res.ok || !result.accepted) {
-        setProblem(t(`contact.callErrors.${result.error}`, t("contact.sipCallFailed")));
-        return;
-      }
+      await requestZadarmaCall(c!.id);
       setCallState((state) => state === "started" ? state : "pending");
       setNotice(t("contact.sipAccepted"));
       // Acceptance starts the callback to the manager, not a confirmed client call.
       await load();
-    } catch {
-      setProblem(t("contact.sipCallFailed"));
+    } catch (error) {
+      setProblem(t(`contact.callErrors.${(error as Error).message}`, t("contact.sipCallFailed")));
     } finally {
       setCalling(false);
     }
@@ -374,7 +367,7 @@ export default function ContactPage() {
                 <div className="text-sm">
                   {t(`callDirections.${call.direction}`, call.direction)} · {t(`callStatuses.${call.status}`, call.status)} · {call.duration}s
                 </div>
-                {call.recordingUrl && <audio controls src={call.recordingUrl} className="h-8" />}
+                {call.recordingUrl && <RecordingPlayer callId={call.id} />}
               </div>
             ))}
           </div>

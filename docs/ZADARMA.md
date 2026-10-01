@@ -101,3 +101,11 @@ Rollback: switch to the previously deployed commit, rebuild app/worker and recre
 9. Authenticated credentials GET contains only the current user's env account and no-store; unauthenticated GET is 401/no-store. `/api/settings` does not expose legacy SIP passwords. Verify logs and compiled browser assets do not contain configured credentials.
 
 Automated checks: `npm test`, `npm run typecheck`, `npm run build`. Unit tests use stubbed provider responses; live ringing, audio, CallerID, PBX membership and channel capacity require this manual acceptance plan and are not proven by build success.
+
+## Call page and browser audio
+
+The Calls page includes searchable history, direction filters and lazy recording playback. Zadarma recording references are resolved server-side through `/v1/pbx/record/request/` using `call_id`; audio is streamed through the authenticated recording endpoint. Managers can play their own recordings; administrators and supervisors can play all recordings. Downloads remain administrator-only. Recording must be enabled in Zadarma; newly completed recordings may take time to become available.
+
+The browser softphone provides microphone mute/unmute, hangup, elapsed time and synthesized incoming/outgoing tones. Click Enable sound if browser autoplay policy blocks audio, and grant microphone access. These controls affect the current browser SIP session; calls answered in an external SIP client must be controlled there.
+
+Manual checks: enable sound; initiate a callback; answer the manager leg; confirm ringback stops and the timer starts; mute/unmute and verify the other party hears the change; hang up and confirm timer/audio stop. Test a real inbound call, decline and remote hangup. Open a completed recording, seek within it, then verify another manager cannot access its endpoint. Test an unavailable recording and retry once Zadarma has processed it.
