@@ -8,6 +8,7 @@ import { useI18n } from "@/components/I18nProvider";
 
 type SipConfig =
   | { enabled: false; reason: string }
+  | { enabled: true; mode: "zadarma-widget" }
   | {
       enabled: true;
       wsUrl: string;
@@ -53,6 +54,45 @@ type JsSipSession = {
  */
 export function Softphone() {
   const { t } = useI18n();
+  const [config, setConfig] = useState<SipConfig | null>(null);
+  const [error, setError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    setError(false);
+    fetch("/api/sip/credentials", { cache: "no-store" }).then(async (response) => {
+      if (!response.ok) throw new Error("PHONE_CONFIG_ERROR");
+      const result: SipConfig = await response.json();
+      if (!cancelled) setConfig(result);
+    }).catch(() => { if (!cancelled) setError(true); });
+    return () => { cancelled = true; };
+  }, [attempt]);
+  if (error) return <div className="fixed bottom-4 right-4 z-40 card p-3 text-sm">
+    {t("softphone.error")} <button className="chip ml-2" onClick={() => setAttempt((n) => n + 1)}>{t("calls.retryRecording")}</button>
+  </div>;
+  if (!config?.enabled) return null;
+  if ("mode" in config) return <ZadarmaPhone />;
+  return <NativeSoftphone config={config} />;
+}
+
+function ZadarmaPhone() {
+  const { t } = useI18n();
+  const [minimized, setMinimized] = useState(false);
+  const [revision, setRevision] = useState(0);
+  return <section className="fixed bottom-2 right-2 z-40 card shadow-2xl overflow-hidden w-[360px] max-w-[calc(100vw-1rem)]">
+    <div className="flex items-center justify-between px-3 py-2 text-sm">
+      <span>Zadarma WebRTC</span>
+      <div className="flex gap-2">
+        <button className="chip" onClick={() => setRevision((n) => n + 1)}>{t("softphone.reloadPhone")}</button>
+        <button className="chip" aria-expanded={!minimized} onClick={() => setMinimized((v) => !v)}>{t(minimized ? "softphone.showPhone" : "softphone.hidePhone")}</button>
+      </div>
+    </div>
+    <iframe key={revision} src="/api/sip/widget" title="Zadarma WebRTC" allow="microphone; autoplay" className="w-full border-0" style={{ height: minimized ? 60 : 430 }} />
+  </section>;
+}
+
+function NativeSoftphone({ config }: { config: Extract<SipConfig, { wsUrl: string }> }) {
+  const { t } = useI18n();
   const [state, setState] = useState<CallState>("idle");
   const [muted, setMuted] = useState(false);
   const [seconds, setSeconds] = useState(0);
@@ -60,7 +100,6 @@ export function Softphone() {
   const [callbackPending, setCallbackPending] = useState(false);
   const tonesRef = useRef<CallTones | null>(null);
   const [peer, setPeer] = useState<string>("");
-  const [disabledReason, setDisabledReason] = useState<string | null>(null);
   const uaRef = useRef<UaLike | null>(null);
   const sessionRef = useRef<JsSipSession | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -119,12 +158,6 @@ export function Softphone() {
     const audioElement = audioRef.current;
 
     async function boot() {
-      const config: SipConfig = await fetch("/api/sip/credentials").then((r) => r.json());
-      if (cancelled) return;
-      if (!config.enabled) {
-        setDisabledReason(config.reason);
-        return;
-      }
       const JsSIP = (await import("jssip")).default;
       if (cancelled) return;
       const socket = new JsSIP.WebSocketInterface(config.wsUrl);
@@ -182,9 +215,8 @@ export function Softphone() {
       uaRef.current?.stop();
       if (audioElement) audioElement.srcObject = null;
     };
-  }, [attachAudio]);
+  }, [attachAudio, config]);
 
-  if (disabledReason) return null;
 
   function answer() {
     tonesRef.current?.stop();

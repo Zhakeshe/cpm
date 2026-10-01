@@ -182,7 +182,7 @@ export async function zadarmaApiGet(path: string, params: Record<string, string>
     // Do not retry: a timeout can happen after the provider accepts a callback.
     throw new ZadarmaError("ZADARMA_API_ERROR");
   }
-  const json = (await res.json().catch(() => null)) as { status?: string; message?: string; time?: number; link?: string; links?: string[] } | null;
+  const json = (await res.json().catch(() => null)) as { status?: string; message?: string; time?: number; link?: string; links?: string[]; key?: string } | null;
   if (!res.ok || json?.status !== "success") {
     // Provider messages are untrusted and may echo submitted fields.
     const message = (typeof json?.message === "string" ? json.message : "Invalid provider response")

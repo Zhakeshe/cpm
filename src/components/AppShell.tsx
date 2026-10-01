@@ -25,7 +25,6 @@ import {
   Building2,
 } from "lucide-react";
 import { useRealtime, usePresence } from "@/lib/use-realtime";
-import { Softphone } from "@/components/Softphone";
 import { LOCALES, useI18n, type Locale } from "@/components/I18nProvider";
 
 const NAV = [
@@ -213,7 +212,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {toast && (
           <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 card px-4 py-3 text-sm">{toast}</div>
         )}
-        <Softphone />
         <main className="p-4 md:p-6">{children}</main>
       </div>
     </div>

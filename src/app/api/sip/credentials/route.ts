@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { jsonError, requireUser } from "@/lib/api";
 import { ZADARMA_DEFAULTS } from "@/lib/zadarma";
-import { resolveSipAccount, type SipSettings } from "@/lib/sip-config";
+import { resolveOutboundSipAccount, resolveSipAccount, type SipSettings } from "@/lib/sip-config";
 
 /**
  * WebRTC registration needs SIP credentials in the browser, so they are handed
@@ -15,6 +15,13 @@ export async function GET() {
       where: { id: user.id },
       select: { sipExtension: true, sipUsername: true },
     });
+    if (process.env.SIP_BROWSER_MODE === "zadarma-widget") {
+      if (!me) throw Object.assign(new Error("SIP_ACCOUNT_NOT_CONFIGURED"), { status: 503 });
+      resolveOutboundSipAccount(me);
+      return NextResponse.json({ enabled: true, mode: "zadarma-widget" }, {
+        headers: { "Cache-Control": "no-store" },
+      });
+    }
     const integration = await prisma.integration.findUnique({ where: { type: "TELEPHONY" } });
     const config = (integration?.config || {}) as SipSettings;
     const wsUrl = process.env.SIP_WS_URL || config.wsUrl || ZADARMA_DEFAULTS.wsUrl;

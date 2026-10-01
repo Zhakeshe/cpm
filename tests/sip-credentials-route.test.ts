@@ -28,3 +28,10 @@ it("does not expose legacy credentials stored in integration settings", async ()
   const response = await GET(); expect((await response.json()).enabled).toBe(false);
   expect(response.headers.get("Cache-Control")).toBe("no-store");
 });
+it("selects the official widget without exposing a SIP password or requiring a WebSocket", async () => {
+  vi.stubEnv("SIP_BROWSER_MODE", "zadarma-widget"); vi.stubEnv("SIP_WS_URL", "");
+  const response = await GET();
+  expect(await response.json()).toEqual({ enabled: true, mode: "zadarma-widget" });
+  expect(response.headers.get("Cache-Control")).toBe("no-store");
+  expect(mocks.integration).not.toHaveBeenCalled();
+});

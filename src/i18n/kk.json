@@ -560,6 +560,9 @@
     "SALE": "Сатылым"
   },
   "softphone": {
+    "reloadPhone": "Жаңарту",
+    "showPhone": "Ашу",
+    "hidePhone": "Жинау",
     "callback": "Шығыс қоңырауды қосу",
     "mute": "Микрофонды өшіру",
     "unmute": "Микрофонды қосу",
