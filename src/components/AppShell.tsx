@@ -37,7 +37,7 @@ const NAV = [
   { href: "/tasks", key: "nav.tasks", icon: Shield },
   { href: "/meetings", key: "nav.meetings", icon: Calendar },
   { href: "/quotes", key: "nav.quotes", icon: FileText },
-  { href: "/calls", key: "nav.calls", icon: Phone, admin: true },
+  { href: "/calls", key: "nav.calls", icon: Phone },
   { href: "/catalog", key: "nav.catalog", icon: Package, admin: true },
   { href: "/companies", key: "nav.companies", icon: Building2, admin: true },
   { href: "/sla", key: "nav.sla", icon: Clock, admin: true },

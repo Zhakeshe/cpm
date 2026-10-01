@@ -12,7 +12,7 @@ describe("vacuum funnel", () => {
   it("blocks admin pages for managers", () => {
     expect(isManagerBlockedPath("/settings")).toBe(true);
     expect(isManagerBlockedPath("/catalog")).toBe(true);
-    expect(isManagerBlockedPath("/calls")).toBe(true);
+    expect(isManagerBlockedPath("/calls")).toBe(false);
     expect(isManagerBlockedPath("/leads")).toBe(false);
     expect(isManagerBlockedPath("/messages")).toBe(false);
     expect(isManagerBlockedPath("/pipeline")).toBe(false);

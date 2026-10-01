@@ -27,7 +27,6 @@ export const MANAGER_BLOCKED_PATHS = [
   "/sla",
   "/catalog",
   "/companies",
-  "/calls",
   "/analytics",
 ];
 
