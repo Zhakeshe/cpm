@@ -64,24 +64,21 @@ async function handleLockedEvent(tx: Prisma.TransactionClient, incoming: Telepho
     return { call: existing, ingest: null };
   }
   if (event.event === "call.recording") {
-    if (!existing || !event.recordingUrl) return { call: existing, ingest: null };
-    await db.call.update({ where: { id: existing.id }, data: { recordingUrl: event.recordingUrl } });
+    if (!existing) throw new Error("TELEPHONY_AWAITING_START");
+    if (!event.recordingUrl) return { call: existing, ingest: null };
+    const recordedCall = await db.call.update({ where: { id: existing.id }, data: { recordingUrl: event.recordingUrl } });
     const rec = await db.callRecording.findFirst({ where: { callId: existing.id } });
     if (rec) await db.callRecording.update({ where: { id: rec.id }, data: { url: event.recordingUrl } });
     else await db.callRecording.create({ data: { callId: existing.id, url: event.recordingUrl } });
-    return { call: existing, ingest: null };
+    if (existing.managerId) emitToUser(existing.managerId, "call:updated", { callId: existing.id });
+    emitToAdmins("call:updated", { callId: existing.id });
+    return { call: recordedCall, ingest: null };
   }
 
   const customerNumber = existing
     ? (existing.direction === "INBOUND" ? existing.fromNumber : existing.toNumber)
     : event.direction === "INBOUND" ? event.from : event.to;
-  const ingest = await ingestContact(db, {
-    phone: customerNumber,
-    firstName: "Звонок",
-    source: "PHONE_CALL",
-  });
-
-  let managerId = existing?.managerId || (event.direction === "INBOUND" ? ingest.managerId : null);
+  let routedManagerId: string | null = null;
   if (event.providerInternal) {
     const accounts = serverSipAccounts();
     const account = Object.values(accounts).find((a) => (a.pbxExtension || a.username) === event.providerInternal);
@@ -89,12 +86,21 @@ async function handleLockedEvent(tx: Prisma.TransactionClient, incoming: Telepho
       { sipUsername: account?.username || event.providerInternal },
       ...(account ? Object.entries(accounts).filter(([, a]) => a === account).map(([logicalExtension]) => ({ sipExtension: logicalExtension, OR: [{ sipUsername: null }, { sipUsername: account.username }] })) : []),
     ] }, take: 2 });
-    if (bySip.length === 1) managerId = bySip[0].id;
+    if (bySip.length === 1) routedManagerId = bySip[0].id;
   }
   if (event.managerExtension) {
-    const byExt = await db.user.findFirst({ where: { sipExtension: event.managerExtension } });
-    if (byExt) managerId = byExt.id;
+    const byExt = await db.user.findFirst({ where: { sipExtension: event.managerExtension, isActive: true } });
+    if (byExt) routedManagerId = byExt.id;
   }
+
+  const ingest = await ingestContact(db, {
+    phone: customerNumber,
+    firstName: "Звонок",
+    source: "PHONE_CALL",
+    // Only new contacts use the provider's explicitly resolved manager.
+    newContactManagerId: routedManagerId,
+  });
+  const managerId = routedManagerId || existing?.managerId || (event.direction === "INBOUND" ? ingest.managerId : null);
 
   const status = event.status || (event.event === "call.ended" ? "ANSWERED" : "RINGING");
 

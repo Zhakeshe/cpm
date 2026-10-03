@@ -36,7 +36,10 @@ export async function POST(req: NextRequest) {
     const fields = Object.fromEntries(Object.entries(payload).map(([k, v]) => [k, v == null ? "" : String(v)]));
     const secret = zadarmaCredentials().secret;
     const signature = req.headers.get("signature") || req.headers.get("Signature");
+    const eventType = /^[A-Z_]{1,40}$/.test(fields.event || "") ? fields.event : "UNKNOWN";
+    console.info("[ZADARMA] webhook received", { eventType, signaturePresent: Boolean(signature) });
     if (!verifyZadarmaSignature(fields, signature, secret)) {
+      console.warn("[ZADARMA] webhook rejected", { eventType, reason: "INVALID_SIGNATURE" });
       return NextResponse.json({ error: "INVALID_SIGNATURE" }, { status: 401 });
     }
     const mapped = mapZadarmaNotify(payload);
@@ -53,6 +56,7 @@ export async function POST(req: NextRequest) {
         },
       });
       await enqueueWebhook({ webhookEventId: saved.id, provider: "telephony" });
+      console.info("[ZADARMA] webhook accepted", { eventType, webhookEventId: saved.id });
     } catch (err) {
       if ((err as { code?: string }).code === "P2002") {
         return NextResponse.json({ ok: true, duplicate: true });
