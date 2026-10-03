@@ -32,6 +32,14 @@ input, select, textarea {
   padding: 10px 12px;
   width: 100%;
 }
+input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  padding: 0;
+  accent-color: #22c55e;
+  cursor: pointer;
+}
 button {
   cursor: pointer;
   border: 0;

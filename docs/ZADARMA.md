@@ -123,3 +123,9 @@ Official references: https://zadarma.com/en/support/api/ and https://zadarma.com
 ## Explicit domestic dialing override
 
 The documented callback API format remains international digits by default (`ZADARMA_DESTINATION_FORMAT=international`). At the operator's explicit request, `ZADARMA_DESTINATION_FORMAT=kz-domestic` sends Kazakhstan +7 6/+7 7 destinations with a leading 8, e.g. `77762010702` → `87762010702`. This is an override requiring live provider verification, not a documented API requirement or a guaranteed fix for registration/routing issues. Other international destinations remain unchanged. CRM storage and webhook contact matching remain canonical; corporate-number self-call protection runs before formatting. Provider rejections are preserved; no automatic retries in another format. To roll back this override set `international` and recreate app/worker.
+
+## CRM contract and task forms
+
+The release also includes the production changes from `cursor/contract-talk-checks-29f9`, restoring the contact task/date/address/comment form and the contract purchase/price/gift/dealer/manager form. Fields use existing storage and require no schema migration. Call history retains the production manager filter alongside the authenticated player. Recording visibility checks both the Call URL and separate Recording rows; actual provider delivery and recording enablement must still be verified in production. Deploy app/worker with `--no-deps` as above. Do not run seed/reset scripts as part of this rollout.
+
+Seed passwords now come exclusively from `SEED_ADMIN_PASSWORD` and `SEED_MANAGER_PASSWORD`, with no default. They are required only when explicitly running seed; app/worker deployment and existing user passwords are unaffected. Do not run seed/reset as part of production repair.

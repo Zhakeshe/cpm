@@ -1,6 +1,7 @@
 "use client";
 
 import { AppShell } from "@/components/AppShell";
+import { ManagerFilter } from "@/components/ManagerFilter";
 import { useI18n } from "@/components/I18nProvider";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -12,8 +13,9 @@ type Card = {
   lastName: string;
   phoneDisplay: string;
   source: string;
-  dealAmount: string | number;
   lastContactAt: string | null;
+  city?: string | null;
+  address?: string | null;
   manager?: { name: string };
   tasks?: Array<{ dueAt: string; description: string }>;
 };
@@ -25,12 +27,14 @@ const WON_REASONS = ["paid_full", "installment", "repeat"];
 export default function PipelinePage() {
   const { t } = useI18n();
   const [stages, setStages] = useState<Stage[]>([]);
+  const [manager, setManager] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState<{ contactId: string; stage: Stage } | null>(null);
   const [reason, setReason] = useState("");
   const load = useCallback(async () => {
-    setStages(await fetch("/api/pipeline").then((r) => r.json()));
-  }, []);
+    const qs = manager ? `?manager=${encodeURIComponent(manager)}` : "";
+    setStages(await fetch(`/api/pipeline${qs}`).then((r) => r.json()));
+  }, [manager]);
 
   useEffect(() => {
     load();
@@ -82,7 +86,10 @@ export default function PipelinePage() {
   return (
     <AppShell>
       <h1 className="text-2xl font-semibold mb-2">{t("pipeline.title")}</h1>
-      <p className="muted text-sm mb-6 max-w-3xl">{t("pipeline.howItWorks")}</p>
+      <p className="muted text-sm mb-4 max-w-3xl">{t("pipeline.howItWorks")}</p>
+      <div className="card p-4 mb-4 max-w-xs">
+        <ManagerFilter value={manager} onChange={setManager} />
+      </div>
       {error && <div className="card px-4 py-2 mb-4 text-sm text-[#fbbf24]">{error}</div>}
       <div className="flex gap-4 overflow-x-auto pb-4">
         {stages.map((stage) => (
@@ -113,7 +120,7 @@ export default function PipelinePage() {
                   <div className="text-xs mt-2">
                     {t(`sources.${c.source}`, c.source)} · {c.manager?.name}
                   </div>
-                  <div className="text-xs mt-1">{t("pipeline.amount", { amount: Number(c.dealAmount || 0) })}</div>
+                  <div className="text-xs mt-1">{[c.city, c.address].filter(Boolean).join(", ") || t("contact.address")}</div>
                   <div className="text-xs muted mt-1">
                     {c.tasks?.[0] ? t("pipeline.task", { task: c.tasks[0].description }) : t("pipeline.noTask")}
                   </div>

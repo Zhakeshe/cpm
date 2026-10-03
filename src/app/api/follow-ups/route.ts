@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { jsonError, requireUser } from "@/lib/api";
-import { scopeManagerId } from "@/lib/rbac";
+import { requestedManagerId, scopeManagerId } from "@/lib/rbac";
 import { countFollowUpQueue, FOLLOW_UP_PRESETS, listFollowUpQueue, scheduleFollowUp } from "@/lib/follow-ups";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const user = await requireUser();
-    const managerId = scopeManagerId(user.role, user.id);
+    const managerId = requestedManagerId(user.role, user.id, req.nextUrl.searchParams.get("manager"));
     const [items, count] = await Promise.all([
       listFollowUpQueue(prisma, managerId),
       countFollowUpQueue(prisma, managerId),

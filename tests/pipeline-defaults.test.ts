@@ -1,12 +1,32 @@
 import { describe, expect, it } from "vitest";
 import { isManagerBlockedPath, VACUUM_PIPELINE_STAGES } from "../src/lib/pipeline-defaults";
+import { LEAD_TAGS } from "../src/lib/catalog";
 
 describe("vacuum funnel", () => {
-  it("has one won and one lost column", () => {
-    expect(VACUUM_PIPELINE_STAGES.filter((s) => s.isWon)).toHaveLength(1);
-    expect(VACUUM_PIPELINE_STAGES.filter((s) => s.isLost)).toHaveLength(1);
-    expect(VACUUM_PIPELINE_STAGES.find((s) => s.slug === "thinking")?.requiredFields).toContain("dealAmount");
-    expect(VACUUM_PIPELINE_STAGES.find((s) => s.slug === "paid")?.requiredFields).toContain("dealAmount");
+  it("keeps the handwritten client-card stages", () => {
+    expect(VACUUM_PIPELINE_STAGES.filter((s) => s.isWon)).toHaveLength(0);
+    expect(VACUUM_PIPELINE_STAGES.filter((s) => s.isLost)).toHaveLength(0);
+    expect(VACUUM_PIPELINE_STAGES.map((s) => s.name)).toEqual([
+      "Новый лид",
+      "Demo",
+      "Керек емес",
+      "ТНБ",
+      "ОТКЛ",
+      "Ойланамын",
+      "Потом звонда",
+    ]);
+    expect(VACUUM_PIPELINE_STAGES.find((s) => s.slug === "not_needed")?.isLost).toBeFalsy();
+    expect(VACUUM_PIPELINE_STAGES.some((s) => s.slug === "first_client")).toBe(false);
+  });
+
+  it("keeps the manager tags from the handwritten list", () => {
+    expect(LEAD_TAGS.map((t) => t.name)).toEqual([
+      "демо шыкты",
+      "керек емес",
+      "багасын былейын деп едым",
+      "Кешке зв",
+      "потом звондау керек",
+    ]);
   });
 
   it("blocks admin pages for managers", () => {

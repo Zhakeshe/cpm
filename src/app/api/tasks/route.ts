@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { jsonError, requireUser } from "@/lib/api";
-import { scopeManagerId } from "@/lib/rbac";
+import { requestedManagerId, scopeManagerId } from "@/lib/rbac";
 import { notifyUser } from "@/lib/notifications";
 import { z } from "zod";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const user = await requireUser();
-    const managerId = scopeManagerId(user.role, user.id);
+    const managerId = requestedManagerId(user.role, user.id, req.nextUrl.searchParams.get("manager"));
     const tasks = await prisma.task.findMany({
       where: managerId ? { managerId } : {},
       include: { contact: true, manager: { select: { id: true, name: true } } },
@@ -34,7 +34,8 @@ export async function POST(req: NextRequest) {
   try {
     const user = await requireUser();
     const body = schema.parse(await req.json());
-    const managerId = body.managerId || user.id;
+    const contact = body.contactId ? await prisma.contact.findUnique({ where: { id: body.contactId } }) : null;
+    const managerId = body.managerId || contact?.managerId || user.id;
     const task = await prisma.task.create({
       data: {
         contactId: body.contactId,

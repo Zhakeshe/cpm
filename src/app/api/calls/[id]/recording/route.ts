@@ -1,3 +1,4 @@
+import { recordingReference } from "@/lib/recording-reference";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { jsonError, requireUser } from "@/lib/api";
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
     if (download && !canDownloadRecordings(user.role)) {
       return NextResponse.json({ error: "FORBIDDEN" }, { status: 403, headers: { "Cache-Control": "no-store" } });
     }
-    const reference = call.recordingUrl || call.recordings[0]?.url;
+    const reference = recordingReference(call);
     if (!reference) return NextResponse.json({ error: "NO_RECORDING" }, { status: 404, headers: { "Cache-Control": "no-store" } });
     const { url, provider } = await resolveRecordingUrl(reference);
     if (!provider) return new NextResponse(null, { status: 307, headers: { Location: url, "Cache-Control": "no-store" } });

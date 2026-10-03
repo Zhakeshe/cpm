@@ -22,7 +22,6 @@ import {
   Sun,
   Package,
   FileText,
-  Building2,
 } from "lucide-react";
 import { useRealtime, usePresence } from "@/lib/use-realtime";
 import { LOCALES, useI18n, type Locale } from "@/components/I18nProvider";
@@ -39,7 +38,6 @@ const NAV = [
   { href: "/quotes", key: "nav.quotes", icon: FileText },
   { href: "/calls", key: "nav.calls", icon: Phone },
   { href: "/catalog", key: "nav.catalog", icon: Package, admin: true },
-  { href: "/companies", key: "nav.companies", icon: Building2, admin: true },
   { href: "/sla", key: "nav.sla", icon: Clock, admin: true },
   { href: "/analytics", key: "nav.analytics", icon: BarChart3, admin: true },
   { href: "/managers", key: "nav.managers", icon: UsersRound, admin: true },

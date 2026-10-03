@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
         tags: { include: { tag: true } },
         tasks: { where: { status: "OPEN" }, take: 1, orderBy: { dueAt: "asc" } },
       },
-      orderBy: { updatedAt: "desc" },
+      orderBy: { createdAt: "desc" },
       take: 200,
     });
     return NextResponse.json(contacts);
@@ -50,7 +50,9 @@ const createSchema = z.object({
     "META_LEAD_ADS",
   ]),
   comment: z.string().optional(),
-  dealAmount: z.number().optional(),
+  city: z.string().optional(),
+  address: z.string().optional(),
+  tagIds: z.array(z.string()).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -64,6 +66,8 @@ export async function POST(req: NextRequest) {
       email: body.email || undefined,
       source: body.source,
       comment: body.comment,
+      city: body.city,
+      address: body.address,
       actorId: user.id,
       createLeadOnDuplicate: false,
     });
@@ -73,10 +77,11 @@ export async function POST(req: NextRequest) {
         data: { managerId: user.id },
       });
     }
-    if (body.dealAmount) {
-      await prisma.contact.update({
-        where: { id: ingest.contactId },
-        data: { dealAmount: body.dealAmount },
+    const tagIds = [...new Set(body.tagIds || [])];
+    if (tagIds.length) {
+      await prisma.contactTag.createMany({
+        data: tagIds.map((tagId) => ({ contactId: ingest.contactId, tagId })),
+        skipDuplicates: true,
       });
     }
     const contact = await prisma.contact.findUnique({

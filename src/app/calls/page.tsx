@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { Phone, Headphones, Search } from "lucide-react";
+import { recordingReference } from "@/lib/recording-reference";
 import { RecordingPlayer } from "@/components/RecordingPlayer";
 import { requestZadarmaCall } from "@/lib/call-controls";
 import { AppShell } from "@/components/AppShell";
 import { ExportButton } from "@/components/ExportButton";
+import { ManagerFilter } from "@/components/ManagerFilter";
 import { useI18n } from "@/components/I18nProvider";
 import { useCallback, useEffect, useState } from "react";
 import { useRealtime } from "@/lib/use-realtime";
@@ -19,6 +21,7 @@ type Call = {
   duration: number;
   startedAt: string;
   recordingUrl?: string | null;
+  recordings?: Array<{ url: string }>;
   result?: string | null;
   contact?: { firstName: string; lastName: string; id: string };
   manager?: { name: string };
@@ -29,6 +32,7 @@ const RESULTS = ["CONTACTED", "NO_ANSWER", "CALLBACK", "INTERESTED", "DEMO_BOOKE
 export default function CallsPage() {
   const { t, localeTag } = useI18n();
   const [calls, setCalls] = useState<Call[]>([]);
+  const [manager, setManager] = useState("");
   const [modal, setModal] = useState<Call | null>(null);
   const [search, setSearch] = useState("");
   const [direction, setDirection] = useState("ALL");
@@ -40,14 +44,14 @@ export default function CallsPage() {
   const [callbackAt, setCallbackAt] = useState("");
   const load = useCallback(async () => {
     try {
-      const response = await fetch("/api/calls");
+      const response = await fetch(`/api/calls${manager ? `?manager=${encodeURIComponent(manager)}` : ""}`);
       if (!response.ok) throw new Error();
       const payload = await response.json();
       if (!Array.isArray(payload)) throw new Error();
       setCalls(payload);
     } catch { setError(t("calls.loadFailed")); }
     finally { setLoading(false); }
-  }, [t]);
+  }, [t, manager]);
 
   useEffect(() => {
     void load();
@@ -74,7 +78,7 @@ export default function CallsPage() {
 
   const visible = calls.filter((call) => {
     const text = `${call.contact?.firstName || ""} ${call.contact?.lastName || ""} ${call.fromNumber} ${call.toNumber} ${call.manager?.name || ""}`.toLowerCase();
-    return text.includes(search.toLowerCase()) && (direction === "ALL" || call.direction === direction) && (!recordingsOnly || Boolean(call.recordingUrl));
+    return text.includes(search.toLowerCase()) && (direction === "ALL" || call.direction === direction) && (!recordingsOnly || Boolean(recordingReference(call)));
   });
   async function dial(contactId: string) {
     setDialing(contactId); setError("");
@@ -87,11 +91,16 @@ export default function CallsPage() {
     <AppShell>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold">{t("calls.title")}</h1>
-        <ExportButton href="/api/export/calls" />
+        <div className="flex gap-3 items-end">
+          <div className="w-48">
+            <ManagerFilter value={manager} onChange={setManager} />
+          </div>
+          <ExportButton href="/api/export/calls" />
+        </div>
       </div>
       <p className="muted text-sm mb-5">{t("calls.subtitle")}</p>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-        {[ [t("calls.total"), calls.length], [t("callDirections.INBOUND"), calls.filter((c) => c.direction === "INBOUND").length], [t("callDirections.OUTBOUND"), calls.filter((c) => c.direction === "OUTBOUND").length], [t("calls.recording"), calls.filter((c) => c.recordingUrl).length] ].map(([label, count]) => <div key={label} className="card p-4"><div className="text-xs muted mb-2">{label}</div><div className="text-2xl font-semibold tabular-nums">{count}</div></div>)}
+        {[ [t("calls.total"), calls.length], [t("callDirections.INBOUND"), calls.filter((c) => c.direction === "INBOUND").length], [t("callDirections.OUTBOUND"), calls.filter((c) => c.direction === "OUTBOUND").length], [t("calls.recording"), calls.filter((c) => recordingReference(c)).length] ].map(([label, count]) => <div key={label} className="card p-4"><div className="text-xs muted mb-2">{label}</div><div className="text-2xl font-semibold tabular-nums">{count}</div></div>)}
       </div>
       <div className="card p-4 mb-4 flex flex-wrap gap-3 items-center">
         <div className="flex-1 min-w-48 relative"><Search size={16} className="absolute left-3 top-3 muted" /><input aria-label={t("calls.search")} placeholder={t("calls.search")} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" /></div>
@@ -126,7 +135,7 @@ export default function CallsPage() {
                 </td>
                 <td className="p-3">{c.manager?.name}</td>
                 <td className="p-3">
-                  {c.recordingUrl ? <RecordingPlayer callId={c.id} canDownload={canDownload} /> : t("common.dash")}
+                  {recordingReference(c) ? <RecordingPlayer callId={c.id} canDownload={canDownload} /> : t("common.dash")}
                 </td>
                 <td className="p-3">
                   <button className="chip" onClick={() => setModal(c)}>

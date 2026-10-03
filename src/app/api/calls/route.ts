@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { jsonError, requireUser } from "@/lib/api";
-import { canListenAllRecordings, scopeManagerId } from "@/lib/rbac";
+import { canListenAllRecordings, requestedManagerId, scopeManagerId } from "@/lib/rbac";
 import { originateCall } from "@/lib/telephony";
 import { z } from "zod";
 import { resolveOutboundSipAccount } from "@/lib/sip-config";
 import { ZadarmaError } from "@/lib/zadarma";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const user = await requireUser();
-    const managerId = scopeManagerId(user.role, user.id);
+    const managerId = requestedManagerId(user.role, user.id, req.nextUrl.searchParams.get("manager"));
     const calls = await prisma.call.findMany({
       where: managerId ? { managerId } : {},
       include: { contact: true, manager: { select: { id: true, name: true } }, recordings: true },

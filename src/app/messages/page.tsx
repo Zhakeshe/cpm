@@ -2,6 +2,7 @@
 
 import { AppShell } from "@/components/AppShell";
 import { QuickActions } from "@/components/QuickActions";
+import { ManagerFilter } from "@/components/ManagerFilter";
 import { useI18n } from "@/components/I18nProvider";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -16,7 +17,8 @@ type Contact = {
   pipelineStage?: { name: string } | null;
   manager?: { id: string; name: string } | null;
   comment?: string;
-  dealAmount?: string | number;
+  city?: string | null;
+  address?: string | null;
   source?: string;
 };
 
@@ -87,6 +89,7 @@ function MessagesInbox() {
   const { t, localeTag } = useI18n();
   const requestedContact = params.get("contact");
   const [list, setList] = useState<Conv[]>([]);
+  const [manager, setManager] = useState("");
   const [active, setActive] = useState<string | null>(null);
   const [thread, setThread] = useState<{ messages: Message[]; contact: Contact; serviceWindowExpiresAt: string | null } | null>(null);
   const [text, setText] = useState("");
@@ -104,8 +107,9 @@ function MessagesInbox() {
   const chunksRef = useRef<Blob[]>([]);
 
   const loadList = useCallback(async () => {
-    setList(await fetch("/api/messages").then((r) => r.json()));
-  }, []);
+    const qs = manager ? `?manager=${encodeURIComponent(manager)}` : "";
+    setList(await fetch(`/api/messages${qs}`).then((r) => r.json()));
+  }, [manager]);
 
   const open = useCallback(async (id: string) => {
     setActive(id);
@@ -257,6 +261,9 @@ function MessagesInbox() {
   return (
     <AppShell>
       <h1 className="text-2xl font-semibold mb-4">{t("messages.title")}</h1>
+      <div className="card p-4 mb-4 max-w-xs">
+        <ManagerFilter value={manager} onChange={setManager} />
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] gap-4 min-h-[70vh]">
         <div className="card overflow-y-auto">
           {list.map((c) => (
@@ -433,7 +440,7 @@ function MessagesInbox() {
               <div>{t("messages.source", { source: t(`sources.${thread.contact.source}`, thread.contact.source || "") })}</div>
               <div>{t("messages.manager", { name: thread.contact.manager?.name || t("common.dash") })}</div>
               <div>{t("messages.stage", { name: thread.contact.pipelineStage?.name || t("common.dash") })}</div>
-              <div>{t("messages.amount", { amount: Number(thread.contact.dealAmount || 0) })}</div>
+              <div>{t("pipeline.amount", { amount: [thread.contact.city, thread.contact.address].filter(Boolean).join(", ") || t("common.dash") })}</div>
               <div className="muted">{thread.contact.comment}</div>
               <div className="pt-2">
                 <QuickActions

@@ -1,10 +1,10 @@
 import { beforeEach, afterEach, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
-const mocks = vi.hoisted(() => ({ auth: vi.fn(), contact: vi.fn(), manager: vi.fn(), originate: vi.fn() }));
+const mocks = vi.hoisted(() => ({ auth: vi.fn(), contact: vi.fn(), manager: vi.fn(), originate: vi.fn(), calls: vi.fn() }));
 vi.mock("@/lib/api", () => ({ requireUser: mocks.auth, jsonError: (e: Error) => Response.json({ error: e.message }, { status: 401 }) }));
-vi.mock("@/lib/db", () => ({ prisma: { contact: { findUnique: mocks.contact }, user: { findUnique: mocks.manager } } }));
+vi.mock("@/lib/db", () => ({ prisma: { call: { findMany: mocks.calls }, contact: { findUnique: mocks.contact }, user: { findUnique: mocks.manager } } }));
 vi.mock("@/lib/telephony", () => ({ originateCall: mocks.originate }));
-import { POST } from "../src/app/api/calls/route";
+import { GET, POST } from "../src/app/api/calls/route";
 import { ZadarmaError } from "../src/lib/zadarma";
 const request = () => new NextRequest("http://localhost/api/calls", { method: "POST", body: JSON.stringify({ contactId: "c1", managerId: "other-user" }) });
 beforeEach(() => {
@@ -40,4 +40,17 @@ it("returns a real provider failure without success", async () => {
 it("prevents managers from calling contacts they cannot access", async () => {
   mocks.contact.mockResolvedValue({ managerId: "other", phoneNormalized: "77762010702" });
   expect((await POST(request())).status).toBe(403); expect(mocks.originate).not.toHaveBeenCalled();
+});
+
+it("a manager cannot select another manager's call history", async () => {
+  mocks.calls.mockResolvedValue([]);
+  const response = await GET(new NextRequest("http://localhost/api/calls?manager=other-user"));
+  expect(response.status).toBe(200);
+  expect(mocks.calls).toHaveBeenCalledWith(expect.objectContaining({ where: { managerId: "u1" }, include: expect.objectContaining({ recordings: true }) }));
+});
+it("a supervisor can explicitly filter call history by manager", async () => {
+  mocks.auth.mockResolvedValue({ id: "supervisor", role: "SUPERVISOR" });
+  mocks.calls.mockResolvedValue([]);
+  expect((await GET(new NextRequest("http://localhost/api/calls?manager=u2"))).status).toBe(200);
+  expect(mocks.calls).toHaveBeenCalledWith(expect.objectContaining({ where: { managerId: "u2" } }));
 });
