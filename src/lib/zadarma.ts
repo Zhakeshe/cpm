@@ -1,9 +1,11 @@
 import crypto from "crypto";
 import type { TelephonyWebhook } from "./telephony";
+import { normalizePhone } from "./phone";
+import { sipLoginSchema } from "./sip-config";
 
 export const ZADARMA_DEFAULTS = {
-  wsUrl: "wss://pbx.zadarma.com:8089/ws",
-  domain: "pbx.zadarma.com",
+  wsUrl: "",
+  domain: "sip.zadarma.com",
 };
 
 export function zadarmaCredentials() {
@@ -26,7 +28,7 @@ export function phpHttpBuildQuery(params: Record<string, string>) {
 }
 
 function enc(value: string) {
-  return encodeURIComponent(value).replace(/%20/g, "+");
+  return encodeURIComponent(value).replace(/[!'()*~]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`).replace(/%20/g, "+");
 }
 
 export function zadarmaNotifySignatureData(body: Record<string, string>) {
@@ -44,7 +46,7 @@ export function zadarmaNotifySignatureData(body: Record<string, string>) {
 }
 
 export function verifyZadarmaSignature(body: Record<string, string>, header: string | null, secret: string) {
-  if (!secret) return true;
+  if (!secret) return false;
   if (!header) return false;
   const expected = zadarmaHmacBase64(zadarmaNotifySignatureData(body), secret);
   try {
@@ -85,7 +87,7 @@ export function mapZadarmaNotify(body: Record<string, unknown>): TelephonyWebhoo
       from: field(body, "caller_id"),
       to: field(body, "called_did"),
       corporateNumber: field(body, "called_did"),
-      managerExtension: field(body, "internal") || undefined,
+      providerInternal: field(body, "internal") || undefined,
       status: "RINGING",
       startedAt: field(body, "call_start") || undefined,
     };
@@ -96,9 +98,9 @@ export function mapZadarmaNotify(body: Record<string, unknown>): TelephonyWebhoo
       event: "call.started",
       callId,
       direction: "OUTBOUND",
-      from: field(body, "internal") || field(body, "caller_id"),
+      from: field(body, "caller_id") || process.env.SIP_CORPORATE_NUMBER || "",
       to: field(body, "destination"),
-      managerExtension: field(body, "internal") || undefined,
+      providerInternal: field(body, "internal") || undefined,
       status: "RINGING",
       startedAt: field(body, "call_start") || undefined,
     };
@@ -108,10 +110,11 @@ export function mapZadarmaNotify(body: Record<string, unknown>): TelephonyWebhoo
     return {
       event: "call.answered",
       callId,
-      direction: field(body, "internal") && field(body, "destination") ? "OUTBOUND" : "INBOUND",
+      // NOTIFY_ANSWER does not encode direction; use the persisted provider call.
+      direction: undefined,
       from: field(body, "caller_id"),
       to: field(body, "destination"),
-      managerExtension: field(body, "internal") || undefined,
+      providerInternal: field(body, "internal") || undefined,
       status: "ANSWERED",
       startedAt: field(body, "call_start") || undefined,
       answeredAt: new Date().toISOString(),
@@ -125,10 +128,10 @@ export function mapZadarmaNotify(body: Record<string, unknown>): TelephonyWebhoo
       event: "call.ended",
       callId,
       direction: outbound ? "OUTBOUND" : "INBOUND",
-      from: outbound ? field(body, "internal") || field(body, "caller_id") : field(body, "caller_id"),
+      from: outbound ? field(body, "caller_id") || process.env.SIP_CORPORATE_NUMBER || "" : field(body, "caller_id"),
       to: outbound ? field(body, "destination") : field(body, "called_did"),
       corporateNumber: outbound ? undefined : field(body, "called_did"),
-      managerExtension: field(body, "last_internal") || field(body, "internal") || undefined,
+      providerInternal: field(body, "last_internal") || field(body, "internal") || undefined,
       status: dispositionStatus(field(body, "disposition")),
       startedAt: field(body, "call_start") || undefined,
       endedAt: new Date().toISOString(),
@@ -142,7 +145,7 @@ export function mapZadarmaNotify(body: Record<string, unknown>): TelephonyWebhoo
     return {
       event: "call.recording",
       callId,
-      direction: "INBOUND",
+      direction: undefined,
       from: "",
       to: "",
       recordingUrl: rec ? `zadarma:${rec}` : undefined,
@@ -152,29 +155,78 @@ export function mapZadarmaNotify(body: Record<string, unknown>): TelephonyWebhoo
   return null;
 }
 
+export class ZadarmaError extends Error {
+  constructor(public code: string, public status = 502) { super(code); }
+}
+
+export function zadarmaApiSignature(path: string, params: Record<string, string>, secret: string) {
+  const query = phpHttpBuildQuery(params);
+  return zadarmaHmacBase64(`${path}${query}${crypto.createHash("md5").update(query).digest("hex")}`, secret);
+}
+
 export async function zadarmaApiGet(path: string, params: Record<string, string>) {
   const { userKey, secret, configured } = zadarmaCredentials();
-  if (!configured) throw new Error("ZADARMA_NOT_CONFIGURED");
+  if (!configured) throw new ZadarmaError("ZADARMA_NOT_CONFIGURED", 503);
   const query = phpHttpBuildQuery(params);
   const method = path.startsWith("/") ? path : `/${path}`;
-  const sign = zadarmaHmacBase64(`${method}${query}${crypto.createHash("md5").update(query).digest("hex")}`, secret);
-  const url = `https://api.zadarma.com${method}${query ? `?${query}` : ""}`;
-  const res = await fetch(url, {
-    headers: { Authorization: `${userKey}:${sign}` },
-  });
-  const json = (await res.json().catch(() => ({}))) as { status?: string; message?: string; time?: number };
-  if (!res.ok || json.status === "error") {
-    throw new Error(json.message || `ZADARMA_${res.status}`);
+  const sign = zadarmaApiSignature(method, params, secret);
+  let res: Response;
+  try {
+    res = await fetch(`https://api.zadarma.com${method}${query ? `?${query}` : ""}`, {
+      headers: { Authorization: `${userKey}:${sign}` },
+      cache: "no-store",
+      signal: AbortSignal.timeout(15000),
+    });
+  } catch {
+    console.error("[ZADARMA] callback rejected", { message: "Provider unavailable or request timed out" });
+    // Do not retry: a timeout can happen after the provider accepts a callback.
+    throw new ZadarmaError("ZADARMA_API_ERROR");
+  }
+  const json = (await res.json().catch(() => null)) as { status?: string; message?: string; time?: number; link?: string; links?: string[]; key?: string } | null;
+  if (!res.ok || json?.status !== "success") {
+    // Provider messages are untrusted and may echo submitted fields.
+    const message = (typeof json?.message === "string" ? json.message : "Invalid provider response")
+      .split(secret).join("[redacted]").split(userKey).join("[redacted]").split(sign).join("[redacted]")
+      .replace(/\d{6,}/g, "[number]").replace(/[\r\n]/g, " ").slice(0, 250);
+    console.error("[ZADARMA] callback rejected", { httpStatus: res.status, message });
+    throw new ZadarmaError("ZADARMA_API_ERROR");
   }
   return json;
 }
 
-export async function zadarmaCallback(params: { fromExtension: string; toNumber: string }) {
-  const to = params.toNumber.replace(/\D/g, "");
-  const from = params.fromExtension.replace(/\D/g, "") || params.fromExtension;
-  const json = await zadarmaApiGet("/v1/request/callback/", { from, to, sip: from });
-  return {
-    mocked: false,
-    callId: `zadarma-${from}-${to}-${json.time || Date.now()}`,
-  };
+export function zadarmaDestination(input: string) {
+  if (!/^\+?[\d\s().-]+$/.test(input.trim())) throw new ZadarmaError("INVALID_DESTINATION", 400);
+  const destination = input.trim().startsWith("+") ? input.replace(/\D/g, "") : normalizePhone(input);
+  if (!/^[1-9]\d{7,14}$/.test(destination)) throw new ZadarmaError("INVALID_DESTINATION", 400);
+  return destination;
+}
+
+export function zadarmaCallbackParameters(params: { callbackEndpoint: string; toNumber: string }) {
+  if (!sipLoginSchema.safeParse(params.callbackEndpoint).success) throw new ZadarmaError("SIP_ACCOUNT_NOT_CONFIGURED", 503);
+  const to = zadarmaDestination(params.toNumber);
+  const corporate = normalizePhone(process.env.SIP_CORPORATE_NUMBER);
+  if (!/^[1-9]\d{7,14}$/.test(corporate)) throw new ZadarmaError("ZADARMA_NOT_CONFIGURED", 503);
+  if (to === corporate || to === params.callbackEndpoint) throw new ZadarmaError("INVALID_DESTINATION", 400);
+  // CallerID is configured on the provider SIP/PBX account, not a callback parameter.
+  // Explicit operator-requested domestic dialing mode; canonical CRM numbers stay international.
+  const dialMode = process.env.ZADARMA_DESTINATION_FORMAT || "international";
+  if (dialMode !== "international" && dialMode !== "kz-domestic") throw new ZadarmaError("ZADARMA_NOT_CONFIGURED", 503);
+  const dialDestination = dialMode === "kz-domestic" && /^7[67]\d{9}$/.test(to) ? `8${to.slice(1)}` : to;
+  return { from: params.callbackEndpoint, to: dialDestination, sip: params.callbackEndpoint };
+}
+
+export async function zadarmaCallback(params: { managerId: string; sipAccount: string; callbackEndpoint: string; toNumber: string }) {
+  const request = zadarmaCallbackParameters(params);
+  console.info("[ZADARMA] callback requested", {
+    managerId: params.managerId, destination: `${request.to.slice(0, 2)}***${request.to.slice(-2)}`, sipAccount: params.sipAccount,
+  });
+  await zadarmaApiGet("/v1/request/callback/", request);
+  console.info("[ZADARMA] callback accepted", { managerId: params.managerId });
+  // The documented response has no call ID. Only webhooks create Call records.
+  return { accepted: true, direction: "OUTBOUND" as const };
+}
+
+/** Transport retry identity; START and INTERNAL are distinct provider events. */
+export function zadarmaWebhookEventId(body: Record<string, string>) {
+  return `${body.pbx_call_id}:${body.event}:${body.internal || ""}:${body.call_id_with_rec || ""}`;
 }

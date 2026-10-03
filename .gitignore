@@ -12,3 +12,7 @@ prisma/*.db
 tsconfig.tsbuildinfo
 dump.rdb
 tsconfig.server.tsbuildinfo
+
+# Keep all environment credentials outside git and Docker build context.
+.env.*
+!.env.example

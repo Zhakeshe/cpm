@@ -175,7 +175,9 @@ model User {
   isActive           Boolean  @default(true)
   acceptsNewLeads    Boolean  @default(true)
   isOnline           Boolean  @default(true)
+  /// Logical CRM routing label; not a provider SIP login or verified PBX extension.
   sipExtension       String?
+  /// Explicit real provider authentication login; password lives in server env.
   sipUsername        String?
   totpSecret         String?
   totpEnabled        Boolean  @default(false)

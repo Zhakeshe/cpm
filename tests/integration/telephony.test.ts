@@ -1,5 +1,6 @@
-import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma, resetDatabase, seedBaseline } from "./helpers";
+import { mapZadarmaNotify } from "../../src/lib/zadarma";
 import { handleTelephonyEvent } from "../../src/lib/telephony";
 
 describe("SIP телефония", () => {
@@ -144,4 +145,41 @@ describe("SIP телефония", () => {
     expect(call.recordingUrl).toBe("zadarma:rec-600");
     expect(await prisma.callRecording.count({ where: { callId: call.id } })).toBe(1);
   });
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("serializes concurrent duplicate delivery for one provider call", async () => {
+    const event = { event: "call.started" as const, callId: "concurrent-p", direction: "INBOUND" as const,
+      from: "77762010702", to: "77172696753" };
+    await Promise.all([handleTelephonyEvent(prisma, event), handleTelephonyEvent(prisma, event)]);
+    expect(await prisma.call.count()).toBe(1);
+    expect(await prisma.activity.count({ where: { type: "CALL_IN" } })).toBe(1);
+    expect(await prisma.notification.count({ where: { type: "INCOMING_CALL" } })).toBe(1);
+  });
+
+  it("real account mapping keeps outbound notification, answer and recording direction correct", async () => {
+    vi.stubEnv("SIP_ACCOUNTS_JSON", '{"102":{"username":"200223"}}');
+    const start = mapZadarmaNotify({ event: "NOTIFY_OUT_START", pbx_call_id: "out-p", internal: "200223", destination: "77762010702" })!;
+    await handleTelephonyEvent(prisma, start);
+    await handleTelephonyEvent(prisma, mapZadarmaNotify({ event: "NOTIFY_ANSWER", pbx_call_id: "out-p", internal: "200223", destination: "77762010702" })!);
+    await handleTelephonyEvent(prisma, mapZadarmaNotify({ event: "NOTIFY_OUT_END", pbx_call_id: "out-p", internal: "200223", destination: "77762010702", disposition: "answered", duration: "12" })!);
+    await handleTelephonyEvent(prisma, mapZadarmaNotify({ event: "NOTIFY_RECORD", pbx_call_id: "out-p", call_id_with_rec: "rec-p" })!);
+    await handleTelephonyEvent(prisma, start);
+    const call = await prisma.call.findUniqueOrThrow({ where: { externalCallId: "out-p" } });
+    expect(call.direction).toBe("OUTBOUND"); expect(call.managerId).toBe("mgr-2");
+    expect(call.status).toBe("ANSWERED"); expect(call.duration).toBe(12); expect(call.recordingUrl).toBe("zadarma:rec-p");
+    expect(await prisma.call.count()).toBe(1);
+    expect(await prisma.notification.count({ where: { type: "INCOMING_CALL" } })).toBe(0);
+  });
+
+  it("preserves INTERNAL routing after START and inbound ANSWER", async () => {
+    vi.stubEnv("SIP_ACCOUNTS_JSON", '{"102":{"username":"200223","pbxExtension":"107"}}');
+    await handleTelephonyEvent(prisma, mapZadarmaNotify({ event: "NOTIFY_START", pbx_call_id: "in-p", caller_id: "77762010702", called_did: "77172696753" })!);
+    await handleTelephonyEvent(prisma, mapZadarmaNotify({ event: "NOTIFY_INTERNAL", pbx_call_id: "in-p", internal: "107", caller_id: "77762010702", called_did: "77172696753" })!);
+    await handleTelephonyEvent(prisma, mapZadarmaNotify({ event: "NOTIFY_ANSWER", pbx_call_id: "in-p", internal: "107", caller_id: "77762010702", destination: "107" })!);
+    const call = await prisma.call.findUniqueOrThrow({ where: { externalCallId: "in-p" } });
+    expect(call.direction).toBe("INBOUND"); expect(call.managerId).toBe("mgr-2"); expect(call.toNumber).toBe("77172696753");
+    expect(await prisma.call.count()).toBe(1);
+    expect(await prisma.notification.count({ where: { type: "INCOMING_CALL", userId: "mgr-2" } })).toBe(1);
+  });
+
 });

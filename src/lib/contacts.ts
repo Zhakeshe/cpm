@@ -44,6 +44,8 @@ export type IngestContactInput = {
   formName?: string;
   actorId?: string | null;
   createLeadOnDuplicate?: boolean;
+  /** Server-resolved active manager, applied only when creating a new contact. */
+  newContactManagerId?: string | null;
 };
 
 export type IngestResult = {
@@ -134,7 +136,9 @@ export async function ingestContact(db: Db, input: IngestContactInput): Promise<
     };
   }
 
-  const assigned = await nextManager(db);
+  const assigned = input.newContactManagerId
+    ? { id: input.newContactManagerId }
+    : await nextManager(db);
   const contact = await db.contact.create({
     data: {
       firstName: input.firstName || "Клиент",

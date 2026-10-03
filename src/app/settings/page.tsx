@@ -321,9 +321,8 @@ export default function SettingsPage() {
     Array<{ id?: string; name: string; slug: string; order: number; isActive: boolean; requiredFields?: string[] }>
   >([]);
   const [sip, setSip] = useState({
-    wsUrl: "wss://pbx.zadarma.com:8089/ws",
-    domain: "pbx.zadarma.com",
-    extensions: '{\n  "101": "",\n  "102": "",\n  "103": "",\n  "104": "",\n  "105": ""\n}',
+    wsUrl: "",
+    domain: "sip.zadarma.com",
   });
   const [sipNotice, setSipNotice] = useState("");
   const [err, setErr] = useState("");
@@ -335,11 +334,10 @@ export default function SettingsPage() {
         const payload = await r.json();
         setData(payload);
         const telephony = (payload.integrations || []).find((i: Integration) => i.type === "TELEPHONY");
-        const cfg = (telephony?.config || {}) as { wsUrl?: string; domain?: string; extensions?: unknown };
+        const cfg = (telephony?.config || {}) as { wsUrl?: string; domain?: string };
         setSip({
-          wsUrl: cfg.wsUrl || "wss://pbx.zadarma.com:8089/ws",
-          domain: cfg.domain || "pbx.zadarma.com",
-          extensions: JSON.stringify(cfg.extensions || { "101": "", "102": "", "103": "", "104": "", "105": "" }, null, 2),
+          wsUrl: cfg.wsUrl || "",
+          domain: cfg.domain || "sip.zadarma.com",
         });
       }
     });
@@ -361,13 +359,6 @@ export default function SettingsPage() {
 
   async function saveSip() {
     setSipNotice("");
-    let extensions: unknown = {};
-    try {
-      extensions = JSON.parse(sip.extensions || "{}");
-    } catch {
-      setSipNotice(t("settings.sipFailed"));
-      return;
-    }
     const res = await fetch("/api/settings", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -375,7 +366,7 @@ export default function SettingsPage() {
         integration: {
           type: "TELEPHONY",
           status: sip.wsUrl ? "CONNECTED" : "DISCONNECTED",
-          config: { wsUrl: sip.wsUrl, domain: sip.domain, extensions },
+          config: { wsUrl: sip.wsUrl, domain: sip.domain },
         },
       }),
     });
@@ -453,7 +444,7 @@ export default function SettingsPage() {
         )}
         <input placeholder={t("settings.sipWs")} value={sip.wsUrl} onChange={(e) => setSip({ ...sip, wsUrl: e.target.value })} />
         <input placeholder={t("settings.sipDomain")} value={sip.domain} onChange={(e) => setSip({ ...sip, domain: e.target.value })} />
-        <textarea rows={5} placeholder={t("settings.sipExt")} value={sip.extensions} onChange={(e) => setSip({ ...sip, extensions: e.target.value })} />
+        <p className="muted text-sm">SIP accounts и пароли задаются администратором в server env. CRM extension и SIP login назначаются явно.</p>
         <button className="rounded-xl bg-[#2563eb] px-4 py-2" onClick={saveSip}>
           {t("settings.saveSip")}
         </button>

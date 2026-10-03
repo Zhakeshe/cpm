@@ -7,6 +7,7 @@ import {
   mapZadarmaNotify,
   verifyZadarmaSignature,
   zadarmaCredentials,
+  zadarmaWebhookEventId,
 } from "@/lib/zadarma";
 
 export async function GET(req: NextRequest) {
@@ -35,12 +36,16 @@ export async function POST(req: NextRequest) {
     const fields = Object.fromEntries(Object.entries(payload).map(([k, v]) => [k, v == null ? "" : String(v)]));
     const secret = zadarmaCredentials().secret;
     const signature = req.headers.get("signature") || req.headers.get("Signature");
-    if (secret && !verifyZadarmaSignature(fields, signature, secret)) {
+    const eventType = /^[A-Z_]{1,40}$/.test(fields.event || "") ? fields.event : "UNKNOWN";
+    console.info("[ZADARMA] webhook received", { eventType, signaturePresent: Boolean(signature) });
+    if (!verifyZadarmaSignature(fields, signature, secret)) {
+      console.warn("[ZADARMA] webhook rejected", { eventType, reason: "INVALID_SIGNATURE" });
       return NextResponse.json({ error: "INVALID_SIGNATURE" }, { status: 401 });
     }
     const mapped = mapZadarmaNotify(payload);
     if (!mapped) return NextResponse.json({ ok: true, ignored: payload.event });
-    const composite = `${mapped.callId}:${mapped.event}`;
+    // Preserve INTERNAL after START, per-extension routing and distinct recordings.
+    const composite = zadarmaWebhookEventId(fields);
     try {
       const saved = await prisma.webhookEvent.create({
         data: {
@@ -51,6 +56,7 @@ export async function POST(req: NextRequest) {
         },
       });
       await enqueueWebhook({ webhookEventId: saved.id, provider: "telephony" });
+      console.info("[ZADARMA] webhook accepted", { eventType, webhookEventId: saved.id });
     } catch (err) {
       if ((err as { code?: string }).code === "P2002") {
         return NextResponse.json({ ok: true, duplicate: true });
@@ -62,7 +68,7 @@ export async function POST(req: NextRequest) {
 
   const secret = process.env.SIP_WEBHOOK_SECRET || "";
   const header = req.headers.get("x-sip-secret") || req.headers.get("authorization")?.replace("Bearer ", "") || null;
-  if (secret && !verifySipSecret(header, secret)) {
+  if (!verifySipSecret(header, secret)) {
     return NextResponse.json({ error: "INVALID_SECRET" }, { status: 401 });
   }
   const eventId = String(payload.callId || payload.id || "");

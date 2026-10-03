@@ -24,7 +24,6 @@ import {
   FileText,
 } from "lucide-react";
 import { useRealtime, usePresence } from "@/lib/use-realtime";
-import { Softphone } from "@/components/Softphone";
 import { LOCALES, useI18n, type Locale } from "@/components/I18nProvider";
 
 const NAV = [
@@ -37,7 +36,7 @@ const NAV = [
   { href: "/tasks", key: "nav.tasks", icon: Shield },
   { href: "/meetings", key: "nav.meetings", icon: Calendar },
   { href: "/quotes", key: "nav.quotes", icon: FileText },
-  { href: "/calls", key: "nav.calls", icon: Phone, admin: true },
+  { href: "/calls", key: "nav.calls", icon: Phone },
   { href: "/catalog", key: "nav.catalog", icon: Package, admin: true },
   { href: "/sla", key: "nav.sla", icon: Clock, admin: true },
   { href: "/analytics", key: "nav.analytics", icon: BarChart3, admin: true },
@@ -82,7 +81,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       setToast(n.title);
       setTimeout(() => setToast(null), 6000);
     },
-    "call:incoming": (payload: { contactId?: string }) => {
+    "call:outgoing": () => {
+      setToast(t("contact.sipStarted"));
+      setTimeout(() => setToast(null), 6000);
+    },
+    "call:incoming": (payload: { contactId?: string; direction?: string }) => {
+      if (payload.direction === "OUTBOUND") return;
       setIncoming(payload);
       setTimeout(() => setIncoming(null), 20000);
     },
@@ -206,7 +210,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {toast && (
           <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 card px-4 py-3 text-sm">{toast}</div>
         )}
-        <Softphone />
         <main className="p-4 md:p-6">{children}</main>
       </div>
     </div>

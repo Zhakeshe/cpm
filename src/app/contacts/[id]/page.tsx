@@ -7,6 +7,11 @@ import { TagChips } from "@/components/TagChips";
 import { useI18n } from "@/components/I18nProvider";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
+import { recordingReference } from "@/lib/recording-reference";
+import { RecordingPlayer } from "@/components/RecordingPlayer";
+import { requestZadarmaCall } from "@/lib/call-controls";
+import { useRealtime } from "@/lib/use-realtime";
 
 type Stage = { id: string; name: string; requiredFields: string[]; isWon?: boolean; isLost?: boolean };
 
@@ -34,7 +39,7 @@ type Contact = {
   company?: { id: string; name: string } | null;
   pipelineStage?: { id: string; name: string } | null;
   tags?: Array<{ tag: { id: string; name: string; color: string } }>;
-  calls: Array<{ id: string; direction: string; duration: number; recordingUrl?: string | null; status: string }>;
+  calls: Array<{ id: string; direction: string; duration: number; recordingUrl?: string | null; recordings?: Array<{ url: string }>; status: string }>;
   tasks: Array<{ id: string; description: string; dueAt: string; status: string; type: string }>;
   meetings: Array<{ id: string; startsAt: string; status: string; format: string }>;
 };
@@ -51,6 +56,20 @@ export default function ContactPage() {
   const [pendingStage, setPendingStage] = useState<Stage | null>(null);
   const [reason, setReason] = useState("");
   const [calling, setCalling] = useState(false);
+  const [callState, setCallState] = useState<"idle" | "pending" | "started">("idle");
+  useEffect(() => {
+    if (callState === "idle") return;
+    const timer = setTimeout(() => setCallState("idle"), 45000);
+    return () => clearTimeout(timer);
+  }, [callState]);
+  useRealtime({
+    "call:outgoing": (event: { contactId?: string }) => {
+      if (event.contactId !== params.id) return;
+      setCallState("started");
+      setNotice(t("contact.sipStarted"));
+    },
+    "call:updated": () => { void load(); },
+  });
   const [allTags, setAllTags] = useState<Array<{ id: string; name: string; color: string }>>([]);
 
   const load = useCallback(async () => {
@@ -127,18 +146,18 @@ export default function ContactPage() {
   async function sipCall() {
     setProblem("");
     setCalling(true);
-    const res = await fetch("/api/calls", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contactId: c?.id }),
-    });
-    setCalling(false);
-    if (!res.ok) {
-      setProblem(t("contact.sipCallFailed"));
-      return;
+    setNotice("");
+    try {
+      await requestZadarmaCall(c!.id);
+      setCallState((state) => state === "started" ? state : "pending");
+      setNotice(t("contact.sipAccepted"));
+      // Acceptance starts the callback to the manager, not a confirmed client call.
+      await load();
+    } catch (error) {
+      setProblem(t(`contact.callErrors.${(error as Error).message}`, t("contact.sipCallFailed")));
+    } finally {
+      setCalling(false);
     }
-    setNotice(t("contact.sipCalling"));
-    load();
   }
 
   async function confirmOutcome() {
@@ -166,8 +185,8 @@ export default function ContactPage() {
                 </h1>
                 <div className="muted">{c.phoneDisplay}</div>
               </div>
-              <button type="button" className="rounded-xl bg-[#16a34a] px-4 py-2 h-fit" disabled={calling} onClick={sipCall}>
-                {calling ? t("contact.sipCalling") : t("contact.sipCall")}
+              <button type="button" className="rounded-xl bg-[#16a34a] px-4 py-2 h-fit" disabled={calling || callState === "pending"} onClick={sipCall}>
+                {calling || callState === "pending" ? t("contact.sipCalling") : callState === "started" ? t("contact.sipStarted") : t("contact.sipCall")}
               </button>
             </div>
 
@@ -334,7 +353,7 @@ export default function ContactPage() {
                 <div className="text-sm">
                   {t(`callDirections.${call.direction}`, call.direction)} · {t(`callStatuses.${call.status}`, call.status)} · {call.duration}s
                 </div>
-                {call.recordingUrl && <audio controls src={call.recordingUrl} className="h-8" />}
+                {recordingReference(call) && <RecordingPlayer callId={call.id} />}
               </div>
             ))}
           </div>

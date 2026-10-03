@@ -24,8 +24,8 @@ npm run dev
 
 | Роль | Email | Пароль |
 | --- | --- | --- |
-| Руководитель | admin@crm.local | Admin123! |
-| Менеджеры 1–5 | manager1@crm.local … manager5@crm.local | Manager123! |
+| Руководитель | admin@crm.local | <LOCAL_DEMO_PASSWORD> |
+| Менеджеры 1–5 | manager1@crm.local … manager5@crm.local | <LOCAL_DEMO_PASSWORD> |
 
 SIP-внутренние номера: 101–105.
 
@@ -65,7 +65,7 @@ Caddy слушает `:80`/`:443` для `quantum.ushqn.com` и ставит Let
 
 4. Verify Token:
 
-   `quantum_waba_verify_2026`
+   `<server WHATSAPP_VERIFY_TOKEN>`
 
    Он должен совпадать с `WHATSAPP_VERIFY_TOKEN` в `.env`.
 
@@ -88,7 +88,7 @@ npm run test:integration
 Проверка verification без UI:
 
 ```bash
-curl -sS "https://quantum.ushqn.com/api/webhooks/whatsapp?hub.mode=subscribe&hub.verify_token=quantum_waba_verify_2026&hub.challenge=123456"
+curl -sS "https://quantum.ushqn.com/api/webhooks/whatsapp?hub.mode=subscribe&hub.verify_token=<server WHATSAPP_VERIFY_TOKEN>&hub.challenge=123456"
 # ожидается: 123456
 ```
 - Исходящие: `POST /api/messages/send`
@@ -122,19 +122,13 @@ curl -sS "https://quantum.ushqn.com/api/webhooks/whatsapp?hub.mode=subscribe&hub
 }
 ```
 
-Click-to-call: `POST /api/calls` с `contactId`. Если `SIP_ORIGINATE_URL` не задан, создаётся локальное событие звонка (dev).
+Click-to-call: `POST /api/calls` с `contactId` инициирует реальный Zadarma callback к SIP account текущего менеджера. `202 { accepted: true, direction: "OUTBOUND" }` означает принятие запроса, а не ответ клиента. Локальные Call и входящие уведомления не создаются. Реальные записи/статусы поступают через подписанные PBX webhook с `pbx_call_id`.
 
-**WebRTC-софтфон.** Менеджер говорит из браузера через гарнитуру. Креды не зашиты в фронтенд: `GET /api/sip/credentials` отдаёт залогиненному пользователю WebSocket-URL, SIP URI и пароль его внутреннего номера. Настраивается в Integration `TELEPHONY`:
+CRM logical extension и реальный SIP login — разные значения. Аккаунты и пароли задаются в server env `SIP_ACCOUNTS_JSON`, назначения — явно по ID пользователя через `SIP_USER_MAPPING_JSON`. Не назначайте аккаунты по порядку создания менеджеров. Не храните пароли в Integration JSON: он больше не используется для credentials.
 
-```json
-{
-  "wsUrl": "wss://pbx.example.com:8089/ws",
-  "domain": "pbx.example.com",
-  "extensions": { "101": "secret-101", "102": "secret-102" }
-}
-```
+Для callback менеджер должен быть зарегистрирован в MicroSIP/телефоне или в настроенном браузерном софтфоне и ответить на callback. Для существующего JsSIP нужны подтверждённые провайдером `SIP_WS_URL` и `SIP_DOMAIN` для конкретного типа аккаунта. Обычный SIP-сервер не доказывает доступность WebSocket. Официальный Zadarma WebRTC widget использует отдельный API key flow; это не тот же протокол, что JsSIP registration.
 
-Пока настройки нет, виджет софтфона просто не показывается.
+Полная конфигурация, команды развёртывания и ручные проверки: [docs/ZADARMA.md](docs/ZADARMA.md).
 
 ### Meta Lead Ads
 

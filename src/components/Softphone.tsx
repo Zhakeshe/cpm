@@ -1,11 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Phone, PhoneOff, PhoneIncoming } from "lucide-react";
+import { Phone, PhoneOff, PhoneIncoming, Mic, MicOff, Volume2 } from "lucide-react";
+import { CallTones } from "@/lib/call-tones";
+import { toggleMicrophone } from "@/lib/call-controls";
 import { useI18n } from "@/components/I18nProvider";
 
 type SipConfig =
   | { enabled: false; reason: string }
+  | { enabled: true; mode: "zadarma-widget" }
   | {
       enabled: true;
       wsUrl: string;
@@ -37,7 +40,10 @@ type JsSipSession = {
     mediaConstraints?: { audio: boolean; video: boolean };
     pcConfig?: { iceServers?: Array<{ urls: string }> };
   }) => void;
-  terminate: () => void;
+  terminate: (options?: { status_code?: number }) => void;
+  isMuted: () => { audio: boolean };
+  mute: (options: { audio: boolean }) => void;
+  unmute: (options: { audio: boolean }) => void;
   connection?: RTCPeerConnection;
   remote_identity?: { uri?: { user?: string } };
 };
@@ -48,9 +54,52 @@ type JsSipSession = {
  */
 export function Softphone() {
   const { t } = useI18n();
+  const [config, setConfig] = useState<SipConfig | null>(null);
+  const [error, setError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    setError(false);
+    fetch("/api/sip/credentials", { cache: "no-store" }).then(async (response) => {
+      if (!response.ok) throw new Error("PHONE_CONFIG_ERROR");
+      const result: SipConfig = await response.json();
+      if (!cancelled) setConfig(result);
+    }).catch(() => { if (!cancelled) setError(true); });
+    return () => { cancelled = true; };
+  }, [attempt]);
+  if (error) return <div className="fixed bottom-4 right-4 z-40 card p-3 text-sm">
+    {t("softphone.error")} <button className="chip ml-2" onClick={() => setAttempt((n) => n + 1)}>{t("calls.retryRecording")}</button>
+  </div>;
+  if (!config?.enabled) return null;
+  if ("mode" in config) return <ZadarmaPhone />;
+  return <NativeSoftphone config={config} />;
+}
+
+function ZadarmaPhone() {
+  const { t } = useI18n();
+  const [minimized, setMinimized] = useState(false);
+  const [revision, setRevision] = useState(0);
+  return <section className="fixed bottom-2 right-2 z-40 card shadow-2xl overflow-hidden w-[360px] max-w-[calc(100vw-1rem)]">
+    <div className="flex items-center justify-between px-3 py-2 text-sm">
+      <span>Zadarma WebRTC</span>
+      <div className="flex gap-2">
+        <button className="chip" onClick={() => setRevision((n) => n + 1)}>{t("softphone.reloadPhone")}</button>
+        <button className="chip" aria-expanded={!minimized} onClick={() => setMinimized((v) => !v)}>{t(minimized ? "softphone.showPhone" : "softphone.hidePhone")}</button>
+      </div>
+    </div>
+    <iframe key={revision} src="/api/sip/widget" title="Zadarma WebRTC" allow="microphone; autoplay" className="w-full border-0" style={{ height: minimized ? 60 : 430 }} />
+  </section>;
+}
+
+function NativeSoftphone({ config }: { config: Extract<SipConfig, { wsUrl: string }> }) {
+  const { t } = useI18n();
   const [state, setState] = useState<CallState>("idle");
+  const [muted, setMuted] = useState(false);
+  const [seconds, setSeconds] = useState(0);
+  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [callbackPending, setCallbackPending] = useState(false);
+  const tonesRef = useRef<CallTones | null>(null);
   const [peer, setPeer] = useState<string>("");
-  const [disabledReason, setDisabledReason] = useState<string | null>(null);
   const uaRef = useRef<UaLike | null>(null);
   const sessionRef = useRef<JsSipSession | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -58,22 +107,59 @@ export function Softphone() {
   const attachAudio = useCallback((session: JsSipSession) => {
     const pc = session.connection;
     if (!pc || !audioRef.current) return;
-    pc.ontrack = (event) => {
-      if (audioRef.current) audioRef.current.srcObject = event.streams[0];
+    const attach = (stream: MediaStream) => {
+      if (!audioRef.current) return;
+      audioRef.current.srcObject = stream;
+      void audioRef.current.play().catch(() => setSoundEnabled(false));
+    };
+    pc.ontrack = (event) => attach(event.streams[0] || new MediaStream([event.track]));
+    const tracks = pc.getReceivers().map((receiver) => receiver.track).filter((track) => track.kind === "audio");
+    if (tracks.length) attach(new MediaStream(tracks));
+  }, []);
+
+  useEffect(() => {
+    const tones = new CallTones(); tonesRef.current = tones;
+    let expiry: ReturnType<typeof setTimeout> | undefined;
+    const cancel = () => { setCallbackPending(false); if (expiry) clearTimeout(expiry); };
+    const pending = () => {
+      setCallbackPending(true);
+      if (expiry) clearTimeout(expiry);
+      expiry = setTimeout(cancel, 45000);
+    };
+    const unlock = () => { void tones.unlock().then(setSoundEnabled).catch(() => setSoundEnabled(false)); };
+    window.addEventListener("pointerdown", unlock, { once: true });
+    window.addEventListener("crm:callback-pending", pending);
+    window.addEventListener("crm:callback-cancel", cancel);
+    return () => {
+      if (expiry) clearTimeout(expiry);
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("crm:callback-pending", pending);
+      window.removeEventListener("crm:callback-cancel", cancel);
+      tones.close();
     };
   }, []);
 
   useEffect(() => {
+    if (soundEnabled && (state === "incoming" || (callbackPending && state !== "in-call"))) {
+      tonesRef.current?.start(callbackPending ? "outgoing" : "incoming");
+    } else tonesRef.current?.stop();
+    return () => tonesRef.current?.stop();
+  }, [state, callbackPending, soundEnabled]);
+
+  useEffect(() => {
+    if (state !== "in-call") { setSeconds(0); return; }
+    const start = Date.now();
+    const timer = setInterval(() => setSeconds(Math.floor((Date.now() - start) / 1000)), 1000);
+    return () => clearInterval(timer);
+  }, [state]);
+
+  useEffect(() => {
     let cancelled = false;
+    const audioElement = audioRef.current;
 
     async function boot() {
-      const config: SipConfig = await fetch("/api/sip/credentials").then((r) => r.json());
-      if (cancelled) return;
-      if (!config.enabled) {
-        setDisabledReason(config.reason);
-        return;
-      }
       const JsSIP = (await import("jssip")).default;
+      if (cancelled) return;
       const socket = new JsSIP.WebSocketInterface(config.wsUrl);
       const ua = new JsSIP.UA({
         sockets: [socket],
@@ -90,10 +176,21 @@ export function Softphone() {
       ua.on("registrationFailed", () => setState("error"));
       ua.on("newRTCSession", (event) => {
         const session = event.session;
+        if (sessionRef.current) { session.terminate({ status_code: 486 }); return; }
         const handle = session as unknown as JsSipSession;
         sessionRef.current = handle;
+        setMuted(false);
         setPeer(handle.remote_identity?.uri?.user || "");
         if (event.originator === "remote") setState("incoming");
+        const finish = () => {
+          if (sessionRef.current !== handle) return;
+          sessionRef.current = null;
+          setCallbackPending(false); setMuted(false); setState("ready");
+          if (audioRef.current) audioRef.current.srcObject = null;
+        };
+        session.on("muted", () => setMuted(handle.isMuted().audio));
+        session.on("unmuted", () => setMuted(handle.isMuted().audio));
+        session.on("peerconnection", () => attachAudio(handle));
         session.on("accepted", () => {
           setState("in-call");
           attachAudio(handle);
@@ -102,8 +199,8 @@ export function Softphone() {
           setState("in-call");
           attachAudio(handle);
         });
-        session.on("ended", () => setState("ready"));
-        session.on("failed", () => setState("ready"));
+        session.on("ended", finish);
+        session.on("failed", finish);
       });
 
       setState("registering");
@@ -113,13 +210,16 @@ export function Softphone() {
     boot().catch(() => setState("error"));
     return () => {
       cancelled = true;
+      sessionRef.current?.terminate();
+      sessionRef.current = null;
       uaRef.current?.stop();
+      if (audioElement) audioElement.srcObject = null;
     };
-  }, [attachAudio]);
+  }, [attachAudio, config]);
 
-  if (disabledReason) return null;
 
   function answer() {
+    tonesRef.current?.stop();
     sessionRef.current?.answer({
       mediaConstraints: { audio: true, video: false },
       pcConfig: { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] },
@@ -127,18 +227,20 @@ export function Softphone() {
   }
   function hangup() {
     sessionRef.current?.terminate();
-    setState("ready");
+    tonesRef.current?.stop();
+    setCallbackPending(false);
+    setMuted(false); setState("ready");
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-40 card px-4 py-3 w-64 space-y-2">
+    <div className="fixed bottom-4 right-4 z-40 card px-5 py-4 w-80 max-w-[calc(100vw-2rem)] space-y-3 shadow-2xl">
       <audio ref={audioRef} autoPlay />
       <div className="flex items-center gap-2 text-sm">
         <Phone size={14} />
         <span className="muted">
           {state === "ready" && t("softphone.ready")}
           {state === "registering" && t("softphone.registering")}
-          {state === "incoming" && t("softphone.incoming")}
+          {state === "incoming" && (callbackPending ? t("softphone.callback") : t("softphone.incoming"))}
           {state === "in-call" && t("softphone.inCall")}
           {state === "error" && t("softphone.error")}
           {state === "idle" && t("softphone.idle")}
@@ -155,6 +257,16 @@ export function Softphone() {
           </button>
         </div>
       )}
+      {!soundEnabled && <button className="chip flex gap-2 items-center text-xs" onClick={() => {
+        void tonesRef.current?.unlock().then(setSoundEnabled).catch(() => setSoundEnabled(false));
+        void audioRef.current?.play().catch(() => {});
+      }}><Volume2 size={14} />{t("softphone.enableSound")}</button>}
+      {state === "in-call" && <div className="flex items-center justify-between gap-2">
+        <span className="font-mono text-lg tabular-nums">{Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}</span>
+        <button className="chip flex items-center gap-2" aria-pressed={muted} onClick={() => {
+          if (sessionRef.current) setMuted(toggleMicrophone(sessionRef.current));
+        }}>{muted ? <MicOff size={16} /> : <Mic size={16} />}{t(muted ? "softphone.unmute" : "softphone.mute")}</button>
+      </div>}
       {state === "in-call" && (
         <button className="rounded-xl bg-[#dc2626] px-3 py-2 text-sm flex items-center gap-1" onClick={hangup}>
           <PhoneOff size={14} /> {t("softphone.hangup")}

@@ -7,8 +7,13 @@ import { ensureTrackingChannels } from "../src/lib/tracking";
 const prisma = new PrismaClient();
 
 async function main() {
-  const passwordHash = await bcrypt.hash("Admin123!", 12);
-  const managerHash = await bcrypt.hash("Manager123!", 12);
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD;
+  const managerPassword = process.env.SEED_MANAGER_PASSWORD;
+  if (!adminPassword || !managerPassword) {
+    throw new Error("Set SEED_ADMIN_PASSWORD and SEED_MANAGER_PASSWORD before explicitly running seed.");
+  }
+  const passwordHash = await bcrypt.hash(adminPassword, 12);
+  const managerHash = await bcrypt.hash(managerPassword, 12);
 
   const admin = await prisma.user.upsert({
     where: { email: "admin@crm.local" },
