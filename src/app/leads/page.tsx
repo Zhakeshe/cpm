@@ -38,6 +38,14 @@ const SOURCES = [
   "OTHER",
 ];
 
+const TAG_COLORS = ["#2563eb", "#059669", "#d97706", "#dc2626", "#7c3aed", "#db2777", "#0891b2"];
+
+function tagBadgeColor(tag: { name: string; color: string }) {
+  if (tag.color && tag.color.toLowerCase() !== "#2563eb") return tag.color;
+  const hash = Array.from(tag.name).reduce((total, character) => total + character.charCodeAt(0), 0);
+  return TAG_COLORS[hash % TAG_COLORS.length];
+}
+
 function LeadsInner() {
   const params = useSearchParams();
   const { t, localeTag } = useI18n();
@@ -222,7 +230,16 @@ function LeadsInner() {
                 <td className="p-3">{t(`sources.${c.source}`, c.source)}</td>
                 {isAdmin && <td className="p-3">{c.manager?.name || t("common.dash")}</td>}
                 <td className="p-3">{c.pipelineStage?.name || t("common.dash")}</td>
-                <td className="p-3">{(c.tags || []).map((x) => x.tag.name).join(", ")}</td>
+                <td className="p-3">
+                  <div className="flex flex-wrap gap-1.5">
+                    {(c.tags || []).length === 0 && <span className="muted">{t("common.dash")}</span>}
+                    {(c.tags || []).map(({ tag }) => (
+                      <span key={tag.id} className="rounded-full px-2.5 py-1 text-xs font-medium text-white" style={{ backgroundColor: tagBadgeColor(tag) }}>
+                        {tag.name}
+                      </span>
+                    ))}
+                  </div>
+                </td>
                 <td className="p-3">{[c.city, c.address].filter(Boolean).join(", ") || t("common.dash")}</td>
                 <td className="p-3">{Number(c.dealAmount || 0)}</td>
               </tr>
