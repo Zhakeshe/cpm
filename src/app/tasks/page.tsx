@@ -5,7 +5,7 @@ import { useI18n } from "@/components/I18nProvider";
 import { addDays, isSameDay, startOfDay } from "date-fns";
 import {
   AlertTriangle, CalendarClock, Check, CheckCircle2, ChevronRight, CircleUserRound,
-  Clock3, MessageCircle, Phone, Search, Send, UserRound, Video, X,
+  ChevronDown, Clock3, MessageCircle, Phone, Search, Send, UserRound, Video, X,
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -66,6 +66,9 @@ export default function TasksPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [managerFilter, setManagerFilter] = useState("");
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
+    () => new Set(["overdue", "later", "done"]),
+  );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -146,6 +149,15 @@ export default function TasksPage() {
     if (days === 0) date.setMinutes(0, 0, 0);
     else date.setHours(10, 0, 0, 0);
     setForm((current) => ({ ...current, dueAt: localDateTimeValue(date) }));
+  }
+
+  function toggleGroup(key: string) {
+    setCollapsedGroups((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
   }
 
   async function create(event: React.FormEvent) {
@@ -266,14 +278,20 @@ export default function TasksPage() {
           {loading && <div className="card muted p-8 text-center">{t("common.loading", "Загрузка…")}</div>}
           {!loading && groups.map((group) => (
             <section key={group.key} className={`rounded-2xl border ${group.tone}`}>
-              <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+              <button
+                type="button"
+                onClick={() => toggleGroup(group.key)}
+                aria-expanded={!collapsedGroups.has(group.key)}
+                className={`flex w-full items-center justify-between px-4 py-3 text-left hover:bg-white/5 ${collapsedGroups.has(group.key) ? "" : "border-b border-white/10"}`}
+              >
                 <div className="flex items-center gap-2 font-medium">
+                  {collapsedGroups.has(group.key) ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   {group.key === "overdue" ? <AlertTriangle className="h-4 w-4 text-[#f87171]" /> : group.key === "done" ? <CheckCircle2 className="h-4 w-4 text-[#34d399]" /> : <Clock3 className="h-4 w-4 text-[#93a0bb]" />}
                   {t(`tasks.${group.key}`)}
                 </div>
                 <span className="chip">{group.items.length}</span>
-              </div>
-              <div className="divide-y divide-white/10">
+              </button>
+              {!collapsedGroups.has(group.key) && <div className="divide-y divide-white/10">
                 {group.items.length === 0 && <div className="muted px-4 py-5 text-sm">{t("tasks.emptyGroup")}</div>}
                 {group.items.map((task) => {
                   const isOverdue = task.status === "OPEN" && new Date(task.dueAt) < new Date();
@@ -311,7 +329,7 @@ export default function TasksPage() {
                     </div>
                   );
                 })}
-              </div>
+              </div>}
             </section>
           ))}
         </div>
