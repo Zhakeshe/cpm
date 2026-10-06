@@ -463,6 +463,11 @@
     "reassign": "Сменить менеджера",
     "tasks": "Задачи",
     "newTask": "Задача клиенту",
+    "clientTaskTypes": {
+      "demo": "Демо",
+      "demoOtherDay": "Демо басқа күнге",
+      "demoTomorrow": "Демо Ертеңге"
+    },
     "openTasks": "Открытые задачи: {count}",
     "noTasks": "Задач нет",
     "meetings": "Демо и встречи",

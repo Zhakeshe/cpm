@@ -8,7 +8,9 @@ import { useI18n } from "@/components/I18nProvider";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
-type Stage = { id: string; name: string; requiredFields: string[]; isWon?: boolean; isLost?: boolean };
+type Stage = { id: string; slug: string; name: string; requiredFields: string[]; isWon?: boolean; isLost?: boolean };
+
+const CONTACT_STAGE_ORDER = ["not_needed", "contacted", "demo", "demo_done", "callback", "thinking"];
 
 const LOST_REASONS = ["price", "no_need", "competitor", "silent", "later", "other"];
 const WON_REASONS = ["paid_full", "installment", "repeat"];
@@ -75,6 +77,7 @@ export default function ContactPage() {
   }, [load]);
 
   const fieldName = (f: string) => t(`fields.${f}`, f);
+  const contactStages = CONTACT_STAGE_ORDER.map((slug) => stages.find((stage) => stage.slug === slug)).filter((stage): stage is Stage => Boolean(stage));
 
   async function patch(data: object) {
     setProblem("");
@@ -200,9 +203,9 @@ export default function ContactPage() {
               </div>
               <label>
                 {t("contact.stage")}
-                <select className="mt-1" value={/перв(ый|ая)\s+(контакт|клиент)/i.test(c.pipelineStage?.name || "") ? "" : c.pipelineStage?.id || ""} onChange={(e) => pickStage(e.target.value)}>
+                <select className="mt-1" value={contactStages.some((stage) => stage.id === c.pipelineStage?.id) ? c.pipelineStage?.id || "" : ""} onChange={(e) => pickStage(e.target.value)}>
                   <option value="" disabled>{t("contact.pickStage")}</option>
-                  {stages.filter((s) => !/перв(ый|ая)\s+(контакт|клиент)/i.test(s.name)).map((s) => (
+                  {contactStages.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name}
                       {s.requiredFields.length ? ` (${t("contact.needs", { fields: s.requiredFields.map(fieldName).join(", ") })})` : ""}

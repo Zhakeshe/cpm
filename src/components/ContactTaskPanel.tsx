@@ -7,7 +7,11 @@ import { useState } from "react";
 
 type Task = { id: string; description: string; dueAt: string; status: string; type: string };
 
-const TASK_TYPES = ["CALL", "WHATSAPP", "DEMO", "MEETING", "SEND_PROPOSAL", "FOLLOW_UP", "OTHER"];
+const CLIENT_TASK_TYPES = [
+  { value: "DEMO", label: "demo" },
+  { value: "MEETING", label: "demoOtherDay" },
+  { value: "FOLLOW_UP", label: "demoTomorrow" },
+];
 
 function defaultDueAt() {
   const date = addDays(startOfDay(new Date()), 1);
@@ -35,7 +39,7 @@ export function ContactTaskPanel({
   onChange: () => void;
 }) {
   const { t, localeTag } = useI18n();
-  const [form, setForm] = useState({ type: "CALL", description: "", dueAt: defaultDueAt() });
+  const [form, setForm] = useState({ type: "DEMO", description: "", dueAt: defaultDueAt() });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -56,7 +60,7 @@ export function ContactTaskPanel({
     });
     if (!response.ok) setError(t("quickActions.taskFailed"));
     else {
-      setForm({ type: "CALL", description: "", dueAt: defaultDueAt() });
+      setForm({ type: "DEMO", description: "", dueAt: defaultDueAt() });
       onChange();
     }
     setSaving(false);
@@ -87,7 +91,7 @@ export function ContactTaskPanel({
       </div>
       <form className="space-y-2" onSubmit={createTask}>
         <select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })}>
-          {TASK_TYPES.map((type) => <option key={type} value={type}>{t(`taskTypes.${type}`)}</option>)}
+          {CLIENT_TASK_TYPES.map((type) => <option key={type.value} value={type.value}>{t(`contact.clientTaskTypes.${type.label}`)}</option>)}
         </select>
         <input required type="datetime-local" value={form.dueAt} onChange={(event) => setForm({ ...form, dueAt: event.target.value })} />
         <textarea required rows={3} placeholder={t("quickActions.what")} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} />
