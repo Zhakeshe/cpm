@@ -18,7 +18,6 @@ type Contact = {
   city: string;
   createdAt: string;
   source: string;
-  dealAmount: string | number;
   manager?: { name: string };
   pipelineStage?: { name: string };
   company?: { name: string } | null;
@@ -202,7 +201,7 @@ function LeadsInner() {
       {error && <div className="text-sm text-[#f87171] mb-3">{error}</div>}
       {importNotice && <div className="text-sm text-[#34d399] mb-3">{importNotice}</div>}
       <div className="card max-w-full overflow-x-auto">
-        <table className="w-full min-w-[1120px] text-sm">
+        <table className="w-full min-w-[1020px] text-sm">
           <thead className="bg-[#182235] text-[#93a0bb]">
             <tr>
               <th className="text-left p-3">{t("common.client")}</th>
@@ -213,7 +212,6 @@ function LeadsInner() {
               <th className="text-left p-3">{t("common.stage")}</th>
               <th className="text-left p-3">{t("leads.tag")}</th>
               <th className="text-left p-3">{t("contact.address")}</th>
-              <th className="text-left p-3">{t("common.amount")}</th>
             </tr>
           </thead>
           <tbody>
@@ -241,7 +239,6 @@ function LeadsInner() {
                   </div>
                 </td>
                 <td className="p-3">{[c.city, c.address].filter(Boolean).join(", ") || t("common.dash")}</td>
-                <td className="p-3">{Number(c.dealAmount || 0)}</td>
               </tr>
             ))}
           </tbody>
