@@ -45,8 +45,6 @@ function LeadsInner() {
   const [stages, setStages] = useState<Array<{ id: string; name: string }>>([]);
   const [managers, setManagers] = useState<Array<{ id: string; name: string }>>([]);
   const [tags, setTags] = useState<Array<{ id: string; name: string }>>([]);
-  const [views, setViews] = useState<Array<{ id: string; name: string; filters: Record<string, string> }>>([]);
-  const [selected, setSelected] = useState<string[]>([]);
   const [form, setForm] = useState({ firstName: "", phone: "", source: "MANUAL", comment: "" });
   const [filters, setFilters] = useState({
     q: params.get("q") || "",
@@ -59,9 +57,6 @@ function LeadsInner() {
   });
   const [error, setError] = useState("");
   const [importNotice, setImportNotice] = useState("");
-  const [bulkStage, setBulkStage] = useState("");
-  const [bulkTag, setBulkTag] = useState("");
-  const [viewName, setViewName] = useState("");
   const [role, setRole] = useState("MANAGER");
   const isAdmin = role === "ADMIN" || role === "SUPERVISOR";
 
@@ -94,7 +89,6 @@ function LeadsInner() {
     fetch("/api/pipeline").then((r) => r.json()).then(setStages);
     fetch("/api/users").then((r) => r.json()).then(setManagers);
     fetch("/api/tags").then((r) => r.json()).then(setTags);
-    fetch("/api/views").then((r) => r.json()).then(setViews);
   }, []);
 
   useRealtime({ "lead:new": () => load() });
@@ -127,17 +121,6 @@ function LeadsInner() {
       return;
     }
     setImportNotice(t("leads.importResult", { created: data.created, duplicates: data.duplicates, errors: data.errors?.length || 0 }));
-    await load();
-  }
-
-  async function bulk(payload: object) {
-    if (!selected.length) return;
-    await fetch("/api/contacts/bulk", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: selected, ...payload }),
-    });
-    setSelected([]);
     await load();
   }
 
@@ -208,54 +191,12 @@ function LeadsInner() {
           <option value="1">{t("leads.archived")}</option>
         </select>
       </div>
-      {isAdmin && (
-      <div className="flex flex-wrap gap-2 mb-4 items-center">
-        <select value={bulkStage} onChange={(e) => setBulkStage(e.target.value)}>
-          <option value="">{t("leads.bulkStage")}</option>
-          {stages.map((s) => (
-            <option key={s.id} value={s.id}>{s.name}</option>
-          ))}
-        </select>
-        <button className="chip" type="button" onClick={() => bulk({ pipelineStageId: bulkStage })}>{t("leads.apply")}</button>
-        <select value={bulkTag} onChange={(e) => setBulkTag(e.target.value)}>
-          <option value="">{t("leads.bulkTag")}</option>
-          {tags.map((tag) => (
-            <option key={tag.id} value={tag.id}>{tag.name}</option>
-          ))}
-        </select>
-        <button className="chip" type="button" onClick={() => bulk({ tagId: bulkTag })}>{t("leads.apply")}</button>
-        <button className="chip" type="button" onClick={() => bulk({ archive: true })}>{t("leads.archive")}</button>
-        <input className="w-40" placeholder={t("leads.saveView")} value={viewName} onChange={(e) => setViewName(e.target.value)} />
-        <button
-          className="chip"
-          type="button"
-          onClick={async () => {
-            if (!viewName) return;
-            await fetch("/api/views", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: viewName, filters }) });
-            setViewName("");
-            setViews(await fetch("/api/views").then((r) => r.json()));
-          }}
-        >
-          {t("common.save")}
-        </button>
-        {views.map((v) => (
-          <button key={v.id} className="chip" type="button" onClick={() => setFilters({ ...filters, ...v.filters })}>
-            {v.name}
-          </button>
-        ))}
-      </div>
-      )}
       {error && <div className="text-sm text-[#f87171] mb-3">{error}</div>}
       {importNotice && <div className="text-sm text-[#34d399] mb-3">{importNotice}</div>}
       <div className="card max-w-full overflow-x-auto">
         <table className="w-full min-w-[1120px] text-sm">
           <thead className="bg-[#182235] text-[#93a0bb]">
             <tr>
-              {isAdmin && (
-              <th className="p-3 w-8">
-                <input type="checkbox" className="w-auto" checked={selected.length === rows.length && rows.length > 0} onChange={(e) => setSelected(e.target.checked ? rows.map((r) => r.id) : [])} />
-              </th>
-              )}
               <th className="text-left p-3">{t("common.client")}</th>
               <th className="text-left p-3">{t("common.date")}</th>
               <th className="text-left p-3">{t("common.phone")}</th>
@@ -270,11 +211,6 @@ function LeadsInner() {
           <tbody>
             {rows.map((c) => (
               <tr key={c.id} className="border-t border-[#243049]">
-                {isAdmin && (
-                <td className="p-3">
-                  <input type="checkbox" className="w-auto" checked={selected.includes(c.id)} onChange={(e) => setSelected((prev) => (e.target.checked ? [...prev, c.id] : prev.filter((id) => id !== c.id)))} />
-                </td>
-                )}
                 <td className="p-3">
                   <Link href={`/contacts/${c.id}`} className="text-[#93c5fd]">
                     {c.firstName} {c.lastName}
