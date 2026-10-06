@@ -207,7 +207,7 @@ export default function TasksPage() {
     setSelectedIds((current) => {
       const next = new Set(current);
       if (next.has(id)) next.delete(id);
-      else if (next.size < 200) next.add(id);
+      else if (next.size < 500) next.add(id);
       return next;
     });
   }
@@ -325,7 +325,7 @@ export default function TasksPage() {
               return (
                 <section key={group.key} className={`min-w-0 rounded-2xl border ${group.tone}`}>
                   <div className={`flex items-center gap-2 px-4 py-3 ${collapsed.has(group.key) ? "" : "border-b border-white/10"}`}>
-                    <input className="w-auto" type="checkbox" checked={allChecked} disabled={!state.items.length} onChange={() => setSelectedIds((current) => { const next = new Set(current); state.items.forEach((task) => allChecked ? next.delete(task.id) : next.size < 200 && next.add(task.id)); return next; })} onClick={(event) => event.stopPropagation()} />
+                    <input className="w-auto" type="checkbox" checked={allChecked} disabled={!state.items.length} onChange={() => setSelectedIds((current) => { const next = new Set(current); state.items.forEach((task) => allChecked ? next.delete(task.id) : next.size < 500 && next.add(task.id)); return next; })} onClick={(event) => event.stopPropagation()} />
                     <button type="button" onClick={() => toggleGroup(group.key)} aria-expanded={!collapsed.has(group.key)} className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left">
                       <span className="flex min-w-0 items-center gap-2 font-medium">{collapsed.has(group.key) ? <ChevronRight className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />}{isOverdue ? <AlertTriangle className="h-4 w-4 shrink-0 text-[#f87171]" /> : group.key === "done" ? <CheckCircle2 className="h-4 w-4 shrink-0 text-[#34d399]" /> : <Clock3 className="h-4 w-4 shrink-0 text-[#93a0bb]" />}<span className="truncate">{t(`tasks.${group.key}`)}</span></span>
                       <span className="chip shrink-0">{counts[group.key] || 0}</span>

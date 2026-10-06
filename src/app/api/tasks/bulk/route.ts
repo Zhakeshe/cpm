@@ -6,14 +6,14 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 const schema = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("DONE"), ids: z.array(z.string()).min(1).max(200) }),
-  z.object({ action: z.literal("CANCEL"), ids: z.array(z.string()).min(1).max(200) }),
+  z.object({ action: z.literal("DONE"), ids: z.array(z.string()).min(1).max(500) }),
+  z.object({ action: z.literal("CANCEL"), ids: z.array(z.string()).min(1).max(500) }),
   z.object({
     action: z.literal("RESCHEDULE"),
-    ids: z.array(z.string()).min(1).max(200),
+    ids: z.array(z.string()).min(1).max(500),
     dueAt: z.string().refine((value) => !Number.isNaN(new Date(value).getTime())),
   }),
-  z.object({ action: z.literal("REASSIGN"), ids: z.array(z.string()).min(1).max(200), managerId: z.string().min(1) }),
+  z.object({ action: z.literal("REASSIGN"), ids: z.array(z.string()).min(1).max(500), managerId: z.string().min(1) }),
 ]);
 
 export async function POST(req: NextRequest) {
