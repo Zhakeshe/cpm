@@ -14,6 +14,9 @@ type Contact = {
   firstName: string;
   lastName: string;
   phoneDisplay: string;
+  address: string;
+  city: string;
+  createdAt: string;
   source: string;
   dealAmount: string | number;
   manager?: { name: string };
@@ -37,7 +40,7 @@ const SOURCES = [
 
 function LeadsInner() {
   const params = useSearchParams();
-  const { t } = useI18n();
+  const { t, localeTag } = useI18n();
   const [rows, setRows] = useState<Contact[]>([]);
   const [stages, setStages] = useState<Array<{ id: string; name: string }>>([]);
   const [managers, setManagers] = useState<Array<{ id: string; name: string }>>([]);
@@ -49,11 +52,9 @@ function LeadsInner() {
     q: params.get("q") || "",
     stage: params.get("stage") || "",
     manager: params.get("manager") || "",
-    source: params.get("source") || "",
     tag: params.get("tag") || "",
     company: params.get("company") || "",
-    from: "",
-    to: "",
+    date: "",
     archived: "",
   });
   const [error, setError] = useState("");
@@ -67,8 +68,15 @@ function LeadsInner() {
   const query = useCallback(() => {
     const qs = new URLSearchParams();
     Object.entries(filters).forEach(([k, v]) => {
-      if (v) qs.set(k, v);
+      if (v && k !== "date") qs.set(k, v);
     });
+    if (filters.date) {
+      const start = new Date(`${filters.date}T00:00:00`);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 1);
+      qs.set("from", start.toISOString());
+      qs.set("to", end.toISOString());
+    }
     return qs.toString();
   }, [filters]);
 
@@ -169,8 +177,8 @@ function LeadsInner() {
         <input placeholder={t("common.comment")} value={form.comment} onChange={(e) => setForm({ ...form, comment: e.target.value })} />
         <button className="rounded-xl bg-[#2563eb]">{t("common.create")}</button>
       </form>
-      <div className="card p-4 mb-4 grid md:grid-cols-4 xl:grid-cols-8 gap-2">
-        <input placeholder={t("common.search")} value={filters.q} onChange={(e) => setFilters({ ...filters, q: e.target.value })} />
+      <div className="card p-4 mb-4 grid md:grid-cols-3 xl:grid-cols-6 gap-2">
+        <input className="md:col-span-2" placeholder={t("leads.searchHint")} value={filters.q} onChange={(e) => setFilters({ ...filters, q: e.target.value })} />
         <select value={filters.stage} onChange={(e) => setFilters({ ...filters, stage: e.target.value })}>
           <option value="">{t("common.stage")}</option>
           {stages.map((s) => (
@@ -185,20 +193,16 @@ function LeadsInner() {
           ))}
         </select>
         )}
-        <select value={filters.source} onChange={(e) => setFilters({ ...filters, source: e.target.value })}>
-          <option value="">{t("common.source")}</option>
-          {SOURCES.map((s) => (
-            <option key={s} value={s}>{t(`sources.${s}`)}</option>
-          ))}
-        </select>
         <select value={filters.tag} onChange={(e) => setFilters({ ...filters, tag: e.target.value })}>
           <option value="">{t("leads.tag")}</option>
           {tags.map((tag) => (
             <option key={tag.id} value={tag.id}>{tag.name}</option>
           ))}
         </select>
-        <input type="date" value={filters.from} onChange={(e) => setFilters({ ...filters, from: e.target.value })} />
-        <input type="date" value={filters.to} onChange={(e) => setFilters({ ...filters, to: e.target.value })} />
+        <label className="flex items-center gap-2 rounded-xl border border-[#2a3650] px-3 text-sm">
+          <span className="muted shrink-0">{t("common.date")}</span>
+          <input className="min-w-0 border-0 bg-transparent p-0" aria-label={t("common.date")} type="date" value={filters.date} onChange={(e) => setFilters({ ...filters, date: e.target.value })} />
+        </label>
         <select value={filters.archived} onChange={(e) => setFilters({ ...filters, archived: e.target.value })}>
           <option value="">{t("leads.activeOnly")}</option>
           <option value="1">{t("leads.archived")}</option>
@@ -243,8 +247,8 @@ function LeadsInner() {
       )}
       {error && <div className="text-sm text-[#f87171] mb-3">{error}</div>}
       {importNotice && <div className="text-sm text-[#34d399] mb-3">{importNotice}</div>}
-      <div className="card overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="card max-w-full overflow-x-auto">
+        <table className="w-full min-w-[1120px] text-sm">
           <thead className="bg-[#182235] text-[#93a0bb]">
             <tr>
               {isAdmin && (
@@ -253,11 +257,13 @@ function LeadsInner() {
               </th>
               )}
               <th className="text-left p-3">{t("common.client")}</th>
+              <th className="text-left p-3">{t("common.date")}</th>
               <th className="text-left p-3">{t("common.phone")}</th>
               <th className="text-left p-3">{t("common.source")}</th>
               {isAdmin && <th className="text-left p-3">{t("common.manager")}</th>}
               <th className="text-left p-3">{t("common.stage")}</th>
               <th className="text-left p-3">{t("leads.tag")}</th>
+              <th className="text-left p-3">{t("contact.address")}</th>
               <th className="text-left p-3">{t("common.amount")}</th>
             </tr>
           </thead>
@@ -275,11 +281,13 @@ function LeadsInner() {
                   </Link>
                   {c.company?.name ? <div className="muted text-xs">{c.company.name}</div> : null}
                 </td>
-                <td className="p-3">{c.phoneDisplay}</td>
+                <td className="whitespace-nowrap p-3">{new Date(c.createdAt).toLocaleString(localeTag)}</td>
+                <td className="whitespace-nowrap p-3">{c.phoneDisplay}</td>
                 <td className="p-3">{t(`sources.${c.source}`, c.source)}</td>
                 {isAdmin && <td className="p-3">{c.manager?.name || t("common.dash")}</td>}
                 <td className="p-3">{c.pipelineStage?.name || t("common.dash")}</td>
                 <td className="p-3">{(c.tags || []).map((x) => x.tag.name).join(", ")}</td>
+                <td className="p-3">{[c.city, c.address].filter(Boolean).join(", ") || t("common.dash")}</td>
                 <td className="p-3">{Number(c.dealAmount || 0)}</td>
               </tr>
             ))}

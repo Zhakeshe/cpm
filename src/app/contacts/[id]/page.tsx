@@ -1,12 +1,12 @@
 "use client";
 
 import { AppShell } from "@/components/AppShell";
-import { QuickActions } from "@/components/QuickActions";
 import { ContactSales } from "@/components/ContactSales";
+import { ContactTaskPanel } from "@/components/ContactTaskPanel";
+import { ContactContract } from "@/components/ContactContract";
 import { useI18n } from "@/components/I18nProvider";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
 
 type Stage = { id: string; name: string; requiredFields: string[]; isWon?: boolean; isLost?: boolean };
 
@@ -170,7 +170,7 @@ export default function ContactPage() {
 
   return (
     <AppShell>
-      <div className="grid lg:grid-cols-[1fr_360px] gap-6">
+      <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
         <div className="space-y-4">
           <div className="card p-6">
             <div className="flex justify-between gap-4">
@@ -187,10 +187,6 @@ export default function ContactPage() {
               </button>
             </div>
 
-            <div className="mt-4">
-              <QuickActions contactId={c.id} compact onDone={load} />
-            </div>
-
             <div className="grid md:grid-cols-2 gap-3 mt-4">
               <div>{t("contact.source", { source: t(`sources.${c.source}`, c.source) })}</div>
               <div>
@@ -204,8 +200,9 @@ export default function ContactPage() {
               </div>
               <label>
                 {t("contact.stage")}
-                <select className="mt-1" value={c.pipelineStage?.id || ""} onChange={(e) => pickStage(e.target.value)}>
-                  {stages.map((s) => (
+                <select className="mt-1" value={/перв(ый|ая)\s+(контакт|клиент)/i.test(c.pipelineStage?.name || "") ? "" : c.pipelineStage?.id || ""} onChange={(e) => pickStage(e.target.value)}>
+                  <option value="" disabled>{t("contact.pickStage")}</option>
+                  {stages.filter((s) => !/перв(ый|ая)\s+(контакт|клиент)/i.test(s.name)).map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name}
                       {s.requiredFields.length ? ` (${t("contact.needs", { fields: s.requiredFields.map(fieldName).join(", ") })})` : ""}
@@ -296,19 +293,7 @@ export default function ContactPage() {
             )}
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="card p-5">
-              <div className="font-medium mb-2">{t("contact.tasks")}</div>
-              {c.tasks.length === 0 && <div className="muted text-sm">{t("contact.noTasks")}</div>}
-              {c.tasks.slice(0, 6).map((task) => (
-                <div key={task.id} className="text-sm border-t border-[#243049] py-2">
-                  <div>{task.description}</div>
-                  <div className="muted text-xs">
-                    {t(`taskTypes.${task.type}`, task.type)} · {new Date(task.dueAt).toLocaleString(localeTag)} · {task.status}
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="grid gap-4">
             <div className="card p-5">
               <div className="font-medium mb-2">{t("contact.meetings")}</div>
               {c.meetings.length === 0 && <div className="muted text-sm">{t("contact.noMeetings")}</div>}
@@ -321,25 +306,6 @@ export default function ContactPage() {
                 </div>
               ))}
             </div>
-          </div>
-
-          <div className="card p-5">
-            <div className="font-medium mb-2">{t("quotes.title")}</div>
-            {(c.quotes || []).map((q) => (
-              <Link key={q.id} href={`/quotes/${q.id}`} className="block text-sm border-t border-[#243049] py-2 text-[#93c5fd]">
-                {q.number} · {Number(q.total)} ₸ · {t(`quoteStatus.${q.status}`, q.status)}
-              </Link>
-            ))}
-            {(c.payments || []).map((p) => (
-              <div key={p.id} className="text-sm border-t border-[#243049] py-2">
-                {Number(p.amount)} ₸ · {t(`payments.${p.method}`, p.method)}
-              </div>
-            ))}
-            {(c.files || []).map((f) => (
-              <a key={f.id} className="block text-sm text-[#93c5fd] border-t border-[#243049] py-2" href={`/api/contacts/${c.id}/files/${f.id}`}>
-                {f.fileName}
-              </a>
-            ))}
           </div>
 
           <div className="card p-6">
@@ -357,7 +323,25 @@ export default function ContactPage() {
         </div>
 
         <div className="space-y-4">
-        <ContactSales contactId={c.id} customFields={c.customFields || {}} tags={c.tags || []} companyId={c.company?.id} onChange={load} />
+        <ContactTaskPanel
+          contactId={c.id}
+          clientName={`${c.firstName} ${c.lastName}`.trim()}
+          phone={c.phoneDisplay}
+          address={c.address}
+          managerId={c.manager?.id}
+          managerName={c.manager?.name}
+          tasks={c.tasks}
+          onChange={load}
+        />
+        <ContactContract
+          contactId={c.id}
+          clientName={`${c.firstName} ${c.lastName}`.trim()}
+          managerName={c.manager?.name}
+          customFields={c.customFields || {}}
+          dealAmount={c.dealAmount}
+          onChange={load}
+        />
+        <ContactSales contactId={c.id} tags={c.tags || []} companyId={c.company?.id} onChange={load} />
         <div className="card p-6">
           <div className="font-medium mb-4">{t("contact.timeline")}</div>
           <form onSubmit={addNote} className="mb-4 space-y-2">
