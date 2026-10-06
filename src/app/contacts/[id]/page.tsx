@@ -341,7 +341,7 @@ export default function ContactPage() {
           dealAmount={c.dealAmount}
           onChange={load}
         />
-        <ContactSales contactId={c.id} tags={c.tags || []} companyId={c.company?.id} onChange={load} />
+        <ContactSales contactId={c.id} tags={c.tags || []} onChange={load} />
         <div className="card p-6">
           <div className="font-medium mb-4">{t("contact.timeline")}</div>
           <form onSubmit={addNote} className="mb-4 space-y-2">
