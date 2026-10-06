@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     if (tasks.length !== new Set(body.ids).size) {
       return NextResponse.json({ error: "TASK_ACCESS_DENIED" }, { status: 403 });
     }
-    const data: Prisma.TaskUpdateManyMutationInput = body.action === "DONE"
+    const data: Prisma.TaskUncheckedUpdateManyInput = body.action === "DONE"
       ? { status: "DONE" as const }
       : body.action === "CANCEL"
         ? { status: "CANCELLED" as const }
