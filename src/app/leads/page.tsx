@@ -14,7 +14,7 @@ type Contact = {
   firstName: string;
   lastName: string;
   phoneDisplay: string;
-  address: string;
+  email?: string | null;
   city: string;
   createdAt: string;
   source: string;
@@ -49,7 +49,7 @@ function LeadsInner() {
   const params = useSearchParams();
   const { t, localeTag } = useI18n();
   const [rows, setRows] = useState<Contact[]>([]);
-  const [stages, setStages] = useState<Array<{ id: string; name: string }>>([]);
+  const [stages, setStages] = useState<Array<{ id: string; slug: string; name: string }>>([]);
   const [managers, setManagers] = useState<Array<{ id: string; name: string }>>([]);
   const [tags, setTags] = useState<Array<{ id: string; name: string }>>([]);
   const [form, setForm] = useState({ firstName: "", phone: "", source: "MANUAL", comment: "" });
@@ -58,9 +58,7 @@ function LeadsInner() {
     stage: params.get("stage") || "",
     manager: params.get("manager") || "",
     tag: params.get("tag") || "",
-    company: params.get("company") || "",
     date: "",
-    archived: "",
   });
   const [error, setError] = useState("");
   const [importNotice, setImportNotice] = useState("");
@@ -168,10 +166,10 @@ function LeadsInner() {
         <button className="rounded-xl bg-[#2563eb]">{t("common.create")}</button>
       </form>
       <div className="card p-4 mb-4 grid md:grid-cols-3 xl:grid-cols-6 gap-2">
-        <input className="md:col-span-2" placeholder={t("leads.searchHint")} value={filters.q} onChange={(e) => setFilters({ ...filters, q: e.target.value })} />
+        <input className="md:col-span-2" placeholder={t("common.searchShort")} value={filters.q} onChange={(e) => setFilters({ ...filters, q: e.target.value })} />
         <select value={filters.stage} onChange={(e) => setFilters({ ...filters, stage: e.target.value })}>
           <option value="">{t("common.stage")}</option>
-          {stages.map((s) => (
+          {stages.filter((stage) => stage.slug !== "paid" && stage.slug !== "lost").map((s) => (
             <option key={s.id} value={s.id}>{s.name}</option>
           ))}
         </select>
@@ -193,25 +191,22 @@ function LeadsInner() {
           <span className="muted shrink-0">{t("common.date")}</span>
           <input className="min-w-0 border-0 bg-transparent p-0" aria-label={t("common.date")} type="date" value={filters.date} onChange={(e) => setFilters({ ...filters, date: e.target.value })} />
         </label>
-        <select value={filters.archived} onChange={(e) => setFilters({ ...filters, archived: e.target.value })}>
-          <option value="">{t("leads.activeOnly")}</option>
-          <option value="1">{t("leads.archived")}</option>
-        </select>
       </div>
       {error && <div className="text-sm text-[#f87171] mb-3">{error}</div>}
       {importNotice && <div className="text-sm text-[#34d399] mb-3">{importNotice}</div>}
       <div className="card max-w-full overflow-x-auto">
-        <table className="w-full min-w-[1020px] text-sm">
+        <table className="w-full min-w-[1080px] text-sm">
           <thead className="bg-[#182235] text-[#93a0bb]">
             <tr>
               <th className="text-left p-3">{t("common.client")}</th>
               <th className="text-left p-3">{t("common.date")}</th>
               <th className="text-left p-3">{t("common.phone")}</th>
+              <th className="text-left p-3">{t("common.email")}</th>
               <th className="text-left p-3">{t("common.source")}</th>
               {isAdmin && <th className="text-left p-3">{t("common.manager")}</th>}
               <th className="text-left p-3">{t("common.stage")}</th>
               <th className="text-left p-3">{t("leads.tag")}</th>
-              <th className="text-left p-3">{t("contact.address")}</th>
+              <th className="text-left p-3">{t("contact.city")}</th>
             </tr>
           </thead>
           <tbody>
@@ -225,6 +220,7 @@ function LeadsInner() {
                 </td>
                 <td className="whitespace-nowrap p-3">{new Date(c.createdAt).toLocaleString(localeTag)}</td>
                 <td className="whitespace-nowrap p-3">{c.phoneDisplay}</td>
+                <td className="p-3">{c.email || t("common.dash")}</td>
                 <td className="p-3">{t(`sources.${c.source}`, c.source)}</td>
                 {isAdmin && <td className="p-3">{c.manager?.name || t("common.dash")}</td>}
                 <td className="p-3">{c.pipelineStage?.name || t("common.dash")}</td>
@@ -238,7 +234,7 @@ function LeadsInner() {
                     ))}
                   </div>
                 </td>
-                <td className="p-3">{[c.city, c.address].filter(Boolean).join(", ") || t("common.dash")}</td>
+                <td className="p-3">{c.city || t("common.dash")}</td>
               </tr>
             ))}
           </tbody>

@@ -15,7 +15,7 @@ export const VACUUM_PIPELINE_STAGES: VacuumStageDef[] = [
   { slug: "demo", name: "Демо Бүгінге", order: 4, requiredFields: [] },
   { slug: "demo_done", name: "Демо Ертеңге", order: 5, requiredFields: [] },
   { slug: "callback", name: "Патом звонда", order: 6, requiredFields: [] },
-  { slug: "thinking", name: "Ойланамын", order: 7, requiredFields: ["dealAmount"] },
+  { slug: "thinking", name: "Ойланамын", order: 7, requiredFields: [] },
   { slug: "paid", name: "Оплатил", order: 8, isWon: true, requiredFields: ["dealAmount"] },
   { slug: "lost", name: "Отказ", order: 9, isLost: true, requiredFields: [] },
 ];

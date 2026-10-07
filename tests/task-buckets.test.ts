@@ -9,11 +9,11 @@ describe("task time buckets", () => {
     expect(today.toISOString()).toBe("2026-10-05T19:00:00.000Z");
   });
 
-  it("separates today's overdue tasks from the rest of today", () => {
+  it("shows tasks in the today list only after their deadline", () => {
     expect(taskBucketFilter("overdueToday", now, today)).toEqual({ status: "OPEN", dueAt: { gte: today, lt: now } });
     expect(taskBucketFilter("today", now, today)).toEqual({
       status: "OPEN",
-      dueAt: { gte: now, lt: new Date("2026-10-06T19:00:00.000Z") },
+      dueAt: { lt: now },
     });
   });
 

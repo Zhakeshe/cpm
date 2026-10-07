@@ -7,7 +7,6 @@ import {
   Activity,
   BarChart3,
   Bell,
-  Calendar,
   Clock,
   LayoutDashboard,
   MessageSquare,
@@ -20,8 +19,6 @@ import {
   Kanban,
   Search,
   Sun,
-  Package,
-  FileText,
   Building2,
 } from "lucide-react";
 import { useRealtime, usePresence } from "@/lib/use-realtime";
@@ -36,10 +33,7 @@ const NAV = [
   { href: "/pipeline", key: "nav.pipeline", icon: Kanban },
   { href: "/messages", key: "nav.messages", icon: MessageSquare },
   { href: "/tasks", key: "nav.tasks", icon: Shield },
-  { href: "/meetings", key: "nav.meetings", icon: Calendar },
-  { href: "/quotes", key: "nav.quotes", icon: FileText },
   { href: "/calls", key: "nav.calls", icon: Phone, admin: true },
-  { href: "/catalog", key: "nav.catalog", icon: Package, admin: true },
   { href: "/companies", key: "nav.companies", icon: Building2, admin: true },
   { href: "/sla", key: "nav.sla", icon: Clock, admin: true },
   { href: "/analytics", key: "nav.analytics", icon: BarChart3, admin: true },

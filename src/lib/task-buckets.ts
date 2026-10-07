@@ -30,7 +30,7 @@ export function taskBucketFilter(bucket: TaskBucket, now: Date, today: Date) {
   if (bucket === "overdue1to3") return { status: "OPEN" as const, dueAt: { gte: addUtcDays(today, -3), lt: today } };
   if (bucket === "overdue4to7") return { status: "OPEN" as const, dueAt: { gte: addUtcDays(today, -7), lt: addUtcDays(today, -3) } };
   if (bucket === "overdueOlder") return { status: "OPEN" as const, dueAt: { lt: addUtcDays(today, -7) } };
-  if (bucket === "today") return { status: "OPEN" as const, dueAt: { gte: now, lt: tomorrow } };
+  if (bucket === "today") return { status: "OPEN" as const, dueAt: { lt: now } };
   if (bucket === "tomorrow") return { status: "OPEN" as const, dueAt: { gte: tomorrow, lt: afterTomorrow } };
   if (bucket === "week") return { status: "OPEN" as const, dueAt: { gte: afterTomorrow, lt: afterWeek } };
   if (bucket === "later") return { status: "OPEN" as const, dueAt: { gte: afterWeek } };

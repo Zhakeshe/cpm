@@ -9,13 +9,19 @@ export async function seedVacuumCatalog(db: PrismaClient) {
       create: product,
     });
   }
+  await db.tag.deleteMany({
+    where: {
+      name: {
+        in: ["B2B", "b2b", "бөліп төлеу", "ыстық", "кепілдік", "қайта қоңырау", "демо өтті", "бағасын білу"],
+      },
+    },
+  });
   const tags = [
-    { name: "ыстық", color: "#ef4444" },
-    { name: "қайта қоңырау", color: "#f59e0b" },
-    { name: "кепілдік", color: "#10b981" },
-    { name: "B2B", color: "#6366f1" },
-    { name: "бөліп төлеу", color: "#8b5cf6" },
-    { name: "демо өтті", color: "#2563eb" },
+    { name: "демо шықты", color: "#2563eb" },
+    { name: "керек емес", color: "#ef4444" },
+    { name: "демо басқа күнге", color: "#10b981" },
+    { name: "потом зв керек", color: "#f59e0b" },
+    { name: "кешке зв", color: "#f472b6" },
   ];
   for (const tag of tags) {
     await db.tag.upsert({ where: { name: tag.name }, update: { color: tag.color }, create: tag });

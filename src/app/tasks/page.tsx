@@ -5,7 +5,7 @@ import { useI18n } from "@/components/I18nProvider";
 import { addDays, startOfDay } from "date-fns";
 import {
   AlertTriangle, CalendarClock, Check, CheckCircle2, ChevronDown, ChevronRight,
-  CircleUserRound, Clock3, Filter, History, MessageCircle, Phone, Search, Send,
+  CircleUserRound, Filter, History, MessageCircle, Phone, Search, Send,
   UserRound, Video, X,
 } from "lucide-react";
 import Link from "next/link";
@@ -27,23 +27,14 @@ type AuditEntry = {
   id: string; action: string; oldValue?: Record<string, unknown> | null;
   newValue?: Record<string, unknown> | null; createdAt: string; actor?: Person | null;
 };
-type BucketKey = "overdueToday" | "overdue1to3" | "overdue4to7" | "overdueOlder" | "today" | "tomorrow" | "week" | "later" | "done";
+type BucketKey = "today";
 type BucketState = { items: Task[]; total: number; nextOffset: number; hasMore: boolean; loaded: boolean; loading: boolean };
 
 const TASK_TYPES = ["CALL", "WHATSAPP", "DEMO", "MEETING", "SEND_PROPOSAL", "FOLLOW_UP", "OTHER"];
-const OVERDUE_BUCKETS: BucketKey[] = ["overdueToday", "overdue1to3", "overdue4to7", "overdueOlder"];
 const GROUPS: Array<{ key: BucketKey; tone: string }> = [
-  { key: "overdueToday", tone: "border-[#7f1d1d] bg-[#2b1720]" },
-  { key: "overdue1to3", tone: "border-[#7f1d1d] bg-[#291820]" },
-  { key: "overdue4to7", tone: "border-[#7f1d1d] bg-[#25171e]" },
-  { key: "overdueOlder", tone: "border-[#7f1d1d] bg-[#21161c]" },
-  { key: "today", tone: "border-[#1d4ed8] bg-[#13233f]" },
-  { key: "tomorrow", tone: "border-[#334155] bg-[#151e32]" },
-  { key: "week", tone: "border-[#334155] bg-[#151e32]" },
-  { key: "later", tone: "border-[#334155] bg-[#151e32]" },
-  { key: "done", tone: "border-[#14532d] bg-[#11271f]" },
+  { key: "today", tone: "border-[#7f1d1d] bg-[#2b1720]" },
 ];
-const DEFAULT_COLLAPSED = new Set<BucketKey>([...OVERDUE_BUCKETS, "later", "done"]);
+const DEFAULT_COLLAPSED = new Set<BucketKey>();
 
 function emptyBuckets(): Record<BucketKey, BucketState> {
   return Object.fromEntries(GROUPS.map(({ key }) => [key, { items: [], total: 0, nextOffset: 0, hasMore: false, loaded: false, loading: false }])) as unknown as Record<BucketKey, BucketState>;
@@ -51,12 +42,6 @@ function emptyBuckets(): Record<BucketKey, BucketState> {
 
 function localDateTimeValue(date: Date) {
   return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
-}
-
-function defaultDueAt() {
-  const date = addDays(startOfDay(new Date()), 1);
-  date.setHours(10, 0, 0, 0);
-  return localDateTimeValue(date);
 }
 
 function tomorrowIso() {
@@ -91,9 +76,8 @@ export default function TasksPage() {
   const [collapsed, setCollapsed] = useState<Set<BucketKey>>(() => new Set(DEFAULT_COLLAPSED));
   const [accordionReady, setAccordionReady] = useState(false);
   const lastFilterSignature = useRef("");
-  const [filters, setFilters] = useState({ q: "", managerId: "", contactId: "", type: "", tagId: "", from: "", to: "", overdueOnly: false });
+  const [filters, setFilters] = useState({ q: "", managerId: "", contactId: "", type: "", tagId: "" });
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [form, setForm] = useState({ type: "CALL", description: "", dueAt: defaultDueAt(), contactId: "", managerId: "" });
 
   useEffect(() => {
     const stored = window.localStorage.getItem("crm_task_collapsed_groups");
@@ -121,7 +105,6 @@ export default function TasksPage() {
       setManagers(Array.isArray(managerRows) ? managerRows : []);
       setTags(Array.isArray(tagRows) ? tagRows : []);
       setCanAssign(me?.role === "ADMIN" || me?.role === "SUPERVISOR");
-      setForm((current) => ({ ...current, managerId: me?.id || "" }));
     }).catch(() => setError(t("tasks.loadFailed")));
   }, [t]);
 
@@ -137,10 +120,8 @@ export default function TasksPage() {
     if (filters.contactId) params.set("contactId", filters.contactId);
     if (filters.type) params.set("type", filters.type);
     if (filters.tagId) params.set("tagId", filters.tagId);
-    if (filters.from) params.set("from", new Date(`${filters.from}T00:00:00`).toISOString());
-    if (filters.to) params.set("to", addDays(new Date(`${filters.to}T00:00:00`), 1).toISOString());
     return params.toString();
-  }, [debouncedQuery, filters.contactId, filters.from, filters.managerId, filters.tagId, filters.to, filters.type]);
+  }, [debouncedQuery, filters.contactId, filters.managerId, filters.tagId, filters.type]);
 
   const fetchBucket = useCallback(async (key: BucketKey, offset = 0) => {
     setBuckets((current) => ({ ...current, [key]: { ...current[key], loading: true } }));
@@ -169,14 +150,14 @@ export default function TasksPage() {
 
   useEffect(() => {
     if (!accordionReady) return;
-    const signature = `${filterQuery}|${filters.overdueOnly}`;
+    const signature = filterQuery;
     if (lastFilterSignature.current === signature) return;
     lastFilterSignature.current = signature;
     setBuckets(emptyBuckets());
     setSelectedIds(new Set());
-    const visible = GROUPS.map(({ key }) => key).filter((key) => !collapsed.has(key) && (!filters.overdueOnly || OVERDUE_BUCKETS.includes(key)));
+    const visible = GROUPS.map(({ key }) => key).filter((key) => !collapsed.has(key));
     Promise.all([fetchSummary(), ...visible.map((key) => fetchBucket(key))]).catch(() => setError(t("tasks.loadFailed")));
-  }, [accordionReady, collapsed, fetchBucket, fetchSummary, filterQuery, filters.overdueOnly, t]);
+  }, [accordionReady, collapsed, fetchBucket, fetchSummary, filterQuery, t]);
 
   const allLoadedTasks = useMemo(() => GROUPS.flatMap(({ key }) => buckets[key].items), [buckets]);
   const selected = allLoadedTasks.find((task) => task.id === selectedId) || null;
@@ -212,18 +193,6 @@ export default function TasksPage() {
     });
   }
 
-  async function create(event: React.FormEvent) {
-    event.preventDefault();
-    setSaving(true); setError("");
-    const response = await fetch("/api/tasks", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, dueAt: new Date(form.dueAt).toISOString(), managerId: canAssign ? form.managerId : undefined }),
-    });
-    if (!response.ok) setError(t("tasks.createFailed"));
-    else { setForm((current) => ({ ...current, description: "", dueAt: defaultDueAt() })); await refresh(); }
-    setSaving(false);
-  }
-
   async function updateTask(id: string, payload: { status?: Task["status"]; dueAt?: string }) {
     setSaving(true); setError("");
     const response = await fetch("/api/tasks", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, ...payload }) });
@@ -245,9 +214,7 @@ export default function TasksPage() {
   }
 
   const formatDate = (value: string) => new Date(value).toLocaleString(localeTag, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
-  const shownGroups = filters.overdueOnly ? GROUPS.filter(({ key }) => OVERDUE_BUCKETS.includes(key)) : GROUPS;
-  const overdueCount = OVERDUE_BUCKETS.reduce((sum, key) => sum + (counts[key] || 0), 0);
-  const openCount = GROUPS.filter(({ key }) => key !== "done").reduce((sum, { key }) => sum + (counts[key] || 0), 0);
+  const shownGroups = GROUPS;
 
   function historyLabel(action: string) {
     if (action.includes("create")) return t("tasks.historyCreated");
@@ -271,36 +238,22 @@ export default function TasksPage() {
       <div className="max-w-full min-w-0 overflow-x-hidden">
         <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
           <div><h1 className="text-2xl font-semibold">{t("tasks.title")}</h1><p className="muted mt-1 text-sm">{t("tasks.subtitle")}</p></div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {[["open", openCount, "text-[#93c5fd]"], ["overdue", overdueCount, "text-[#fca5a5]"], ["today", counts.today || 0, "text-[#fcd34d]"], ["done", counts.done || 0, "text-[#6ee7b7]"]].map(([key, value, color]) => (
+          <div>
+            {[["today", counts.today || 0, "text-[#fcd34d]"]].map(([key, value, color]) => (
               <div key={key} className="card min-w-20 px-3 py-2 text-center"><div className={`text-xl font-semibold ${color}`}>{value}</div><div className="muted text-[11px]">{t(`tasks.${key}`)}</div></div>
             ))}
           </div>
         </div>
 
-        <form onSubmit={create} className="card mb-5 p-4">
-          <div className="mb-3 flex items-center gap-2 font-medium"><CalendarClock className="h-4 w-4 text-[#60a5fa]" />{t("tasks.newTask")}</div>
-          <div className={`grid gap-3 md:grid-cols-2 ${canAssign ? "xl:grid-cols-6" : "xl:grid-cols-5"}`}>
-            <select required value={form.contactId} onChange={(event) => setForm({ ...form, contactId: event.target.value })}><option value="">{t("meetings.pickClient")}</option>{contacts.map((contact) => <option key={contact.id} value={contact.id}>{contact.firstName} {contact.lastName}</option>)}</select>
-            {canAssign && <select required value={form.managerId} onChange={(event) => setForm({ ...form, managerId: event.target.value })}><option value="">{t("tasks.assignee")}</option>{managers.map((manager) => <option key={manager.id} value={manager.id}>{manager.name}</option>)}</select>}
-            <select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })}>{TASK_TYPES.map((type) => <option key={type} value={type}>{t(`taskTypes.${type}`)}</option>)}</select>
-            <input required className="xl:col-span-2" placeholder={t("tasks.descriptionHint")} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} />
-            <div className="flex min-w-0 gap-2"><input className="min-w-0" required type="datetime-local" value={form.dueAt} onChange={(event) => setForm({ ...form, dueAt: event.target.value })} /><button disabled={saving} className="shrink-0 rounded-xl bg-[#2563eb] px-4 font-medium disabled:opacity-60">{t("common.create")}</button></div>
-          </div>
-        </form>
-
         <div className="card mb-4 p-3">
           <div className="mb-3 flex items-center gap-2 text-sm font-medium"><Filter className="h-4 w-4" />{t("tasks.filters")}</div>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-            <label className="relative sm:col-span-2"><Search className="muted absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" /><input className="pl-9" value={filters.q} onChange={(event) => setFilters({ ...filters, q: event.target.value })} placeholder={t("tasks.search")} /></label>
+            <label className="relative sm:col-span-2"><Search className="muted absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" /><input className="pl-9" value={filters.q} onChange={(event) => setFilters({ ...filters, q: event.target.value })} placeholder={t("tasks.searchShort")} /></label>
             {canAssign && <select value={filters.managerId} onChange={(event) => setFilters({ ...filters, managerId: event.target.value })}><option value="">{t("tasks.allManagers")}</option>{managers.map((manager) => <option key={manager.id} value={manager.id}>{manager.name}</option>)}</select>}
             <select value={filters.contactId} onChange={(event) => setFilters({ ...filters, contactId: event.target.value })}><option value="">{t("tasks.allClients")}</option>{contacts.map((contact) => <option key={contact.id} value={contact.id}>{contact.firstName} {contact.lastName}</option>)}</select>
             <select value={filters.type} onChange={(event) => setFilters({ ...filters, type: event.target.value })}><option value="">{t("tasks.allTypes")}</option>{TASK_TYPES.map((type) => <option key={type} value={type}>{t(`taskTypes.${type}`)}</option>)}</select>
             <select value={filters.tagId} onChange={(event) => setFilters({ ...filters, tagId: event.target.value })}><option value="">{t("tasks.allTags")}</option>{tags.map((tag) => <option key={tag.id} value={tag.id}>{tag.name}</option>)}</select>
-            <input aria-label={t("tasks.dateFrom")} title={t("tasks.dateFrom")} type="date" value={filters.from} onChange={(event) => setFilters({ ...filters, from: event.target.value })} />
-            <input aria-label={t("tasks.dateTo")} title={t("tasks.dateTo")} type="date" value={filters.to} onChange={(event) => setFilters({ ...filters, to: event.target.value })} />
           </div>
-          <label className="mt-3 inline-flex cursor-pointer items-center gap-2 text-sm"><input className="!h-4 !w-4 shrink-0 !p-0" type="checkbox" checked={filters.overdueOnly} onChange={(event) => setFilters({ ...filters, overdueOnly: event.target.checked })} />{t("tasks.overdueOnly")}</label>
         </div>
 
         {selectedIds.size > 0 && (
@@ -320,14 +273,14 @@ export default function TasksPage() {
           <div className="min-w-0 space-y-4">
             {shownGroups.map((group) => {
               const state = buckets[group.key];
-              const isOverdue = OVERDUE_BUCKETS.includes(group.key);
+              const isOverdue = true;
               const allChecked = state.items.length > 0 && state.items.every((task) => selectedIds.has(task.id));
               return (
                 <section key={group.key} className={`min-w-0 rounded-2xl border ${group.tone}`}>
                   <div className={`flex items-center gap-2 px-4 py-3 ${collapsed.has(group.key) ? "" : "border-b border-white/10"}`}>
                     <input className="!h-4 !w-4 shrink-0 !p-0" type="checkbox" checked={allChecked} disabled={!state.items.length} onChange={() => setSelectedIds((current) => { const next = new Set(current); state.items.forEach((task) => allChecked ? next.delete(task.id) : next.size < 500 && next.add(task.id)); return next; })} onClick={(event) => event.stopPropagation()} />
                     <button type="button" onClick={() => toggleGroup(group.key)} aria-expanded={!collapsed.has(group.key)} className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left">
-                      <span className="flex min-w-0 items-center gap-2 font-medium">{collapsed.has(group.key) ? <ChevronRight className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />}{isOverdue ? <AlertTriangle className="h-4 w-4 shrink-0 text-[#f87171]" /> : group.key === "done" ? <CheckCircle2 className="h-4 w-4 shrink-0 text-[#34d399]" /> : <Clock3 className="h-4 w-4 shrink-0 text-[#93a0bb]" />}<span className="truncate">{t(`tasks.${group.key}`)}</span></span>
+                      <span className="flex min-w-0 items-center gap-2 font-medium">{collapsed.has(group.key) ? <ChevronRight className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />}<AlertTriangle className="h-4 w-4 shrink-0 text-[#f87171]" /><span className="truncate">{t(`tasks.${group.key}`)}</span></span>
                       <span className="chip shrink-0">{counts[group.key] || 0}</span>
                     </button>
                   </div>

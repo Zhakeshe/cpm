@@ -6,7 +6,7 @@ describe("vacuum funnel", () => {
     expect(VACUUM_PIPELINE_STAGES.filter((s) => s.isWon)).toHaveLength(1);
     expect(VACUUM_PIPELINE_STAGES.filter((s) => s.isLost)).toHaveLength(1);
     expect(VACUUM_PIPELINE_STAGES.find((s) => s.slug === "thinking")?.name).toBe("Ойланамын");
-    expect(VACUUM_PIPELINE_STAGES.find((s) => s.slug === "thinking")?.requiredFields).toContain("dealAmount");
+    expect(VACUUM_PIPELINE_STAGES.find((s) => s.slug === "thinking")?.requiredFields).toEqual([]);
     expect(VACUUM_PIPELINE_STAGES.find((s) => s.slug === "paid")?.requiredFields).toContain("dealAmount");
     expect(VACUUM_PIPELINE_STAGES.filter((s) => ["not_needed", "contacted", "demo", "demo_done", "callback", "thinking"].includes(s.slug)).map((s) => s.name)).toEqual([
       "Керек Емес",

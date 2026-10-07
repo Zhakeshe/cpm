@@ -30,8 +30,8 @@ export function ContactSales({
   }, []);
 
   return (
-    <div className="space-y-4">
-      <div className="card p-5 space-y-2">
+    <div className="mt-4 border-t border-[#243049] pt-4">
+      <div className="space-y-2">
         <div className="font-medium">{t("contact.tags")}</div>
         <div className="flex flex-wrap gap-2">
           {allTags.map((tag) => {

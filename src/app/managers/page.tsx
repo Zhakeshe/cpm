@@ -95,6 +95,21 @@ export default function ManagersPage() {
     setResetPassword("");
   }
 
+  async function deleteManager(user: User) {
+    if (!window.confirm(t("managers.deleteConfirm", { name: user.name }))) return;
+    const response = await fetch("/api/users", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: user.id }),
+    });
+    if (!response.ok) {
+      setNotice(t("managers.deleteFailed"));
+      return;
+    }
+    setNotice(t("managers.deleted", { name: user.name }));
+    await reload();
+  }
+
   const seenOnline = (u: User) => u.lastSeenAt && Date.now() - new Date(u.lastSeenAt).getTime() < 5 * 60 * 1000;
 
   return (
@@ -192,6 +207,9 @@ export default function ManagersPage() {
                       {t("managers.resetPassword")}
                     </button>
                   )}
+                  <button type="button" className="mt-2 text-sm text-[#f87171]" onClick={() => deleteManager(u)}>
+                    {t("managers.delete")}
+                  </button>
                 </>
               )}
             </div>
