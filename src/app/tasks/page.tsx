@@ -5,7 +5,7 @@ import { useI18n } from "@/components/I18nProvider";
 import { addDays, startOfDay } from "date-fns";
 import {
   AlertTriangle, CalendarClock, Check, CheckCircle2, ChevronDown, ChevronRight,
-  CircleUserRound, Filter, History, MessageCircle, Phone, Search, Send,
+  CircleUserRound, Clock3, Filter, History, MessageCircle, Phone, Search, Send,
   UserRound, Video, X,
 } from "lucide-react";
 import Link from "next/link";
@@ -27,12 +27,13 @@ type AuditEntry = {
   id: string; action: string; oldValue?: Record<string, unknown> | null;
   newValue?: Record<string, unknown> | null; createdAt: string; actor?: Person | null;
 };
-type BucketKey = "today";
+type BucketKey = "today" | "tomorrow";
 type BucketState = { items: Task[]; total: number; nextOffset: number; hasMore: boolean; loaded: boolean; loading: boolean };
 
 const TASK_TYPES = ["CALL", "WHATSAPP", "DEMO", "MEETING", "SEND_PROPOSAL", "FOLLOW_UP", "OTHER"];
 const GROUPS: Array<{ key: BucketKey; tone: string }> = [
   { key: "today", tone: "border-[#7f1d1d] bg-[#2b1720]" },
+  { key: "tomorrow", tone: "border-[#334155] bg-[#151e32]" },
 ];
 const DEFAULT_COLLAPSED = new Set<BucketKey>();
 
@@ -238,8 +239,8 @@ export default function TasksPage() {
       <div className="max-w-full min-w-0 overflow-x-hidden">
         <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
           <div><h1 className="text-2xl font-semibold">{t("tasks.title")}</h1><p className="muted mt-1 text-sm">{t("tasks.subtitle")}</p></div>
-          <div>
-            {[["today", counts.today || 0, "text-[#fcd34d]"]].map(([key, value, color]) => (
+          <div className="grid grid-cols-2 gap-2">
+            {[["today", counts.today || 0, "text-[#fcd34d]"], ["tomorrow", counts.tomorrow || 0, "text-[#93c5fd]"]].map(([key, value, color]) => (
               <div key={key} className="card min-w-20 px-3 py-2 text-center"><div className={`text-xl font-semibold ${color}`}>{value}</div><div className="muted text-[11px]">{t(`tasks.${key}`)}</div></div>
             ))}
           </div>
@@ -273,14 +274,14 @@ export default function TasksPage() {
           <div className="min-w-0 space-y-4">
             {shownGroups.map((group) => {
               const state = buckets[group.key];
-              const isOverdue = true;
+              const isOverdue = group.key === "today";
               const allChecked = state.items.length > 0 && state.items.every((task) => selectedIds.has(task.id));
               return (
                 <section key={group.key} className={`min-w-0 rounded-2xl border ${group.tone}`}>
                   <div className={`flex items-center gap-2 px-4 py-3 ${collapsed.has(group.key) ? "" : "border-b border-white/10"}`}>
                     <input className="!h-4 !w-4 shrink-0 !p-0" type="checkbox" checked={allChecked} disabled={!state.items.length} onChange={() => setSelectedIds((current) => { const next = new Set(current); state.items.forEach((task) => allChecked ? next.delete(task.id) : next.size < 500 && next.add(task.id)); return next; })} onClick={(event) => event.stopPropagation()} />
                     <button type="button" onClick={() => toggleGroup(group.key)} aria-expanded={!collapsed.has(group.key)} className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left">
-                      <span className="flex min-w-0 items-center gap-2 font-medium">{collapsed.has(group.key) ? <ChevronRight className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />}<AlertTriangle className="h-4 w-4 shrink-0 text-[#f87171]" /><span className="truncate">{t(`tasks.${group.key}`)}</span></span>
+                      <span className="flex min-w-0 items-center gap-2 font-medium">{collapsed.has(group.key) ? <ChevronRight className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />}{isOverdue ? <AlertTriangle className="h-4 w-4 shrink-0 text-[#f87171]" /> : <Clock3 className="h-4 w-4 shrink-0 text-[#93c5fd]" />}<span className="truncate">{t(`tasks.${group.key}`)}</span></span>
                       <span className="chip shrink-0">{counts[group.key] || 0}</span>
                     </button>
                   </div>

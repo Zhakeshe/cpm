@@ -17,6 +17,13 @@ describe("task time buckets", () => {
     });
   });
 
+  it("keeps tomorrow as the only future bucket shown by the task page", () => {
+    expect(taskBucketFilter("tomorrow", now, today)).toEqual({
+      status: "OPEN",
+      dueAt: { gte: new Date("2026-10-06T19:00:00.000Z"), lt: new Date("2026-10-07T19:00:00.000Z") },
+    });
+  });
+
   it("creates non-overlapping overdue age ranges", () => {
     expect(taskBucketFilter("overdue1to3", now, today).dueAt).toEqual({
       gte: new Date("2026-10-02T19:00:00.000Z"),
