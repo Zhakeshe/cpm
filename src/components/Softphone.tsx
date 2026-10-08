@@ -1,165 +1,99 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Phone, PhoneOff, PhoneIncoming } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Phone } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
 
-type SipConfig =
+type WebrtcConfig =
   | { enabled: false; reason: string }
-  | {
-      enabled: true;
-      wsUrl: string;
-      uri: string;
-      password: string;
-      extension: string;
-      displayName: string;
+  | { enabled: true; key: string; sip: string };
+
+type ZadarmaWidget = (
+  key: string,
+  sip: string,
+  shape: "square" | "rounded",
+  language: string,
+  incoming: boolean,
+  position: { right: string; bottom: string },
+) => void;
+
+declare global {
+  interface Window {
+    zadarmaWidgetFn?: ZadarmaWidget;
+  }
+}
+
+const WIDGET_SCRIPTS = [
+  "https://my.zadarma.com/webphoneWebRTCWidget/v9/js/loader-phone-lib.js?sub_v=1",
+  "https://my.zadarma.com/webphoneWebRTCWidget/v9/js/loader-phone-fn.js?sub_v=1",
+];
+
+function loadScript(src: string) {
+  return new Promise<void>((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`);
+    if (existing?.dataset.loaded === "true") return resolve();
+    if (existing) {
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener("error", () => reject(new Error("ZADARMA_WIDGET_LOAD_FAILED")), { once: true });
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = false;
+    script.onload = () => {
+      script.dataset.loaded = "true";
+      resolve();
     };
+    script.onerror = () => reject(new Error("ZADARMA_WIDGET_LOAD_FAILED"));
+    document.head.appendChild(script);
+  });
+}
 
-type CallState = "idle" | "registering" | "ready" | "incoming" | "in-call" | "error";
-
-type SessionEvents = { on: (event: string, handler: () => void) => void };
-
-/** jssip's own event map is stricter than we need, so the UA is used through a narrow surface. */
-type UaLike = {
-  start: () => void;
-  stop: () => void;
-  on: {
-    (event: "registered" | "registrationFailed", handler: () => void): void;
-    (
-      event: "newRTCSession",
-      handler: (data: { session: JsSipSession & SessionEvents; originator: string }) => void,
-    ): void;
-  };
-};
-
-type JsSipSession = {
-  answer: (opts?: {
-    mediaConstraints?: { audio: boolean; video: boolean };
-    pcConfig?: { iceServers?: Array<{ urls: string }> };
-  }) => void;
-  terminate: () => void;
-  connection?: RTCPeerConnection;
-  remote_identity?: { uri?: { user?: string } };
-};
-
-/**
- * Browser softphone: registers the manager's SIP extension over WebSocket so a
- * headset is enough, with no desk phone or separate client.
- */
+/** Official Zadarma WebRTC widget authenticated with a short-lived server key. */
 export function Softphone() {
   const { t } = useI18n();
-  const [state, setState] = useState<CallState>("idle");
-  const [peer, setPeer] = useState<string>("");
-  const [disabledReason, setDisabledReason] = useState<string | null>(null);
-  const uaRef = useRef<UaLike | null>(null);
-  const sessionRef = useRef<JsSipSession | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  const attachAudio = useCallback((session: JsSipSession) => {
-    const pc = session.connection;
-    if (!pc || !audioRef.current) return;
-    pc.ontrack = (event) => {
-      if (audioRef.current) audioRef.current.srcObject = event.streams[0];
-    };
-  }, []);
+  const [state, setState] = useState<"loading" | "ready" | "disabled" | "error">("loading");
 
   useEffect(() => {
     let cancelled = false;
 
     async function boot() {
-      const config: SipConfig = await fetch("/api/sip/credentials").then((r) => r.json());
+      const response = await fetch("/api/sip/webrtc-key", { cache: "no-store" });
+      if (!response.ok) throw new Error("ZADARMA_WEBRTC_KEY_FAILED");
+      const config = (await response.json()) as WebrtcConfig;
       if (cancelled) return;
       if (!config.enabled) {
-        setDisabledReason(config.reason);
+        setState("disabled");
         return;
       }
-      const JsSIP = (await import("jssip")).default;
-      const socket = new JsSIP.WebSocketInterface(config.wsUrl);
-      const ua = new JsSIP.UA({
-        sockets: [socket],
-        uri: config.uri,
-        password: config.password,
-        display_name: config.displayName,
-        session_timers: false,
-        register_expires: 300,
-        connection_recovery_max_interval: 30,
-      }) as unknown as UaLike;
-      uaRef.current = ua;
-
-      ua.on("registered", () => setState("ready"));
-      ua.on("registrationFailed", () => setState("error"));
-      ua.on("newRTCSession", (event) => {
-        const session = event.session;
-        const handle = session as unknown as JsSipSession;
-        sessionRef.current = handle;
-        setPeer(handle.remote_identity?.uri?.user || "");
-        if (event.originator === "remote") setState("incoming");
-        session.on("accepted", () => {
-          setState("in-call");
-          attachAudio(handle);
-        });
-        session.on("confirmed", () => {
-          setState("in-call");
-          attachAudio(handle);
-        });
-        session.on("ended", () => setState("ready"));
-        session.on("failed", () => setState("ready"));
+      for (const src of WIDGET_SCRIPTS) await loadScript(src);
+      if (cancelled) return;
+      if (!window.zadarmaWidgetFn) throw new Error("ZADARMA_WIDGET_NOT_AVAILABLE");
+      window.zadarmaWidgetFn(config.key, config.sip, "square", "ru", true, {
+        right: "10px",
+        bottom: "5px",
       });
-
-      setState("registering");
-      ua.start();
+      setState("ready");
     }
 
-    boot().catch(() => setState("error"));
+    boot().catch((error) => {
+      console.error("Zadarma WebRTC widget failed", error);
+      if (!cancelled) setState("error");
+    });
     return () => {
       cancelled = true;
-      uaRef.current?.stop();
     };
-  }, [attachAudio]);
+  }, []);
 
-  if (disabledReason) return null;
-
-  function answer() {
-    sessionRef.current?.answer({
-      mediaConstraints: { audio: true, video: false },
-      pcConfig: { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] },
-    });
-  }
-  function hangup() {
-    sessionRef.current?.terminate();
-    setState("ready");
-  }
-
+  if (state === "ready" || state === "disabled") return null;
   return (
-    <div className="fixed bottom-4 right-4 z-40 card px-4 py-3 w-64 space-y-2">
-      <audio ref={audioRef} autoPlay />
+    <div className="fixed bottom-4 right-4 z-40 card px-4 py-3 w-64">
       <div className="flex items-center gap-2 text-sm">
         <Phone size={14} />
         <span className="muted">
-          {state === "ready" && t("softphone.ready")}
-          {state === "registering" && t("softphone.registering")}
-          {state === "incoming" && t("softphone.incoming")}
-          {state === "in-call" && t("softphone.inCall")}
-          {state === "error" && t("softphone.error")}
-          {state === "idle" && t("softphone.idle")}
+          {state === "loading" ? t("softphone.registering") : t("softphone.error")}
         </span>
       </div>
-      {(state === "incoming" || state === "in-call") && <div className="text-sm">{peer}</div>}
-      {state === "incoming" && (
-        <div className="flex gap-2">
-          <button className="rounded-xl bg-[#16a34a] px-3 py-2 text-sm flex items-center gap-1" onClick={answer}>
-            <PhoneIncoming size={14} /> {t("softphone.answer")}
-          </button>
-          <button className="rounded-xl bg-[#dc2626] px-3 py-2 text-sm" onClick={hangup}>
-            {t("softphone.decline")}
-          </button>
-        </div>
-      )}
-      {state === "in-call" && (
-        <button className="rounded-xl bg-[#dc2626] px-3 py-2 text-sm flex items-center gap-1" onClick={hangup}>
-          <PhoneOff size={14} /> {t("softphone.hangup")}
-        </button>
-      )}
     </div>
   );
 }

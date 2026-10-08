@@ -93,12 +93,12 @@ docker compose run --rm --no-deps app npm run zadarma:setup -- --dry-run
 docker compose run --rm --no-deps app npm run zadarma:setup
 ```
 
-Обновите страницу CRM у менеджеров и проверьте регистрацию софтфона. Скрипт не проверяет подключение к АТС. Для click-to-call и уведомлений нужны API-ключи ниже; SIP-пароль не заменяет `ZADARMA_SECRET`.
+Обновите страницу CRM у менеджеров и проверьте официальный WebRTC-виджет Zadarma. CRM на сервере получает для текущего полного SIP-логина краткоживущий ключ через `/v1/webrtc/get_key`; SIP-пароль в браузер не передаётся. Домен CRM должен быть разрешён в настройках WebRTC-виджета Zadarma. Для click-to-call, WebRTC-ключа и уведомлений нужны API-ключи ниже; SIP-пароль не заменяет `ZADARMA_SECRET`.
 
 Уведомления PBX: `https://quantum.ushqn.com/api/webhooks/telephony`  
 (в кабинете Zadarma поле «Уведомления о звонках АТС», должен открываться `zd_echo`).
 
-Click-to-call с карточки клиента идёт через `GET /v1/request/callback/`. Софтфон в браузере регистрируется по WebSocket.
+Click-to-call с карточки клиента идёт через `GET /v1/request/callback/`. Софтфон использует официальный WebRTC-виджет Zadarma.
 
 После правок `.env`: `docker compose up -d app worker`.
 

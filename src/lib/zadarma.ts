@@ -152,7 +152,12 @@ export function mapZadarmaNotify(body: Record<string, unknown>): TelephonyWebhoo
   return null;
 }
 
-export async function zadarmaApiGet(path: string, params: Record<string, string>) {
+type ZadarmaApiResponse = { status?: string; message?: string; time?: number };
+
+export async function zadarmaApiGet<T extends ZadarmaApiResponse = ZadarmaApiResponse>(
+  path: string,
+  params: Record<string, string>,
+): Promise<T> {
   const { userKey, secret, configured } = zadarmaCredentials();
   if (!configured) throw new Error("ZADARMA_NOT_CONFIGURED");
   const query = phpHttpBuildQuery(params);
@@ -162,11 +167,20 @@ export async function zadarmaApiGet(path: string, params: Record<string, string>
   const res = await fetch(url, {
     headers: { Authorization: `${userKey}:${sign}` },
   });
-  const json = (await res.json().catch(() => ({}))) as { status?: string; message?: string; time?: number };
+  const json = (await res.json().catch(() => ({}))) as T;
   if (!res.ok || json.status === "error") {
     throw new Error(json.message || `ZADARMA_${res.status}`);
   }
   return json;
+}
+
+export async function zadarmaWebrtcKey(sip: string) {
+  const json = await zadarmaApiGet<ZadarmaApiResponse & { key?: string }>(
+    "/v1/webrtc/get_key/",
+    { sip },
+  );
+  if (!json.key) throw new Error("ZADARMA_WEBRTC_KEY_MISSING");
+  return json.key;
 }
 
 export function resolveZadarmaCallbackSip(extension?: string | null, username?: string | null) {

@@ -37,6 +37,7 @@ export async function middleware(req: NextRequest) {
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
+    pathname === "/manifest.json" ||
     isWebhookOrHealth(pathname)
   ) {
     return NextResponse.next();
