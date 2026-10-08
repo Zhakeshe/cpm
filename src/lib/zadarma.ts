@@ -169,6 +169,13 @@ export async function zadarmaApiGet(path: string, params: Record<string, string>
   return json;
 }
 
+export function resolveZadarmaCallbackSip(extension?: string | null, username?: string | null) {
+  // PBX accounts use a login such as 593615-101, while callback expects the
+  // internal extension (101). Standalone SIP accounts use their full login.
+  if (username && !username.includes("-")) return username;
+  return extension || username || "101";
+}
+
 export async function zadarmaCallback(params: { fromExtension: string; toNumber: string }) {
   const to = params.toNumber.replace(/\D/g, "");
   const from = params.fromExtension.replace(/\D/g, "") || params.fromExtension;

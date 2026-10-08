@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   mapZadarmaNotify,
   phpHttpBuildQuery,
+  resolveZadarmaCallbackSip,
   verifyZadarmaSignature,
   zadarmaHmacBase64,
   zadarmaNotifySignatureData,
@@ -82,5 +83,11 @@ describe("zadarma notify mapping", () => {
     expect(verifyZadarmaSignature(body, header, secret)).toBe(true);
     expect(verifyZadarmaSignature(body, "nope", secret)).toBe(false);
     expect(phpHttpBuildQuery({ to: "7701", from: "101" })).toBe("from=101&to=7701");
+  });
+
+  it("uses an internal extension for PBX callback and a full standalone login", () => {
+    expect(resolveZadarmaCallbackSip("101", "593615-101")).toBe("101");
+    expect(resolveZadarmaCallbackSip("101", "158925")).toBe("158925");
+    expect(resolveZadarmaCallbackSip("104", null)).toBe("104");
   });
 });

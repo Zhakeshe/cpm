@@ -21,19 +21,19 @@ async function main() {
   try {
     const assignments = await prisma.$transaction(async (db) => {
       const managers = await db.user.findMany({
-        where: { role: "MANAGER", isActive: true },
+        where: { isActive: true },
         orderBy: [{ createdAt: "asc" }, { id: "asc" }],
         select: { id: true, email: true, sipExtension: true },
       });
       if (managers.length < numbers.length) {
-        throw new Error(`Need ${numbers.length} active managers; found ${managers.length}. No settings changed.`);
+        throw new Error(`Need ${numbers.length} active users; found ${managers.length}. No settings changed.`);
       }
       const assignedManagerIds = new Set<string>();
       const assignments = numbers.map((extension) => {
         const currentOwner = managers.find((manager) =>
           manager.sipExtension === extension && !assignedManagerIds.has(manager.id));
         const manager = currentOwner || managers.find((candidate) => !assignedManagerIds.has(candidate.id));
-        if (!manager) throw new Error(`No active manager available for extension ${extension}. No settings changed.`);
+        if (!manager) throw new Error(`No active user available for extension ${extension}. No settings changed.`);
         assignedManagerIds.add(manager.id);
         return {
           id: manager.id,
