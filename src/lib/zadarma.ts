@@ -190,8 +190,13 @@ export function resolveZadarmaCallbackSip(extension?: string | null, username?: 
   return extension || username || "101";
 }
 
+export function normalizeZadarmaDialNumber(phone: string) {
+  const digits = phone.replace(/\D/g, "");
+  return /^7\d{10}$/.test(digits) ? `8${digits.slice(1)}` : digits;
+}
+
 export async function zadarmaCallback(params: { fromExtension: string; toNumber: string }) {
-  const to = params.toNumber.replace(/\D/g, "");
+  const to = normalizeZadarmaDialNumber(params.toNumber);
   const from = params.fromExtension.replace(/\D/g, "") || params.fromExtension;
   const json = await zadarmaApiGet("/v1/request/callback/", { from, to, sip: from });
   return {

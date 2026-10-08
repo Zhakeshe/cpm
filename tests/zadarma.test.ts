@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   mapZadarmaNotify,
+  normalizeZadarmaDialNumber,
   phpHttpBuildQuery,
   resolveZadarmaCallbackSip,
   verifyZadarmaSignature,
@@ -95,6 +96,12 @@ describe("zadarma notify mapping", () => {
     expect(resolveZadarmaCallbackSip("101", "593615-101")).toBe("101");
     expect(resolveZadarmaCallbackSip("101", "158925")).toBe("158925");
     expect(resolveZadarmaCallbackSip("104", null)).toBe("104");
+  });
+
+  it("dials Kazakhstan +7 lead numbers through the 8 prefix", () => {
+    expect(normalizeZadarmaDialNumber("+7 701 234 56 78")).toBe("87012345678");
+    expect(normalizeZadarmaDialNumber("8 (701) 234-56-78")).toBe("87012345678");
+    expect(normalizeZadarmaDialNumber("12345")).toBe("12345");
   });
 
   it("requests a short-lived WebRTC key for the full SIP login", async () => {
