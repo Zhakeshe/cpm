@@ -55,7 +55,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [openNotes, setOpenNotes] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [incoming, setIncoming] = useState<{ contactId?: string } | null>(null);
 
   useEffect(() => {
     fetch("/api/auth/me").then(async (r) => {
@@ -77,10 +76,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       setNotes((prev) => [n, ...prev].slice(0, 50));
       setToast(n.title);
       setTimeout(() => setToast(null), 6000);
-    },
-    "call:incoming": (payload: { contactId?: string }) => {
-      setIncoming(payload);
-      setTimeout(() => setIncoming(null), 20000);
     },
   });
 
@@ -186,17 +181,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
             ))}
             {notes.length === 0 && <div className="muted text-sm">{t("common.noNotifications")}</div>}
-          </div>
-        )}
-        {incoming && (
-          <div className="fixed bottom-4 right-4 z-30 card p-4 w-80">
-            <div className="font-medium">{t("softphone.incomingToast")}</div>
-            <div className="muted text-sm">{t("softphone.incomingHint")}</div>
-            {incoming.contactId && (
-              <Link href={`/contacts/${incoming.contactId}`} className="mt-3 inline-block chip">
-                {t("softphone.openCard")}
-              </Link>
-            )}
           </div>
         )}
         {toast && (
