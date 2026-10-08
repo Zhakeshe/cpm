@@ -36,16 +36,20 @@ export async function POST(req: NextRequest) {
     const body = originateSchema.parse(await req.json());
     const contact = await prisma.contact.findUnique({ where: { id: body.contactId } });
     if (!contact) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
-    const manager = await prisma.user.findUnique({ where: { id: user.id } });
+    const manager = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { sipExtension: true, sipUsername: true },
+    });
+    const callbackLogin = manager?.sipUsername || manager?.sipExtension || "101";
     const result = await originateCall({
-      fromExtension: manager?.sipExtension || "101",
+      fromExtension: callbackLogin,
       toNumber: contact.phoneNormalized,
     });
     const handled = await handleTelephonyEvent(prisma, {
       event: "call.started",
       callId: String(result.callId),
       direction: "OUTBOUND",
-      from: manager?.sipExtension || "101",
+      from: callbackLogin,
       to: contact.phoneNormalized,
       managerExtension: manager?.sipExtension || undefined,
       status: "RINGING",

@@ -8,6 +8,12 @@ describe("SIP registration credentials", () => {
     } }, "101", "101")).toEqual({ username: "593615-101", password: "test-only" });
   });
 
+  it("supports direct SIP accounts issued after a tariff change", () => {
+    expect(resolveSipAccount({ extensions: {
+      "101": { username: "158925", password: "test-only" },
+    } }, "101", "158925")).toEqual({ username: "158925", password: "test-only" });
+  });
+
   it("keeps legacy password-only settings compatible with the user's SIP login", () => {
     expect(resolveSipAccount({ extensions: { "101": "test-only" } }, "101", "593615-101"))
       .toEqual({ username: "593615-101", password: "test-only" });

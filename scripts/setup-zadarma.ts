@@ -3,7 +3,7 @@ import { z } from "zod";
 import { ZADARMA_DEFAULTS } from "../src/lib/zadarma";
 
 const extensionsSchema = z.record(z.string().regex(/^\d+$/), z.object({
-  username: z.string().regex(/^\d+-\d+$/),
+  username: z.string().regex(/^\d+(?:-\d+)?$/),
   password: z.string().min(1),
 }));
 
@@ -17,26 +17,31 @@ async function main() {
   }
   const numbers = Object.keys(extensions).sort((a, b) => Number(a) - Number(b));
   if (!numbers.length) throw new Error("At least one SIP extension is required.");
-  for (const number of numbers) {
-    if (!extensions[number].username.endsWith(`-${number}`)) {
-      throw new Error(`SIP login does not match extension ${number}.`);
-    }
-  }
   const prisma = new PrismaClient();
   try {
     const assignments = await prisma.$transaction(async (db) => {
       const managers = await db.user.findMany({
         where: { role: "MANAGER", isActive: true },
         orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-        take: numbers.length,
-        select: { id: true, email: true },
+        select: { id: true, email: true, sipExtension: true },
       });
       if (managers.length < numbers.length) {
         throw new Error(`Need ${numbers.length} active managers; found ${managers.length}. No settings changed.`);
       }
-      const assignments = managers.map((manager, index) => ({
-        ...manager, extension: numbers[index], username: extensions[numbers[index]].username,
-      }));
+      const assignedManagerIds = new Set<string>();
+      const assignments = numbers.map((extension) => {
+        const currentOwner = managers.find((manager) =>
+          manager.sipExtension === extension && !assignedManagerIds.has(manager.id));
+        const manager = currentOwner || managers.find((candidate) => !assignedManagerIds.has(candidate.id));
+        if (!manager) throw new Error(`No active manager available for extension ${extension}. No settings changed.`);
+        assignedManagerIds.add(manager.id);
+        return {
+          id: manager.id,
+          email: manager.email,
+          extension,
+          username: extensions[extension].username,
+        };
+      });
       if (process.argv.includes("--dry-run")) return assignments;
 
       // Remove previous owners so two users cannot register the same extension.
