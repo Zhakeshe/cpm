@@ -1,11 +1,19 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   mapZadarmaNotify,
+  normalizeZadarmaDialNumber,
   phpHttpBuildQuery,
+  resolveZadarmaCallbackSip,
   verifyZadarmaSignature,
   zadarmaHmacBase64,
   zadarmaNotifySignatureData,
+  zadarmaWebrtcKey,
 } from "../src/lib/zadarma";
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllEnvs();
+});
 
 describe("zadarma notify mapping", () => {
   it("maps inbound start and answered hangup", () => {
@@ -82,5 +90,29 @@ describe("zadarma notify mapping", () => {
     expect(verifyZadarmaSignature(body, header, secret)).toBe(true);
     expect(verifyZadarmaSignature(body, "nope", secret)).toBe(false);
     expect(phpHttpBuildQuery({ to: "7701", from: "101" })).toBe("from=101&to=7701");
+  });
+
+  it("uses an internal extension for PBX callback and a full standalone login", () => {
+    expect(resolveZadarmaCallbackSip("101", "593615-101")).toBe("101");
+    expect(resolveZadarmaCallbackSip("101", "158925")).toBe("158925");
+    expect(resolveZadarmaCallbackSip("104", null)).toBe("104");
+  });
+
+  it("dials Kazakhstan +7 lead numbers through the 8 prefix", () => {
+    expect(normalizeZadarmaDialNumber("+7 701 234 56 78")).toBe("87012345678");
+    expect(normalizeZadarmaDialNumber("8 (701) 234-56-78")).toBe("87012345678");
+    expect(normalizeZadarmaDialNumber("12345")).toBe("12345");
+  });
+
+  it("requests a short-lived WebRTC key for the full SIP login", async () => {
+    vi.stubEnv("ZADARMA_USER_KEY", "test-user-key");
+    vi.stubEnv("ZADARMA_SECRET", "test-secret");
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(
+      JSON.stringify({ status: "success", key: "temporary-webrtc-key" }),
+      { status: 200, headers: { "Content-Type": "application/json" } },
+    ));
+
+    await expect(zadarmaWebrtcKey("593615-100")).resolves.toBe("temporary-webrtc-key");
+    expect(String(fetchMock.mock.calls[0][0])).toContain("/v1/webrtc/get_key/?sip=593615-100");
   });
 });

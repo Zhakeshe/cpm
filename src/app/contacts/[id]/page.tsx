@@ -1,14 +1,16 @@
 "use client";
 
 import { AppShell } from "@/components/AppShell";
-import { QuickActions } from "@/components/QuickActions";
 import { ContactSales } from "@/components/ContactSales";
+import { ContactTaskPanel } from "@/components/ContactTaskPanel";
+import { ContactContract } from "@/components/ContactContract";
 import { useI18n } from "@/components/I18nProvider";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
 
-type Stage = { id: string; name: string; requiredFields: string[]; isWon?: boolean; isLost?: boolean };
+type Stage = { id: string; slug: string; name: string; requiredFields: string[]; isWon?: boolean; isLost?: boolean };
+
+const CONTACT_STAGE_ORDER = ["not_needed", "contacted", "demo", "demo_done", "callback", "thinking"];
 
 const LOST_REASONS = ["price", "no_need", "competitor", "silent", "later", "other"];
 const WON_REASONS = ["paid_full", "installment", "repeat"];
@@ -37,7 +39,6 @@ type Contact = {
   quotes?: Array<{ id: string; number: string; total: string | number; status: string }>;
   payments?: Array<{ id: string; amount: string | number; method: string }>;
   files?: Array<{ id: string; fileName: string; size: number }>;
-  activities: Array<{ id: string; title: string; createdAt: string }>;
   calls: Array<{ id: string; direction: string; duration: number; recordingUrl?: string | null; status: string }>;
   tasks: Array<{ id: string; description: string; dueAt: string; status: string; type: string }>;
   meetings: Array<{ id: string; startsAt: string; status: string; format: string }>;
@@ -54,7 +55,6 @@ export default function ContactPage() {
   const [problem, setProblem] = useState("");
   const [pendingStage, setPendingStage] = useState<Stage | null>(null);
   const [reason, setReason] = useState("");
-  const [note, setNote] = useState("");
   const [calling, setCalling] = useState(false);
 
   const load = useCallback(async () => {
@@ -75,6 +75,7 @@ export default function ContactPage() {
   }, [load]);
 
   const fieldName = (f: string) => t(`fields.${f}`, f);
+  const contactStages = CONTACT_STAGE_ORDER.map((slug) => stages.find((stage) => stage.slug === slug)).filter((stage): stage is Stage => Boolean(stage));
 
   async function patch(data: object) {
     setProblem("");
@@ -107,22 +108,6 @@ export default function ContactPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ contactId: params.id, managerId }),
     });
-    await load();
-  }
-
-  async function addNote(e: React.FormEvent) {
-    e.preventDefault();
-    if (!note.trim()) return;
-    const res = await fetch(`/api/contacts/${params.id}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: note }),
-    });
-    if (!res.ok) {
-      setProblem(t("contact.noteFailed"));
-      return;
-    }
-    setNote("");
     await load();
   }
 
@@ -170,7 +155,7 @@ export default function ContactPage() {
 
   return (
     <AppShell>
-      <div className="grid lg:grid-cols-[1fr_360px] gap-6">
+      <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
         <div className="space-y-4">
           <div className="card p-6">
             <div className="flex justify-between gap-4">
@@ -187,10 +172,6 @@ export default function ContactPage() {
               </button>
             </div>
 
-            <div className="mt-4">
-              <QuickActions contactId={c.id} compact onDone={load} />
-            </div>
-
             <div className="grid md:grid-cols-2 gap-3 mt-4">
               <div>{t("contact.source", { source: t(`sources.${c.source}`, c.source) })}</div>
               <div>
@@ -204,20 +185,16 @@ export default function ContactPage() {
               </div>
               <label>
                 {t("contact.stage")}
-                <select className="mt-1" value={c.pipelineStage?.id || ""} onChange={(e) => pickStage(e.target.value)}>
-                  {stages.map((s) => (
+                <select className="mt-1" value={contactStages.some((stage) => stage.id === c.pipelineStage?.id) ? c.pipelineStage?.id || "" : ""} onChange={(e) => pickStage(e.target.value)}>
+                  <option value="" disabled>{t("contact.pickStage")}</option>
+                  {contactStages.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name}
-                      {s.requiredFields.length ? ` (${t("contact.needs", { fields: s.requiredFields.map(fieldName).join(", ") })})` : ""}
                     </option>
                   ))}
                 </select>
               </label>
               <div>{t("contact.manager", { name: c.manager?.name || t("common.dash") })}</div>
-              <label>
-                {t("contact.amount")}
-                <input value={String(c.dealAmount)} onChange={(e) => setC({ ...c, dealAmount: e.target.value })} />
-              </label>
               <label>
                 {t("common.email")}
                 <input value={c.email || ""} onChange={(e) => setC({ ...c, email: e.target.value })} />
@@ -236,6 +213,8 @@ export default function ContactPage() {
               </label>
             </div>
 
+            <ContactSales contactId={c.id} tags={c.tags || []} onChange={load} />
+
             <textarea className="mt-3" rows={3} value={c.comment} onChange={(e) => setC({ ...c, comment: e.target.value })} />
             <div className="flex gap-2 mt-3">
               <button
@@ -243,7 +222,6 @@ export default function ContactPage() {
                 onClick={() =>
                   patch({
                     comment: c.comment,
-                    dealAmount: Number(c.dealAmount),
                     email: c.email,
                     altPhone: c.altPhone,
                     city: c.city,
@@ -296,19 +274,7 @@ export default function ContactPage() {
             )}
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="card p-5">
-              <div className="font-medium mb-2">{t("contact.tasks")}</div>
-              {c.tasks.length === 0 && <div className="muted text-sm">{t("contact.noTasks")}</div>}
-              {c.tasks.slice(0, 6).map((task) => (
-                <div key={task.id} className="text-sm border-t border-[#243049] py-2">
-                  <div>{task.description}</div>
-                  <div className="muted text-xs">
-                    {t(`taskTypes.${task.type}`, task.type)} · {new Date(task.dueAt).toLocaleString(localeTag)} · {task.status}
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="grid gap-4">
             <div className="card p-5">
               <div className="font-medium mb-2">{t("contact.meetings")}</div>
               {c.meetings.length === 0 && <div className="muted text-sm">{t("contact.noMeetings")}</div>}
@@ -321,25 +287,6 @@ export default function ContactPage() {
                 </div>
               ))}
             </div>
-          </div>
-
-          <div className="card p-5">
-            <div className="font-medium mb-2">{t("quotes.title")}</div>
-            {(c.quotes || []).map((q) => (
-              <Link key={q.id} href={`/quotes/${q.id}`} className="block text-sm border-t border-[#243049] py-2 text-[#93c5fd]">
-                {q.number} · {Number(q.total)} ₸ · {t(`quoteStatus.${q.status}`, q.status)}
-              </Link>
-            ))}
-            {(c.payments || []).map((p) => (
-              <div key={p.id} className="text-sm border-t border-[#243049] py-2">
-                {Number(p.amount)} ₸ · {t(`payments.${p.method}`, p.method)}
-              </div>
-            ))}
-            {(c.files || []).map((f) => (
-              <a key={f.id} className="block text-sm text-[#93c5fd] border-t border-[#243049] py-2" href={`/api/contacts/${c.id}/files/${f.id}`}>
-                {f.fileName}
-              </a>
-            ))}
           </div>
 
           <div className="card p-6">
@@ -357,22 +304,24 @@ export default function ContactPage() {
         </div>
 
         <div className="space-y-4">
-        <ContactSales contactId={c.id} customFields={c.customFields || {}} tags={c.tags || []} companyId={c.company?.id} onChange={load} />
-        <div className="card p-6">
-          <div className="font-medium mb-4">{t("contact.timeline")}</div>
-          <form onSubmit={addNote} className="mb-4 space-y-2">
-            <textarea rows={3} placeholder={t("contact.notePlaceholder")} value={note} onChange={(e) => setNote(e.target.value)} />
-            <button className="rounded-xl bg-[#2563eb] px-3 py-2 text-sm">{t("contact.addNote")}</button>
-          </form>
-          <div className="space-y-3">
-            {c.activities.map((a) => (
-              <div key={a.id} className="text-sm">
-                <div className="muted text-xs">{new Date(a.createdAt).toLocaleString(localeTag)}</div>
-                <div>{a.title}</div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <ContactTaskPanel
+          contactId={c.id}
+          clientName={`${c.firstName} ${c.lastName}`.trim()}
+          phone={c.phoneDisplay}
+          address={c.address}
+          managerId={c.manager?.id}
+          managerName={c.manager?.name}
+          tasks={c.tasks}
+          onChange={load}
+        />
+        <ContactContract
+          contactId={c.id}
+          clientName={`${c.firstName} ${c.lastName}`.trim()}
+          managerName={c.manager?.name}
+          customFields={c.customFields || {}}
+          dealAmount={c.dealAmount}
+          onChange={load}
+        />
         </div>
       </div>
     </AppShell>

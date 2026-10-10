@@ -53,7 +53,14 @@ export async function handleTelephonyEvent(db: PrismaClient, event: TelephonyWeb
 
   let managerId = ingest.managerId;
   if (event.managerExtension) {
-    const byExt = await db.user.findFirst({ where: { sipExtension: event.managerExtension } });
+    const byExt = await db.user.findFirst({
+      where: {
+        OR: [
+          { sipExtension: event.managerExtension },
+          { sipUsername: event.managerExtension },
+        ],
+      },
+    });
     if (byExt) managerId = byExt.id;
   }
 

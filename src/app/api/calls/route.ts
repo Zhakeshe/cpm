@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { jsonError, requireUser } from "@/lib/api";
 import { canListenAllRecordings, scopeManagerId } from "@/lib/rbac";
 import { originateCall, handleTelephonyEvent } from "@/lib/telephony";
+import { resolveZadarmaCallbackSip } from "@/lib/zadarma";
 import { z } from "zod";
 
 export async function GET() {
@@ -36,16 +37,20 @@ export async function POST(req: NextRequest) {
     const body = originateSchema.parse(await req.json());
     const contact = await prisma.contact.findUnique({ where: { id: body.contactId } });
     if (!contact) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
-    const manager = await prisma.user.findUnique({ where: { id: user.id } });
+    const manager = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { sipExtension: true, sipUsername: true },
+    });
+    const callbackLogin = resolveZadarmaCallbackSip(manager?.sipExtension, manager?.sipUsername);
     const result = await originateCall({
-      fromExtension: manager?.sipExtension || "101",
+      fromExtension: callbackLogin,
       toNumber: contact.phoneNormalized,
     });
     const handled = await handleTelephonyEvent(prisma, {
       event: "call.started",
       callId: String(result.callId),
       direction: "OUTBOUND",
-      from: manager?.sipExtension || "101",
+      from: callbackLogin,
       to: contact.phoneNormalized,
       managerExtension: manager?.sipExtension || undefined,
       status: "RINGING",
