@@ -620,7 +620,10 @@
     "idle": "Инициализация",
     "answer": "Ответить",
     "decline": "Отклонить",
-    "hangup": "Завершить"
+    "hangup": "Завершить",
+    "open": "Открыть WebRTC",
+    "collapse": "Свернуть",
+    "notConfigured": "SIP не настроен"
   },
   "publicForm": {
     "title": "Оставьте заявку — перезвоним",

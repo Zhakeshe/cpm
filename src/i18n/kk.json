@@ -620,7 +620,10 @@
     "idle": "Іске қосылуда",
     "answer": "Жауап беру",
     "decline": "Қабылдамау",
-    "hangup": "Аяқтау"
+    "hangup": "Аяқтау",
+    "open": "WebRTC ашу",
+    "collapse": "Жинау",
+    "notConfigured": "SIP бапталмаған"
   },
   "publicForm": {
     "title": "Өтінім қалдырыңыз — хабарласамыз",

@@ -1,99 +1,60 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Phone } from "lucide-react";
+import { ChevronDown, ChevronUp, Phone } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
 
-type WebrtcConfig =
-  | { enabled: false; reason: string }
-  | { enabled: true; key: string; sip: string };
+const STORAGE_KEY = "crm-zadarma-open";
 
-type ZadarmaWidget = (
-  key: string,
-  sip: string,
-  shape: "square" | "rounded",
-  language: string,
-  incoming: boolean,
-  position: { right: string; bottom: string },
-) => void;
-
-declare global {
-  interface Window {
-    zadarmaWidgetFn?: ZadarmaWidget;
-  }
-}
-
-const WIDGET_SCRIPTS = [
-  "https://my.zadarma.com/webphoneWebRTCWidget/v9/js/loader-phone-lib.js?sub_v=1",
-  "https://my.zadarma.com/webphoneWebRTCWidget/v9/js/loader-phone-fn.js?sub_v=1",
-];
-
-function loadScript(src: string) {
-  return new Promise<void>((resolve, reject) => {
-    const existing = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`);
-    if (existing?.dataset.loaded === "true") return resolve();
-    if (existing) {
-      existing.addEventListener("load", () => resolve(), { once: true });
-      existing.addEventListener("error", () => reject(new Error("ZADARMA_WIDGET_LOAD_FAILED")), { once: true });
-      return;
-    }
-    const script = document.createElement("script");
-    script.src = src;
-    script.async = false;
-    script.onload = () => {
-      script.dataset.loaded = "true";
-      resolve();
-    };
-    script.onerror = () => reject(new Error("ZADARMA_WIDGET_LOAD_FAILED"));
-    document.head.appendChild(script);
-  });
-}
-
-/** Official Zadarma WebRTC widget authenticated with a short-lived server key. */
+/** Keeps the isolated Zadarma phone alive while allowing the panel to collapse. */
 export function Softphone() {
   const { t } = useI18n();
-  const [state, setState] = useState<"loading" | "ready" | "disabled" | "error">("loading");
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function boot() {
-      const response = await fetch("/api/sip/webrtc-key", { cache: "no-store" });
-      if (!response.ok) throw new Error("ZADARMA_WEBRTC_KEY_FAILED");
-      const config = (await response.json()) as WebrtcConfig;
-      if (cancelled) return;
-      if (!config.enabled) {
-        setState("disabled");
-        return;
-      }
-      for (const src of WIDGET_SCRIPTS) await loadScript(src);
-      if (cancelled) return;
-      if (!window.zadarmaWidgetFn) throw new Error("ZADARMA_WIDGET_NOT_AVAILABLE");
-      window.zadarmaWidgetFn(config.key, config.sip, "square", "ru", true, {
-        right: "10px",
-        bottom: "5px",
-      });
-      setState("ready");
-    }
-
-    boot().catch((error) => {
-      console.error("Zadarma WebRTC widget failed", error);
-      if (!cancelled) setState("error");
-    });
-    return () => {
-      cancelled = true;
-    };
+    setOpen(window.localStorage.getItem(STORAGE_KEY) === "true");
   }, []);
 
-  if (state === "ready" || state === "disabled") return null;
+  function toggle() {
+    setOpen((current) => {
+      const next = !current;
+      window.localStorage.setItem(STORAGE_KEY, String(next));
+      return next;
+    });
+  }
+
   return (
-    <div className="fixed bottom-4 right-4 z-40 card px-4 py-3 w-64">
-      <div className="flex items-center gap-2 text-sm">
-        <Phone size={14} />
-        <span className="muted">
-          {state === "loading" ? t("softphone.registering") : t("softphone.error")}
-        </span>
+    <div className="fixed bottom-4 right-4 z-[100] flex flex-col items-end gap-2">
+      <div
+        className={`overflow-hidden rounded-2xl border border-[#33415f] bg-[#0b1220] shadow-2xl ${
+          open ? "visible pointer-events-auto" : "invisible pointer-events-none absolute"
+        }`}
+        style={{ height: "min(560px, calc(100vh - 90px))", width: "min(390px, calc(100vw - 24px))" }}
+        aria-hidden={!open}
+      >
+        <div className="flex h-12 items-center justify-between border-b border-[#243049] px-4">
+          <div className="flex items-center gap-2 text-sm font-medium"><Phone size={15} /> Zadarma WebRTC</div>
+          <button type="button" className="chip" onClick={toggle} aria-label={t("softphone.collapse")}>
+            <ChevronDown size={15} /> {t("softphone.collapse")}
+          </button>
+        </div>
+        <iframe
+          title="Zadarma WebRTC"
+          src="/sip-phone"
+          allow="microphone; autoplay"
+          className="w-full border-0"
+          style={{ height: "calc(100% - 48px)" }}
+        />
       </div>
+      {!open && (
+        <button
+          type="button"
+          className="flex items-center gap-2 rounded-full bg-[#16a34a] px-4 py-3 text-sm font-medium text-white shadow-xl"
+          onClick={toggle}
+        >
+          <Phone size={17} /> {t("softphone.open")} <ChevronUp size={15} />
+        </button>
+      )}
     </div>
   );
 }
