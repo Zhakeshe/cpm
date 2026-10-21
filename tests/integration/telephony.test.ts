@@ -72,7 +72,13 @@ describe("SIP телефония", () => {
       to: "77270000000",
     });
     const first = await prisma.call.findUniqueOrThrow({ where: { externalCallId: "call-300" } });
-    await prisma.contact.update({ where: { id: first.contactId! }, data: { managerId: "mgr-2" } });
+    const callbackStage = await prisma.pipelineStage.findUniqueOrThrow({
+      where: { pipelineId_slug: { pipelineId: "default", slug: "callback" } },
+    });
+    await prisma.contact.update({
+      where: { id: first.contactId! },
+      data: { managerId: "mgr-2", pipelineStageId: callbackStage.id, status: "IN_PROGRESS" },
+    });
 
     await handleTelephonyEvent(prisma, {
       event: "call.started",
@@ -83,8 +89,11 @@ describe("SIP телефония", () => {
     });
 
     const second = await prisma.call.findUniqueOrThrow({ where: { externalCallId: "call-301" } });
+    const contact = await prisma.contact.findUniqueOrThrow({ where: { id: first.contactId! } });
     expect(second.managerId).toBe("mgr-2");
     expect(await prisma.contact.count()).toBe(1);
+    expect(contact.pipelineStageId).toBe(callbackStage.id);
+    expect(contact.status).toBe("IN_PROGRESS");
   });
 
   it("исходящий звонок привязывается к менеджеру по SIP-расширению", async () => {

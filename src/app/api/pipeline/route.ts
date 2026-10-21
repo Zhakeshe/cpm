@@ -17,7 +17,7 @@ export async function GET() {
             manager: { select: { id: true, name: true } },
             tasks: { where: { status: "OPEN" }, orderBy: { dueAt: "asc" }, take: 1 },
           },
-          orderBy: { updatedAt: "desc" },
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
           take: 100,
         },
       },

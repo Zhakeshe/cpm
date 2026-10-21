@@ -22,6 +22,20 @@ async function mergeLegacyTags(db: PrismaClient, legacyNames: string[], targetNa
 }
 
 export async function seedVacuumCatalog(db: PrismaClient) {
+  const retiredThreeDayRules = [
+    "3 күн тиілмесе — қайта қоңырау",
+    "3 күннен соң хабарлас",
+    "3 күннен кейін хабарлас",
+    "Связаться через 3 дня",
+  ];
+  await db.task.deleteMany({
+    where: {
+      type: "FOLLOW_UP",
+      OR: retiredThreeDayRules.map((name) => ({ description: { startsWith: name } })),
+    },
+  });
+  await db.automationRule.deleteMany({ where: { name: { in: retiredThreeDayRules } } });
+
   for (const product of vacuumDefaults()) {
     await db.product.upsert({
       where: { sku: product.sku },
@@ -77,12 +91,6 @@ export async function seedVacuumCatalog(db: PrismaClient) {
       where: { key: field.key },
       update: { name: field.name, options: field.options, fieldType: field.fieldType },
       create: field,
-    });
-  }
-  const existing = await db.automationRule.count();
-  if (!existing) {
-    await db.automationRule.create({
-      data: { name: "3 күн тиілмесе — қайта қоңырау", enabled: true, staleDays: 3, action: "CREATE_TASK", taskType: "FOLLOW_UP" },
     });
   }
   return { products: vacuumDefaults().length, tags: tags.length, fields: fields.length };

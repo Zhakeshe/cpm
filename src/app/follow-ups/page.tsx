@@ -18,7 +18,7 @@ type Item = {
   pipelineStage?: { name: string } | null;
 };
 
-const PRESETS = ["today", "tomorrow", "in3days"] as const;
+const PRESETS = ["today", "tomorrow"] as const;
 
 export default function FollowUpsPage() {
   const { t, localeTag } = useI18n();
