@@ -5,6 +5,7 @@ import { ContactSales } from "@/components/ContactSales";
 import { ContactTaskPanel } from "@/components/ContactTaskPanel";
 import { ContactContract } from "@/components/ContactContract";
 import { useI18n } from "@/components/I18nProvider";
+import { apiJson } from "@/lib/client-api";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
@@ -58,21 +59,25 @@ export default function ContactPage() {
   const [calling, setCalling] = useState(false);
 
   const load = useCallback(async () => {
-    setC(await fetch(`/api/contacts/${params.id}`).then((r) => r.json()));
-  }, [params.id]);
+    try {
+      setC(await apiJson<Contact>(`/api/contacts/${params.id}`));
+    } catch {
+      setProblem(t("common.loadFailed", "Не удалось загрузить данные"));
+    }
+  }, [params.id, t]);
 
   useEffect(() => {
     load();
-    fetch("/api/pipeline")
-      .then((r) => r.json())
-      .then(setStages);
-    fetch("/api/users")
-      .then((r) => r.json())
-      .then(setManagers);
-    fetch("/api/auth/me")
-      .then((r) => r.json())
-      .then(setMe);
-  }, [load]);
+    Promise.all([
+      apiJson<Stage[]>("/api/pipeline"),
+      apiJson<Array<{ id: string; name: string; role: string }>>("/api/users"),
+      apiJson<{ role: string }>("/api/auth/me"),
+    ]).then(([loadedStages, loadedManagers, currentUser]) => {
+      setStages(loadedStages);
+      setManagers(loadedManagers);
+      setMe(currentUser);
+    }).catch(() => setProblem(t("common.loadFailed", "Не удалось загрузить данные")));
+  }, [load, t]);
 
   const fieldName = (f: string) => t(`fields.${f}`, f);
   const contactStages = CONTACT_STAGE_ORDER.map((slug) => stages.find((stage) => stage.slug === slug)).filter((stage): stage is Stage => Boolean(stage));

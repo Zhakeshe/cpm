@@ -6,20 +6,33 @@ import { originateCall, handleTelephonyEvent } from "@/lib/telephony";
 import { resolveZadarmaCallbackSip } from "@/lib/zadarma";
 import { z } from "zod";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const user = await requireUser();
     const managerId = scopeManagerId(user.role, user.id);
+    const offset = Math.max(0, Number(req.nextUrl.searchParams.get("offset")) || 0);
+    const limit = Math.min(200, Math.max(1, Number(req.nextUrl.searchParams.get("limit")) || 200));
+    const where = managerId ? { managerId } : {};
     const calls = await prisma.call.findMany({
-      where: managerId ? { managerId } : {},
+      where,
       include: { contact: true, manager: { select: { id: true, name: true } }, recordings: true },
       orderBy: { startedAt: "desc" },
-      take: 200,
+      skip: offset,
+      take: limit,
     });
     if (!canListenAllRecordings(user.role)) {
       for (const c of calls) {
         if (c.managerId !== user.id) c.recordingUrl = null;
       }
+    }
+    if (req.nextUrl.searchParams.get("page") === "1") {
+      const total = await prisma.call.count({ where });
+      return NextResponse.json({
+        items: calls,
+        total,
+        nextOffset: offset + calls.length,
+        hasMore: offset + calls.length < total,
+      });
     }
     return NextResponse.json(calls);
   } catch (err) {

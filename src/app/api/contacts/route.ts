@@ -13,8 +13,11 @@ export async function GET(req: NextRequest) {
     const user = await requireUser();
     const filters = parseContactFilters(req.nextUrl.searchParams);
     const managerId = scopeManagerId(user.role, user.id);
+    const offset = Math.max(0, Number(req.nextUrl.searchParams.get("offset")) || 0);
+    const limit = Math.min(200, Math.max(1, Number(req.nextUrl.searchParams.get("limit")) || 200));
+    const where = contactWhere(filters, managerId);
     const contacts = await prisma.contact.findMany({
-      where: contactWhere(filters, managerId),
+      where,
       include: {
         manager: { select: { id: true, email: true, name: true, role: true, sipExtension: true } },
         pipelineStage: true,
@@ -23,8 +26,18 @@ export async function GET(req: NextRequest) {
         tasks: { where: { status: "OPEN" }, take: 1, orderBy: { dueAt: "asc" } },
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take: 200,
+      skip: offset,
+      take: limit,
     });
+    if (req.nextUrl.searchParams.get("page") === "1") {
+      const total = await prisma.contact.count({ where });
+      return NextResponse.json({
+        items: contacts,
+        total,
+        nextOffset: offset + contacts.length,
+        hasMore: offset + contacts.length < total,
+      });
+    }
     return NextResponse.json(contacts);
   } catch (err) {
     return jsonError(err);

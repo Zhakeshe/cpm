@@ -13,6 +13,12 @@ export function Softphone() {
 
   useEffect(() => {
     setOpen(window.localStorage.getItem(STORAGE_KEY) === "true");
+    const openForIncomingCall = () => {
+      window.localStorage.setItem(STORAGE_KEY, "true");
+      setOpen(true);
+    };
+    window.addEventListener("crm:incoming-call", openForIncomingCall);
+    return () => window.removeEventListener("crm:incoming-call", openForIncomingCall);
   }, []);
 
   function toggle() {

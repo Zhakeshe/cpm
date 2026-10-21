@@ -4,6 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { useI18n } from "@/components/I18nProvider";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { apiJson } from "@/lib/client-api";
 
 type Item = {
   id: string;
@@ -27,9 +28,13 @@ export default function FollowUpsPage() {
   const [notice, setNotice] = useState("");
 
   const load = useCallback(async () => {
-    const data = await fetch("/api/follow-ups").then((r) => r.json());
-    setItems(Array.isArray(data.items) ? data.items : []);
-  }, []);
+    try {
+      const data = await apiJson<{ items: Item[] }>("/api/follow-ups");
+      setItems(Array.isArray(data.items) ? data.items : []);
+    } catch {
+      setError(t("common.loadFailed", "Не удалось загрузить данные"));
+    }
+  }, [t]);
 
   useEffect(() => {
     load();

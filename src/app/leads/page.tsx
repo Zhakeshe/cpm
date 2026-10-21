@@ -4,10 +4,11 @@ import { AppShell } from "@/components/AppShell";
 import { ExportButton } from "@/components/ExportButton";
 import { useI18n } from "@/components/I18nProvider";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { useRealtime } from "@/lib/use-realtime";
+import { apiJson } from "@/lib/client-api";
 
 type Contact = {
   id: string;
@@ -38,6 +39,8 @@ const SOURCES = [
 ];
 
 const TAG_COLORS = ["#2563eb", "#059669", "#d97706", "#dc2626", "#7c3aed", "#db2777", "#0891b2"];
+const PAGE_SIZE = 200;
+type Page<T> = { items: T[]; total: number; nextOffset: number; hasMore: boolean };
 
 function tagBadgeColor(tag: { name: string; color: string }) {
   if (tag.color && tag.color.toLowerCase() !== "#2563eb") return tag.color;
@@ -63,6 +66,9 @@ function LeadsInner() {
   const [error, setError] = useState("");
   const [importNotice, setImportNotice] = useState("");
   const [role, setRole] = useState("MANAGER");
+  const nextOffset = useRef(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const isAdmin = role === "ADMIN" || role === "SUPERVISOR";
 
   const query = useCallback(() => {
@@ -80,21 +86,42 @@ function LeadsInner() {
     return qs.toString();
   }, [filters]);
 
-  const load = useCallback(async () => {
-    const data = await fetch(`/api/contacts?${query()}`).then((r) => r.json());
-    setRows(Array.isArray(data) ? data : []);
-  }, [query]);
+  const load = useCallback(async (append = false) => {
+    if (append) setLoadingMore(true);
+    try {
+      const qs = new URLSearchParams(query());
+      qs.set("page", "1");
+      qs.set("limit", String(PAGE_SIZE));
+      qs.set("offset", String(append ? nextOffset.current : 0));
+      const data = await apiJson<Page<Contact>>(`/api/contacts?${qs}`);
+      setRows((current) => append ? [...current, ...data.items] : data.items);
+      nextOffset.current = data.nextOffset;
+      setHasMore(data.hasMore);
+      setError("");
+    } catch {
+      setError(t("common.loadFailed", "Не удалось загрузить данные"));
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [query, t]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   useEffect(() => {
-    fetch("/api/auth/me").then((r) => r.json()).then((u) => setRole(u.role || "MANAGER"));
-    fetch("/api/pipeline").then((r) => r.json()).then(setStages);
-    fetch("/api/users").then((r) => r.json()).then(setManagers);
-    fetch("/api/tags").then((r) => r.json()).then(setTags);
-  }, []);
+    Promise.all([
+      apiJson<{ role?: string }>("/api/auth/me"),
+      apiJson<Array<{ id: string; slug: string; name: string }>>("/api/pipeline"),
+      apiJson<Array<{ id: string; name: string }>>("/api/users"),
+      apiJson<Array<{ id: string; name: string }>>("/api/tags"),
+    ]).then(([u, pipeline, users, loadedTags]) => {
+      setRole(u.role || "MANAGER");
+      setStages(pipeline);
+      setManagers(users);
+      setTags(loadedTags);
+    }).catch(() => setError(t("common.loadFailed", "Не удалось загрузить данные")));
+  }, [t]);
 
   useRealtime({ "lead:new": () => load() });
 
@@ -239,6 +266,13 @@ function LeadsInner() {
             ))}
           </tbody>
         </table>
+        {hasMore && (
+          <div className="border-t border-[#243049] p-3 text-center">
+            <button type="button" className="chip" disabled={loadingMore} onClick={() => load(true)}>
+              {loadingMore ? t("common.loading", "Загрузка…") : t("tasks.showMore")}
+            </button>
+          </div>
+        )}
       </div>
     </AppShell>
   );

@@ -77,6 +77,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       setToast(n.title);
       setTimeout(() => setToast(null), 6000);
     },
+    "call:incoming": () => window.dispatchEvent(new Event("crm:incoming-call")),
   });
 
   const items = useMemo(
