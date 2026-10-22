@@ -67,7 +67,7 @@ export function QuickActions({ contactId, onDone, compact }: Props) {
     onDone?.();
   }
 
-  async function callback(preset: "today" | "tomorrow" | "in3days") {
+  async function callback(preset: "today" | "tomorrow") {
     setError("");
     setMessage("");
     const res = await fetch("/api/follow-ups", {
@@ -155,9 +155,6 @@ export function QuickActions({ contactId, onDone, compact }: Props) {
             </button>
             <button className="rounded-xl bg-[#2563eb] px-3 py-2 text-sm" type="button" onClick={() => callback("tomorrow")}>
               {t("followUps.tomorrow")}
-            </button>
-            <button className="chip" type="button" onClick={() => callback("in3days")}>
-              {t("followUps.in3days")}
             </button>
           </div>
         </div>

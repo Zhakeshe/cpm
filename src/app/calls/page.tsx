@@ -3,8 +3,9 @@
 import { AppShell } from "@/components/AppShell";
 import { ExportButton } from "@/components/ExportButton";
 import { useI18n } from "@/components/I18nProvider";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRealtime } from "@/lib/use-realtime";
+import { apiJson } from "@/lib/client-api";
 
 type Call = {
   id: string;
@@ -21,15 +22,32 @@ type Call = {
 };
 
 const RESULTS = ["CONTACTED", "NO_ANSWER", "CALLBACK", "INTERESTED", "DEMO_BOOKED", "THINKING", "REJECTED", "SALE"];
+const PAGE_SIZE = 200;
+type Page<T> = { items: T[]; nextOffset: number; hasMore: boolean };
 
 export default function CallsPage() {
   const { t, localeTag } = useI18n();
   const [calls, setCalls] = useState<Call[]>([]);
   const [modal, setModal] = useState<Call | null>(null);
   const [callbackAt, setCallbackAt] = useState("");
-  const load = useCallback(async () => {
-    setCalls(await fetch("/api/calls").then((r) => r.json()));
-  }, []);
+  const nextOffset = useRef(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const load = useCallback(async (append = false) => {
+    setLoading(true);
+    try {
+      const data = await apiJson<Page<Call>>(`/api/calls?page=1&limit=${PAGE_SIZE}&offset=${append ? nextOffset.current : 0}`);
+      setCalls((current) => append ? [...current, ...data.items] : data.items);
+      nextOffset.current = data.nextOffset;
+      setHasMore(data.hasMore);
+      setError("");
+    } catch {
+      setError(t("common.loadFailed", "Не удалось загрузить данные"));
+    } finally {
+      setLoading(false);
+    }
+  }, [t]);
 
   useEffect(() => {
     load();
@@ -58,6 +76,7 @@ export default function CallsPage() {
         <ExportButton href="/api/export/calls" />
       </div>
       <div className="card overflow-hidden">
+        {error && <div className="p-3 text-sm text-[#f87171]">{error}</div>}
         <table className="w-full text-sm">
           <thead className="bg-[#182235] text-[#93a0bb]">
             <tr>
@@ -92,6 +111,13 @@ export default function CallsPage() {
             ))}
           </tbody>
         </table>
+        {hasMore && (
+          <div className="border-t border-[#243049] p-3 text-center">
+            <button type="button" className="chip" disabled={loading} onClick={() => load(true)}>
+              {loading ? t("common.loading", "Загрузка…") : t("tasks.showMore")}
+            </button>
+          </div>
+        )}
       </div>
       {modal && (
         <div className="fixed inset-0 bg-black/50 grid place-items-center p-4">

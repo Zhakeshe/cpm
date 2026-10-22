@@ -6,6 +6,7 @@ import { useI18n } from "@/components/I18nProvider";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRealtime } from "@/lib/use-realtime";
+import { apiJson } from "@/lib/client-api";
 import { Check, CheckCheck, Clock, AlertTriangle, Paperclip, Lock, ImagePlus, Mic, Square } from "lucide-react";
 
 type Contact = {
@@ -104,14 +105,22 @@ function MessagesInbox() {
   const chunksRef = useRef<Blob[]>([]);
 
   const loadList = useCallback(async () => {
-    setList(await fetch("/api/messages").then((r) => r.json()));
-  }, []);
+    try {
+      setList(await apiJson<Conv[]>("/api/messages"));
+    } catch {
+      setError(t("common.loadFailed", "Не удалось загрузить данные"));
+    }
+  }, [t]);
 
   const open = useCallback(async (id: string) => {
     setActive(id);
     setError("");
-    setThread(await fetch(`/api/messages/${id}`).then((r) => r.json()));
-  }, []);
+    try {
+      setThread(await apiJson<{ messages: Message[]; contact: Contact; serviceWindowExpiresAt: string | null }>(`/api/messages/${id}`));
+    } catch {
+      setError(t("common.loadFailed", "Не удалось загрузить данные"));
+    }
+  }, [t]);
 
   useEffect(() => {
     loadList();

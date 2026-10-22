@@ -17,6 +17,7 @@ export async function GET() {
       );
     }
     const users = await prisma.user.findMany({
+      where: { isActive: true },
       orderBy: { name: "asc" },
       select: publicSelect(),
     });
@@ -137,6 +138,39 @@ export async function PATCH(req: NextRequest) {
       },
     });
     return NextResponse.json({ id: updated.id });
+  } catch (err) {
+    return jsonError(err);
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const actor = await requireAdmin();
+    const body = z.object({ id: z.string().min(1) }).parse(await req.json());
+    if (body.id === actor.id) {
+      return NextResponse.json({ error: "CANNOT_DELETE_SELF" }, { status: 400 });
+    }
+    const target = await prisma.user.findUnique({ where: { id: body.id }, select: { id: true, email: true, role: true } });
+    if (!target || target.role === "ADMIN") {
+      return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+    }
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: target.id },
+        data: { isActive: false, acceptsNewLeads: false, isOnline: false },
+      }),
+      prisma.auditLog.create({
+        data: {
+          actorId: actor.id,
+          action: "user.delete",
+          entityType: "User",
+          entityId: target.id,
+          oldValue: { email: target.email, role: target.role, isActive: true },
+          newValue: { isActive: false },
+        },
+      }),
+    ]);
+    return NextResponse.json({ ok: true });
   } catch (err) {
     return jsonError(err);
   }

@@ -128,13 +128,19 @@ Click-to-call: `POST /api/calls` с `contactId`. Если `SIP_ORIGINATE_URL` н
 
 ```json
 {
-  "wsUrl": "wss://pbx.example.com:8089/ws",
-  "domain": "pbx.example.com",
-  "extensions": { "101": "secret-101", "102": "secret-102" }
+  "wsUrl": "wss://pbx.zadarma.com:8089/ws",
+  "domain": "pbx.zadarma.com",
+  "extensions": {
+    "100": { "username": "593615-100", "password": "<SIP password>" },
+    "101": { "username": "593615-101", "password": "<SIP password>" },
+    "102": { "username": "593615-102", "password": "<SIP password>" }
+  }
 }
 ```
 
 Пока настройки нет, виджет софтфона просто не показывается.
+
+Полный SIP-логин отличается от внутреннего номера АТС. Прежний формат `"101": "password"` тоже поддерживается: логин берётся из `user.sipUsername`, иначе из внутреннего номера. `npm run zadarma:setup` назначает настроенные в `SIP_EXTENSIONS_JSON` номера первым активным менеджерам; `-- --dry-run` показывает назначения без записи. Подробности в `docs/DEPLOY.md`.
 
 ### Meta Lead Ads
 
