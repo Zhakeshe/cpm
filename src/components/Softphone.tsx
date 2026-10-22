@@ -21,6 +21,16 @@ export function Softphone() {
     return () => window.removeEventListener("crm:incoming-call", openForIncomingCall);
   }, []);
 
+  useEffect(() => {
+    const openForSipCall = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin || event.data?.type !== "crm:sip-incoming") return;
+      window.localStorage.setItem(STORAGE_KEY, "true");
+      setOpen(true);
+    };
+    window.addEventListener("message", openForSipCall);
+    return () => window.removeEventListener("message", openForSipCall);
+  }, []);
+
   function toggle() {
     setOpen((current) => {
       const next = !current;
