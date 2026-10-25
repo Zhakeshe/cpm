@@ -89,6 +89,8 @@ export function ZadarmaWebrtcWidget() {
         uri: config.uri,
         password: config.password,
         display_name: config.displayName,
+        // Zadarma rejects its temporary WebRTC credentials for the default JsSIP agent.
+        user_agent: "Zadarma webRTC",
         register: true,
         register_expires: 300,
         session_timers: false,
