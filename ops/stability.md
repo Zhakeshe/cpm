@@ -4,9 +4,9 @@ Work on `cursor/no-wa-autogreet-29f9`. Keep `.env`, SIP secrets, recovery export
 
 ## Deploy
 
-1. Save a fresh database backup outside the repository, with mode 0600.
+1. Save a fresh database backup outside the repository, with mode 0600. Inspect `_prisma_migrations` and every pending SQL file before any deploy; stop if a pending migration changes data outside the intended scope.
 2. Build `app` and `worker` with `docker compose build app worker`.
-3. Apply the additive `OperationRequest` migration with `docker compose run --rm --no-deps app npx prisma migrate deploy`. Do not run the seed job.
+3. After verifying the pending list contains only reviewed changes, apply the additive `OperationRequest` migration with `docker compose run --rm --no-deps app npx prisma migrate deploy`. Do not run the seed job.
 4. Restart only those services: `docker compose up -d --no-deps --no-build app worker`.
 5. Install `ops/crm-monitor.service` and `ops/crm-monitor.timer` to `/etc/systemd/system/`, run `systemctl daemon-reload` and `systemctl enable --now crm-monitor.timer`.
 6. Run `systemctl start crm-monitor.service`; check `/monitoring`, app health, worker heartbeat, and the monitoring report age.
@@ -30,3 +30,7 @@ A live browser and an authorised test destination are needed to verify incoming 
 ## Rollback
 
 Tag/save the previous app and worker images before deployment. If health fails, recreate only app/worker from those saved images. Leave the additive operation table in place so request claims are not lost; do not restore the whole production database over new CRM activity.
+
+## 2026-10-25 deployment record
+
+The previously pending `20261021090000_remove_three_day_followups` migration was unintentionally applied by `migrate deploy`. Its 5,990 deleted tasks and one automation rule were restored from the fresh pre-deployment backup; every restored field was compared with that backup and matched. The compensation is recorded in `AuditLog` as `system.recovery`. The operation-request table was retained. Recovery exports and the database backup remain outside Git under `/root/crm-stability-backup-20261025/`.
