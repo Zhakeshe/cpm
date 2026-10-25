@@ -4,7 +4,7 @@ Work on `cursor/no-wa-autogreet-29f9`. Keep `.env`, SIP secrets, recovery export
 
 ## Deploy
 
-1. Save a fresh database backup outside the repository, with mode 0600. Inspect `_prisma_migrations` and every pending SQL file before any deploy; stop if a pending migration changes data outside the intended scope.
+1. Save a fresh database backup outside the repository, with mode 0600. Run `python3 scripts/check-migrations.py 20261025090000_operation_requests` and inspect every pending SQL file before any deploy. The check refuses pending migrations outside that explicit allowlist; stop if any migration changes data outside the intended scope.
 2. Build `app` and `worker` with `docker compose build app worker`.
 3. After verifying the pending list contains only reviewed changes, apply the additive `OperationRequest` migration with `docker compose run --rm --no-deps app npx prisma migrate deploy`. Do not run the seed job.
 4. Restart only those services: `docker compose up -d --no-deps --no-build app worker`.
