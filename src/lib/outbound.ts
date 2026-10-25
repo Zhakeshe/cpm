@@ -112,6 +112,7 @@ export async function sendOutboundMessage(db: PrismaClient, params: SendParams) 
         channelId: wazzup.channelId,
         chatId: wazzupChatId(to),
         text: params.text,
+        ...(params.automatic ? { crmMessageId: `welcome-${contact.id}`, clearUnanswered: false, timeoutMs: 15_000 } : {}),
       });
     } else {
       sent = await sendWhatsAppText({ to, text: params.text });

@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import { getWazzupConfig, whatsappTransport } from "./whatsapp-transport";
+import { WazzupApiError } from "./wazzup";
 
 export const GREETING_SETTING = "whatsapp:auto-greeting";
 export const DEFAULT_WHATSAPP_GREETING = `Сәлеметсіз бе! 😊
@@ -104,10 +105,14 @@ export async function maybeSendWhatsAppGreeting(db: PrismaClient, params: Greeti
       where: { key: claimKey },
       data: { value: { state: "SENT", messageId: result.message.id, at: new Date().toISOString() } },
     });
-  } catch {
+  } catch (err) {
+    const provider = err instanceof WazzupApiError ? JSON.parse(JSON.stringify(err.details)) as Record<string, string | number | string[]> : {};
     await db.systemSetting.update({
-      where: { key: claimKey }, data: { value: { state: "UNCERTAIN", at: new Date().toISOString() } },
+      where: { key: claimKey }, data: { value: {
+        state: "UNCERTAIN", at: new Date().toISOString(), messageId: params.messageId,
+        errorCode: err instanceof WazzupApiError ? err.code : "SEND_FAILED", ...provider,
+      } },
     });
-    console.error("whatsapp_greeting_uncertain", params.messageId);
+    console.error("whatsapp_greeting_uncertain", { messageId: params.messageId, ...provider });
   }
 }

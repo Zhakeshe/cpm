@@ -6,7 +6,7 @@ import { useI18n } from "./I18nProvider";
 export function WhatsAppGreetingSection() {
   const { locale } = useI18n();
   const kk = locale === "kk";
-  const [config, setConfig] = useState<{ enabled: boolean; text: string } | null>(null);
+  const [config, setConfig] = useState<{ enabled: boolean; text: string; uncertainCount?: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
@@ -33,7 +33,7 @@ export function WhatsAppGreetingSection() {
         }
         throw new Error();
       }
-      setConfig(data);
+      setConfig({ ...data, uncertainCount: config.uncertainCount });
       setNotice(kk ? "Сақталды." : "Сохранено.");
     } catch {
       setError(kk ? "Сақтау мүмкін болмады. Қайта көріңіз." : "Не удалось сохранить. Повторите попытку.");
@@ -45,6 +45,9 @@ export function WhatsAppGreetingSection() {
     <p className="muted text-sm">{kk
       ? "WhatsApp-қа жазған кез келген адамға бір рет жіберіледі, бұрынғы клиенттерге де. Қайта жазса, қайталанбайды. Таргеттен және тікелей келгендерге де жұмыс істейді. «Тоқтату» автоматты сәлемдесуді бұғаттайды."
       : "Одно сообщение любому, кто напишет в WhatsApp, включая клиентов с существующим диалогом. Повторно не отправляется. Работает для рекламы и прямых обращений. «Тоқтату» блокирует автоприветствие."}</p>
+    {!!config?.uncertainCount && <p className="rounded-xl bg-[#7f1d1d] px-3 py-2 text-sm" role="alert">{kk
+      ? `${config.uncertainCount} автожауаптың жіберілуі расталмаған. Wazzup-та осы чаттарды тексеріңіз. Жүйе оларды автоматты түрде қайталап жібермейді.`
+      : `Отправка ${config.uncertainCount} автоприветствий не подтверждена. Проверьте эти диалоги в Wazzup. Автоматическая повторная отправка заблокирована.`}</p>}
     {config && <>
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" className="w-auto" checked={config.enabled} disabled={busy} onChange={(e) => { setConfig({ ...config, enabled: e.target.checked }); setNotice(""); }} />

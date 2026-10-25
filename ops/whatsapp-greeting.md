@@ -22,6 +22,12 @@ A unique `SystemSetting.whatsapp:welcome:<contactId>` claim is written before
 the provider request. Concurrent callbacks can send once. A provider timeout or
 interrupted send stays CLAIMED/UNCERTAIN and is never retried automatically;
 verify delivery with the provider before any manual intervention.
+The settings page shows the number of unconfirmed sends. Provider HTTP status,
+error codes and request ID are retained on the claim, without response bodies,
+tokens or recipient details. Automatic Wazzup text requests include a stable
+`crmMessageId`, `clearUnanswered: false`, and a 15-second timeout. Wazzup only
+deduplicates that ID for 60 seconds; this does not make an old uncertain send
+safe to retry automatically.
 `Тоқтату`, `Токтату`, `Стоп`, `Stop`, and `Отписаться` (case insensitive,
 optional punctuation) persist `whatsapp:opt-out:<contactId>`, including while the
 switch is off. Opt-out has no automatic expiry or re-subscription.

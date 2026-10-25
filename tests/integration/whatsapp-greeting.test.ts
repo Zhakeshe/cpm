@@ -45,6 +45,8 @@ describe("live greeting workflow with a simulated provider", () => {
     expect(request).toHaveBeenCalledTimes(1);
     const sent = JSON.parse(request.mock.calls[0][1].body);
     expect(sent).toMatchObject({ channelId: "test-channel", chatId: "77015550001", text: DEFAULT_WHATSAPP_GREETING });
+    expect(sent.clearUnanswered).toBe(false);
+    expect(sent.crmMessageId).toMatch(/^welcome-/);
     const reply = await prisma.message.findFirstOrThrow({ where: { direction: "OUTBOUND" } });
     expect(reply.rawPayload).toEqual({ automation: "whatsapp-welcome" });
     expect((await prisma.conversation.findFirstOrThrow()).unreadCount).toBe(2);
@@ -118,5 +120,20 @@ describe("live greeting workflow with a simulated provider", () => {
     expect(request).toHaveBeenCalledTimes(1);
     expect(await prisma.message.count({ where: { direction: "OUTBOUND" } })).toBe(1);
     expect((await prisma.conversation.findFirstOrThrow()).unreadCount).toBe(1);
+  });
+
+  it("persists the real HTTP 400 rejection and trace without marking it sent or retrying", async () => {
+    request.mockImplementation(async () => new Response(JSON.stringify({
+      error: "POST_MESSAGE_ERROR", requestId: "test-provider-trace", data: [{ code: "UNKNOWN_ERROR" }],
+    }), { status: 400 }));
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    await handleWazzupInbound(prisma, incoming("wz.rejected"));
+    await handleWazzupInbound(prisma, incoming("wz.rejected-next"));
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(await prisma.message.count({ where: { direction: "OUTBOUND" } })).toBe(0);
+    expect(await prisma.notification.count()).toBe(2);
+    const claim = await prisma.systemSetting.findFirstOrThrow({ where: { key: { startsWith: "whatsapp:welcome:" } } });
+    expect(claim.value).toMatchObject({ state: "UNCERTAIN", providerStatus: 400, providerCode: "POST_MESSAGE_ERROR", providerErrors: ["UNKNOWN_ERROR"], requestId: "test-provider-trace" });
+    log.mockRestore();
   });
 });

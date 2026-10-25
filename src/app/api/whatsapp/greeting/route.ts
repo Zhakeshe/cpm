@@ -9,7 +9,11 @@ const schema = z.object({ enabled: z.boolean(), text: z.string().trim().min(1).m
 export async function GET() {
   try {
     await requireRole(["ADMIN", "SUPERVISOR"]);
-    return NextResponse.json(await getGreetingConfig(prisma));
+    const [config, uncertainCount] = await Promise.all([
+      getGreetingConfig(prisma),
+      prisma.systemSetting.count({ where: { key: { startsWith: "whatsapp:welcome:" }, value: { path: ["state"], equals: "UNCERTAIN" } } }),
+    ]);
+    return NextResponse.json({ ...config, uncertainCount });
   } catch (err) { return jsonError(err); }
 }
 
