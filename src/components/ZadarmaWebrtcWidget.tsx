@@ -2,12 +2,16 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Phone, PhoneIncoming, PhoneOff, RefreshCw } from "lucide-react";
+import { browserSipRegistration, SIP_CLIENT_VERSION } from "@/lib/sip-browser";
 import { sipFailureReason, type sipReasons } from "@/lib/sip-diagnostics";
 import { useI18n } from "@/components/I18nProvider";
 
 type SipConfig =
   | { enabled: false; reason: string }
-  | { enabled: true; wsUrl: string; uri: string; password: string; extension: string; displayName: string };
+  | ({ enabled: true; extension: string; displayName: string } & (
+    { provider: "zadarma"; key: string; sip: string }
+    | { wsUrl: string; uri: string; password: string }
+  ));
 
 type CallState = "registering" | "ready" | "incoming" | "connecting" | "in-call" | "disabled" | "error";
 type PeerConnectionEvent = { peerconnection?: RTCPeerConnection };
@@ -22,14 +26,15 @@ type JsSipSession = {
 type UaLike = {
   start: () => void;
   stop: () => void;
-  on: (event: string, handler: (data?: { session: JsSipSession; originator: string; cause?: string }) => void) => void;
+  on: (event: string, handler: (data?: { session: JsSipSession; originator: string; cause?: string; response?: { status_code?: number } }) => void) => void;
 };
 
-/** Direct PBX WebRTC client. It does not depend on Zadarma's domain widget key. */
+/** Direct SIP UI using the provider's browser WebRTC bootstrap. */
 export function ZadarmaWebrtcWidget() {
   const { t } = useI18n();
   const [state, setState] = useState<CallState>("registering");
   const [peer, setPeer] = useState("");
+  const [sipStatus, setSipStatus] = useState<number | null>(null);
   const [reason, setReason] = useState<typeof sipReasons[number]>("");
   const [micResult, setMicResult] = useState("");
   const [testingMic, setTestingMic] = useState(false);
@@ -61,6 +66,7 @@ export function ZadarmaWebrtcWidget() {
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
     let registrationTimer: ReturnType<typeof setTimeout>;
     const startTimeout = () => {
       clearTimeout(registrationTimer);
@@ -70,8 +76,8 @@ export function ZadarmaWebrtcWidget() {
 
     async function boot() {
       setState("registering");
-      setReason("");
-      const response = await fetch("/api/sip/credentials", { cache: "no-store" });
+      setReason(""); setSipStatus(null);
+      const response = await fetch("/api/sip/credentials?browser=1", { cache: "no-store", signal: controller.signal });
       if (!response.ok) throw new Error(response.status === 401 || response.status === 403 ? "AUTH_REQUIRED" : "CONNECTION_FAILED");
       const config = await response.json() as SipConfig;
       if (cancelled) return;
@@ -81,13 +87,15 @@ export function ZadarmaWebrtcWidget() {
         return;
       }
 
+      const registration = "key" in config ? await browserSipRegistration(config, controller.signal) : config;
+      if (cancelled) return;
       const JsSIP = (await import("jssip")).default;
       if (cancelled) return;
-      const socket = new JsSIP.WebSocketInterface(config.wsUrl);
+      const socket = new JsSIP.WebSocketInterface(registration.wsUrl);
       const ua = new JsSIP.UA({
         sockets: [socket],
-        uri: config.uri,
-        password: config.password,
+        uri: registration.uri,
+        password: registration.password,
         display_name: config.displayName,
         // Zadarma rejects its temporary WebRTC credentials for the default JsSIP agent.
         user_agent: "Zadarma webRTC",
@@ -101,13 +109,13 @@ export function ZadarmaWebrtcWidget() {
 
       ua.on("registered", () => {
         if (cancelled) return;
-        registeredRef.current = true; clearTimeout(registrationTimer); setReason("");
+        registeredRef.current = true; clearTimeout(registrationTimer); setReason(""); setSipStatus(200);
         if (!cancelled) setState((current) => current === "registering" || current === "error" ? "ready" : current);
       });
       ua.on("registrationFailed", (event) => {
         if (!cancelled) {
           registeredRef.current = false; clearTimeout(registrationTimer);
-          setReason("REGISTRATION_FAILED");
+          setReason("REGISTRATION_FAILED"); setSipStatus(event?.response?.status_code || null);
           setState("error");
         }
       });
@@ -153,7 +161,7 @@ export function ZadarmaWebrtcWidget() {
       }
     });
     return () => {
-      cancelled = true; clearTimeout(registrationTimer); registeredRef.current = false;
+      cancelled = true; controller.abort(); clearTimeout(registrationTimer); registeredRef.current = false;
       try { sessionRef.current?.terminate(); } catch { /* Already ended. */ }
       uaRef.current?.stop();
       sessionRef.current = null;
@@ -182,10 +190,10 @@ export function ZadarmaWebrtcWidget() {
   }
 
   useEffect(() => {
-    const report = () => { void fetch("/api/sip/diagnostics", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ state, reason }) }).catch(() => undefined); };
+    const report = () => { void fetch("/api/sip/diagnostics", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ state, reason, sipStatus, clientVersion: SIP_CLIENT_VERSION }) }).catch(() => undefined); };
     report(); const timer = setInterval(report, 60_000);
     return () => clearInterval(timer);
-  }, [state, reason]);
+  }, [state, reason, sipStatus]);
 
   useEffect(() => () => { micStream.current?.getTracks().forEach(track => track.stop()); }, []);
 

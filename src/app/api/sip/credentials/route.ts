@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { jsonError, requireUser } from "@/lib/api";
 import { zadarmaWebrtcCredentials } from "@/lib/zadarma-webrtc";
-import { ZADARMA_DEFAULTS, zadarmaCredentials } from "@/lib/zadarma";
+import { ZADARMA_DEFAULTS, zadarmaCredentials, zadarmaWebrtcKey } from "@/lib/zadarma";
 import { resolveSipAccount, type SipSettings } from "@/lib/sip-config";
 
 /**
@@ -29,6 +29,15 @@ export async function GET(req: Request) {
         enabled: false,
         reason: !extension ? "NO_EXTENSION" : "NOT_CONFIGURED",
       }, { headers: { "Cache-Control": "no-store" } });
+    }
+
+    // The provider handshake belongs to the caller's browser/network, as in its official client.
+    if (dynamic && new URL(req.url).searchParams.get("browser") === "1") {
+      const sip = account?.username || me?.sipUsername || extension;
+      const key = await zadarmaWebrtcKey(sip);
+      return NextResponse.json({ enabled: true, provider: "zadarma", key, sip, extension, displayName: user.name }, {
+        headers: { "Cache-Control": "no-store" },
+      });
     }
 
     const registration = dynamic
