@@ -157,6 +157,7 @@ type ZadarmaApiResponse = { status?: string; message?: string; time?: number };
 export async function zadarmaApiGet<T extends ZadarmaApiResponse = ZadarmaApiResponse>(
   path: string,
   params: Record<string, string>,
+  options?: { signal: AbortSignal },
 ): Promise<T> {
   const { userKey, secret, configured } = zadarmaCredentials();
   if (!configured) throw new Error("ZADARMA_NOT_CONFIGURED");
@@ -166,6 +167,7 @@ export async function zadarmaApiGet<T extends ZadarmaApiResponse = ZadarmaApiRes
   const url = `https://api.zadarma.com${method}${query ? `?${query}` : ""}`;
   const res = await fetch(url, {
     headers: { Authorization: `${userKey}:${sign}` },
+    signal: options?.signal,
   });
   const json = (await res.json().catch(() => ({}))) as T;
   if (!res.ok || json.status === "error") {
@@ -178,6 +180,7 @@ export async function zadarmaWebrtcKey(sip: string) {
   const json = await zadarmaApiGet<ZadarmaApiResponse & { key?: string }>(
     "/v1/webrtc/get_key/",
     { sip },
+    { signal: AbortSignal.timeout(10_000) },
   );
   if (!json.key) throw new Error("ZADARMA_WEBRTC_KEY_MISSING");
   return json.key;

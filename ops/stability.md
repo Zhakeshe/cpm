@@ -23,7 +23,7 @@ Blocking an account requires `confirmDisable: true`. It changes access and lead-
 
 ## SIP acceptance checks
 
-The `/sip-phone` panel records registration/call state and safe error categories to `/api/sip/diagnostics`; administrators see current reports in `/monitoring`. Credentials are never part of telemetry.
+The `/sip-phone` panel records registration/call state and safe error categories to `/api/sip/diagnostics`; administrators see current reports in `/monitoring`. Credentials are never part of telemetry. When the Zadarma API is configured, registration uses the datacenter and temporary credentials returned by its official webphone endpoint on WSS port 4443, rather than a guessed PBX endpoint.
 
 A live browser and an authorised test destination are needed to verify incoming and outgoing calls, two-way audio, recording playback and network reconnection. The microphone button checks browser permission, not two-way audio. Verify the green registration state, make the test call, confirm both parties can hear, then check the call and its recording in CRM. Disconnect/reconnect the browser network and verify re-registration. Never describe these as passed based on a server HTTP or TCP probe alone.
 
