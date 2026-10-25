@@ -65,9 +65,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       }
       setMe(r.ok ? await r.json() : null);
     });
-    fetch("/api/notifications")
-      .then((r) => (r.ok ? r.json() : []))
-      .then(setNotes);
+    let cancelled = false;
+    const loadNotifications = () => fetch("/api/notifications")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (!cancelled && Array.isArray(data)) setNotes(data); })
+      .catch(() => undefined);
+    void loadNotifications();
+    const timer = setInterval(loadNotifications, 30_000);
+    return () => { cancelled = true; clearInterval(timer); };
+
   }, [router]);
 
   usePresence();
