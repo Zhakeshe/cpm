@@ -6,6 +6,7 @@ import { useI18n } from "@/components/I18nProvider";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRealtime } from "@/lib/use-realtime";
+import { apiJson, mutationJson, friendlyError } from "@/lib/client-api";
 import { Check, CheckCheck, Clock, AlertTriangle, Paperclip, Lock, ImagePlus, Mic, Square } from "lucide-react";
 
 type Contact = {
@@ -84,7 +85,7 @@ function MediaBubble({ message, t }: { message: Message; t: (path: string, vars?
 
 function MessagesInbox() {
   const params = useSearchParams();
-  const { t, localeTag } = useI18n();
+  const { t, localeTag, locale } = useI18n();
   const requestedContact = params.get("contact");
   const [list, setList] = useState<Conv[]>([]);
   const [active, setActive] = useState<string | null>(null);
@@ -97,6 +98,8 @@ function MessagesInbox() {
   const [error, setError] = useState("");
   const [recording, setRecording] = useState(false);
   const [busy, setBusy] = useState(false);
+  const sendLock = useRef(false);
+  const pendingUpload = useRef<{ key: string; media: unknown } | null>(null);
   const [transport, setTransport] = useState("meta");
   const fileRef = useRef<HTMLInputElement>(null);
   const imageRef = useRef<HTMLInputElement>(null);
@@ -104,14 +107,22 @@ function MessagesInbox() {
   const chunksRef = useRef<Blob[]>([]);
 
   const loadList = useCallback(async () => {
-    setList(await fetch("/api/messages").then((r) => r.json()));
-  }, []);
+    try {
+      setList(await apiJson<Conv[]>("/api/messages"));
+    } catch {
+      setError(t("common.loadFailed", "Не удалось загрузить данные"));
+    }
+  }, [t]);
 
   const open = useCallback(async (id: string) => {
     setActive(id);
     setError("");
-    setThread(await fetch(`/api/messages/${id}`).then((r) => r.json()));
-  }, []);
+    try {
+      setThread(await apiJson<{ messages: Message[]; contact: Contact; serviceWindowExpiresAt: string | null }>(`/api/messages/${id}`));
+    } catch {
+      setError(t("common.loadFailed", "Не удалось загрузить данные"));
+    }
+  }, [t]);
 
   useEffect(() => {
     loadList();
@@ -155,72 +166,58 @@ function MessagesInbox() {
     return t("messages.sendFailed");
   };
 
+  async function sending(action: () => Promise<void>) {
+    if (sendLock.current) return;
+    sendLock.current = true; setBusy(true); setError("");
+    try { await action(); }
+    catch (e) {
+      const code = e instanceof Error ? e.message : "";
+      setError(["SERVICE_WINDOW_CLOSED", "RECIPIENT_NOT_ALLOWED", "RECIPIENT_UNDELIVERABLE", "TEMPLATE_UNAVAILABLE"].includes(code) ? sendErrorText(code) : friendlyError(e, locale));
+    } finally { sendLock.current = false; setBusy(false); }
+  }
+
   async function send(override?: string) {
     const payload = (override ?? text).trim();
     if (!thread || !payload) return;
-    setError("");
-    const res = await fetch("/api/messages/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contactId: thread.contact.id, text: payload }),
+    await sending(async () => {
+      await mutationJson("/api/messages/send", { contactId: thread.contact.id, text: payload });
+      setText("");
+      if (active) await open(active);
+      await loadList();
     });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setError(sendErrorText(data.error));
-      return;
-    }
-    setText("");
-    if (active) await open(active);
-    await loadList();
   }
 
   async function sendTemplate(template: Template) {
     if (!thread) return;
-    const parameters = template.placeholders.map((p) => templateParams[`${template.id}:${p}`] || "");
-    const res = await fetch("/api/messages/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contactId: thread.contact.id, templateId: template.id, templateParameters: parameters }),
+    await sending(async () => {
+      const parameters = template.placeholders.map((p) => templateParams[`${template.id}:${p}`] || "");
+      await mutationJson("/api/messages/send", { contactId: thread.contact.id, templateId: template.id, templateParameters: parameters });
+      setPickerOpen(false);
+      if (active) await open(active);
+      await loadList();
     });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setError(sendErrorText(data.error));
-      return;
-    }
-    setPickerOpen(false);
-    if (active) await open(active);
-    await loadList();
   }
 
   async function sendFile(file: File, voiceNote = false) {
     if (!thread) return;
-    setError("");
-    setBusy(true);
-    const form = new FormData();
-    form.append("contactId", thread.contact.id);
-    form.append("file", file);
-    if (voiceNote) form.append("voiceNote", "1");
-    const uploaded = await fetch("/api/messages/upload", { method: "POST", body: form });
-    if (!uploaded.ok) {
-      setBusy(false);
-      setError(t("messages.uploadFailed"));
-      return;
-    }
-    const { media } = await uploaded.json();
-    const res = await fetch("/api/messages/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contactId: thread.contact.id, media }),
+    await sending(async () => {
+      const uploadKey = `${thread.contact.id}:${file.name}:${file.size}:${file.lastModified}:${voiceNote}`;
+      let media = pendingUpload.current?.key === uploadKey ? pendingUpload.current.media : null;
+      if (!media) {
+      const form = new FormData();
+      form.append("contactId", thread.contact.id); form.append("file", file);
+      if (voiceNote) form.append("voiceNote", "1");
+      const uploaded = await fetch("/api/messages/upload", { method: "POST", body: form });
+      if (!uploaded.ok) throw new Error("UPLOAD_FAILED");
+      media = (await uploaded.json()).media;
+      pendingUpload.current = { key: uploadKey, media };
+      }
+      await mutationJson("/api/messages/send", { contactId: thread.contact.id, media });
+      pendingUpload.current = null;
+      setText("");
+      if (active) await open(active);
+      await loadList();
     });
-    setBusy(false);
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setError(sendErrorText(data.error));
-      return;
-    }
-    setText("");
-    if (active) await open(active);
-    await loadList();
   }
 
   async function toggleVoice() {
@@ -455,7 +452,7 @@ function MessagesInbox() {
 }
 
 export default function MessagesPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   return (
     <Suspense
       fallback={

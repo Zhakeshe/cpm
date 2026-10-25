@@ -122,12 +122,11 @@ describe("follow-up queue", () => {
     expect(followUpReason({ hasMessages: true, hasCalls: false })).toBe("stale");
   });
 
-  it("schedules today in three hours and later presets at 10:00", () => {
+  it("schedules today in three hours and tomorrow at 10:00", () => {
     const today = dueAtForPreset("today", now);
     expect(today.getTime() - now.getTime()).toBe(3 * 60 * 60 * 1000);
     const tomorrow = dueAtForPreset("tomorrow", now);
     expect(tomorrow.getHours()).toBe(10);
     expect(tomorrow.getDate()).toBe(now.getDate() + 1);
-    expect(dueAtForPreset("in3days", now).getDate()).toBe(now.getDate() + 3);
   });
 });

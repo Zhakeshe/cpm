@@ -53,12 +53,42 @@ export async function handleTelephonyEvent(db: PrismaClient, event: TelephonyWeb
 
   let managerId = ingest.managerId;
   if (event.managerExtension) {
-    const byExt = await db.user.findFirst({ where: { sipExtension: event.managerExtension } });
+    const byExt = await db.user.findFirst({
+      where: {
+        OR: [
+          { sipExtension: event.managerExtension },
+          { sipUsername: event.managerExtension },
+        ],
+      },
+    });
     if (byExt) managerId = byExt.id;
   }
 
-  const existing = await db.call.findUnique({ where: { externalCallId: event.callId } });
+  let existing = await db.call.findUnique({ where: { externalCallId: event.callId } });
   const status = event.status || (event.event === "call.ended" ? "ANSWERED" : "RINGING");
+
+  // The callback API returns a temporary id before Zadarma sends its real
+  // pbx_call_id. Re-key the recent pending call instead of creating a duplicate.
+  if (!existing && event.direction === "OUTBOUND" && !event.callId.startsWith("zadarma-")) {
+    const pending = await db.call.findFirst({
+      where: {
+        direction: "OUTBOUND",
+        status: "RINGING",
+        contactId: ingest.contactId,
+        managerId,
+        toNumber: normalizePhone(event.to) || event.to,
+        externalCallId: { startsWith: "zadarma-" },
+        createdAt: { gte: new Date(Date.now() - 2 * 60 * 1000) },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    if (pending) {
+      existing = await db.call.update({
+        where: { id: pending.id },
+        data: { externalCallId: event.callId },
+      });
+    }
+  }
 
   const data = {
     contactId: ingest.contactId,
@@ -107,7 +137,7 @@ export async function handleTelephonyEvent(db: PrismaClient, event: TelephonyWeb
         payload: { callId: call.id },
       },
     });
-    if (managerId) {
+    if (event.direction === "INBOUND" && managerId) {
       await notifyUser(db, {
         userId: managerId,
         type: "INCOMING_CALL",
@@ -120,8 +150,10 @@ export async function handleTelephonyEvent(db: PrismaClient, event: TelephonyWeb
         emitToUser(managerId, "lead:new", { contactId: ingest.contactId });
       }
     }
-    emitToAdmins("call:incoming", { callId: call.id, contactId: ingest.contactId });
-    if (ingest.createdContact) {
+    if (event.direction === "INBOUND") {
+      emitToAdmins("call:incoming", { callId: call.id, contactId: ingest.contactId });
+    }
+    if (event.direction === "INBOUND" && ingest.createdContact) {
       emitToAdmins("lead:new", { contactId: ingest.contactId });
     }
   }
@@ -131,7 +163,7 @@ export async function handleTelephonyEvent(db: PrismaClient, event: TelephonyWeb
     emitToAdmins("call:updated", { callId: call.id });
   }
 
-  if (event.event === "call.ended" && (status === "MISSED" || status === "NO_ANSWER") && managerId) {
+  if (event.event === "call.ended" && event.direction === "INBOUND" && (status === "MISSED" || status === "NO_ANSWER") && managerId) {
     await notifyUser(db, {
       userId: managerId,
       type: "MISSED_CALL",
