@@ -6,6 +6,7 @@ import { attachTrackingAndGreet, inboundSourceFromText } from "./inbound-trackin
 import { notifyUser } from "./notifications";
 import { emitToUser, emitToAdmins } from "./realtime";
 import { extensionFor, putObject, storageConfigured } from "./storage";
+import { maybeSendWhatsAppGreeting } from "./whatsapp-greeting";
 
 /** Meta allows free-form replies only within 24h of the customer's last message. */
 export const SERVICE_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -179,6 +180,10 @@ export async function handleWhatsAppInbound(db: PrismaClient, payload: unknown) 
           contactId: ingest.contactId,
           managerId: ingest.managerId,
           inbound: true,
+        });
+        await maybeSendWhatsAppGreeting(db, {
+          contactId: ingest.contactId, messageId: saved.id, text: inboundText,
+          receivedAt, provider: "meta",
         });
         await db.activity.create({
           data: {

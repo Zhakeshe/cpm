@@ -29,7 +29,8 @@ export async function getOrCreateConversation(db: PrismaClient, contactId: strin
 
 type SendParams = {
   contactId: string;
-  senderId: string;
+  senderId: string | null;
+  automatic?: boolean;
   text?: string;
   templateId?: string;
   templateParameters?: string[];
@@ -133,25 +134,26 @@ export async function sendOutboundMessage(db: PrismaClient, params: SendParams) 
       mediaFileName: params.media?.fileName,
       mediaSize: params.media?.size,
       status: "SENT",
+      rawPayload: params.automatic ? { automation: "whatsapp-welcome" } : undefined,
     },
   });
 
   await db.conversation.update({
     where: { id: conversation.id },
-    data: { lastMessage: text || "Вложение", lastMessageAt: new Date(), unreadCount: 0 },
+    data: { lastMessage: text || "Вложение", lastMessageAt: new Date(), unreadCount: params.automatic ? undefined : 0 },
   });
   await db.activity.create({
     data: {
       contactId: contact.id,
       managerId: params.senderId,
       type: "WHATSAPP_OUT",
-      title: params.templateId ? "Отправлен шаблон WhatsApp" : "Исходящее сообщение WhatsApp",
+      title: params.automatic ? "Автоматическое приветствие WhatsApp" : params.templateId ? "Отправлен шаблон WhatsApp" : "Исходящее сообщение WhatsApp",
       payload: { messageId: message.id },
     },
   });
   await db.contact.update({ where: { id: contact.id }, data: { lastContactAt: new Date() } });
 
-  emitToUser(params.senderId, "whatsapp:message", { conversationId: conversation.id, messageId: message.id });
+  if (params.senderId) emitToUser(params.senderId, "whatsapp:message", { conversationId: conversation.id, messageId: message.id });
   if (contact.managerId && contact.managerId !== params.senderId) {
     emitToUser(contact.managerId, "whatsapp:message", { conversationId: conversation.id });
   }

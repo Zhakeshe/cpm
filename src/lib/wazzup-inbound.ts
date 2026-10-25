@@ -5,6 +5,7 @@ import { notifyUser } from "./notifications";
 import { emitToAdmins, emitToUser } from "./realtime";
 import { extensionFor, putObject, storageConfigured } from "./storage";
 import { SERVICE_WINDOW_MS } from "./whatsapp";
+import { maybeSendWhatsAppGreeting } from "./whatsapp-greeting";
 
 export type WazzupMessage = {
   messageId?: string;
@@ -148,6 +149,10 @@ export async function handleWazzupInbound(db: PrismaClient, payload: unknown) {
         contactId: ingest.contactId,
         managerId: ingest.managerId,
         inbound: true,
+      });
+      await maybeSendWhatsAppGreeting(db, {
+        contactId: ingest.contactId, messageId: saved.id, text: msg.text,
+        receivedAt, provider: "wazzup", channelId: msg.channelId,
       });
       await db.activity.create({
         data: {
