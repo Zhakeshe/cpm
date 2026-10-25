@@ -5,7 +5,7 @@ import { ContactSales } from "@/components/ContactSales";
 import { ContactTaskPanel } from "@/components/ContactTaskPanel";
 import { ContactContract } from "@/components/ContactContract";
 import { useI18n } from "@/components/I18nProvider";
-import { apiJson } from "@/lib/client-api";
+import { apiJson, mutationJson, friendlyError } from "@/lib/client-api";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
@@ -46,7 +46,7 @@ type Contact = {
 };
 
 export default function ContactPage() {
-  const { t, localeTag } = useI18n();
+  const { t, localeTag, locale } = useI18n();
   const params = useParams<{ id: string }>();
   const [c, setC] = useState<Contact | null>(null);
   const [stages, setStages] = useState<Stage[]>([]);
@@ -129,20 +129,14 @@ export default function ContactPage() {
   }
 
   async function sipCall() {
-    setProblem("");
-    setCalling(true);
-    const res = await fetch("/api/calls", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contactId: c?.id }),
-    });
-    setCalling(false);
-    if (!res.ok) {
-      setProblem(t("contact.sipCallFailed"));
-      return;
-    }
-    setNotice(t("contact.sipCalling"));
-    load();
+    if (calling) return;
+    setProblem(""); setCalling(true);
+    try {
+      await mutationJson("/api/calls", { contactId: c?.id });
+      setNotice(t("contact.sipCalling"));
+      await load();
+    } catch (e) { setProblem(friendlyError(e, locale)); }
+    finally { setCalling(false); }
   }
 
   async function confirmOutcome() {

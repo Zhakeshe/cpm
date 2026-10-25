@@ -752,3 +752,12 @@ model TrackingClick {
   @@index([contactId])
   @@index([createdAt])
 }
+
+// Request claims survive restarts and Redis outages; no credential material is stored.
+model OperationRequest {
+  id          String   @id
+  fingerprint String
+  state       String   @default("PENDING")
+  result      Json?
+  createdAt   DateTime @default(now())
+}

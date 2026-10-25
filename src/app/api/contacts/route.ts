@@ -1,3 +1,4 @@
+import { idempotent } from "@/lib/idempotency";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { jsonError, requireUser } from "@/lib/api";
@@ -70,33 +71,35 @@ export async function POST(req: NextRequest) {
   try {
     const user = await requireUser();
     const body = createSchema.parse(await req.json());
-    const ingest = await ingestContact(prisma, {
-      phone: body.phone,
-      firstName: body.firstName,
-      lastName: body.lastName,
-      email: body.email || undefined,
-      source: body.source,
-      comment: body.comment,
-      actorId: user.id,
-      createLeadOnDuplicate: false,
-    });
-    if (user.role === "MANAGER" && ingest.createdContact) {
-      await prisma.contact.update({
-        where: { id: ingest.contactId },
-        data: { managerId: user.id },
+    return NextResponse.json(await idempotent(prisma, user.id, "contacts", req.headers.get("Idempotency-Key"), body, async () => {
+      const ingest = await ingestContact(prisma, {
+        phone: body.phone,
+        firstName: body.firstName,
+        lastName: body.lastName,
+        email: body.email || undefined,
+        source: body.source,
+        comment: body.comment,
+        actorId: user.id,
+        createLeadOnDuplicate: false,
       });
-    }
-    if (body.dealAmount) {
-      await prisma.contact.update({
+      if (user.role === "MANAGER" && ingest.createdContact) {
+        await prisma.contact.update({
+          where: { id: ingest.contactId },
+          data: { managerId: user.id },
+        });
+      }
+      if (body.dealAmount) {
+        await prisma.contact.update({
+          where: { id: ingest.contactId },
+          data: { dealAmount: body.dealAmount },
+        });
+      }
+      const contact = await prisma.contact.findUnique({
         where: { id: ingest.contactId },
-        data: { dealAmount: body.dealAmount },
+        include: { manager: { select: { id: true, name: true, email: true, role: true } }, pipelineStage: true },
       });
-    }
-    const contact = await prisma.contact.findUnique({
-      where: { id: ingest.contactId },
-      include: { manager: { select: { id: true, name: true, email: true, role: true } }, pipelineStage: true },
-    });
-    return NextResponse.json({ contact, ingest });
+      return { contact, ingest };
+    }));
   } catch (err) {
     return jsonError(err);
   }

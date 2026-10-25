@@ -8,7 +8,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { useRealtime } from "@/lib/use-realtime";
-import { apiJson } from "@/lib/client-api";
+import { apiJson, mutationJson, friendlyError } from "@/lib/client-api";
 
 type Contact = {
   id: string;
@@ -50,7 +50,7 @@ function tagBadgeColor(tag: { name: string; color: string }) {
 
 function LeadsInner() {
   const params = useSearchParams();
-  const { t, localeTag } = useI18n();
+  const { t, localeTag, locale } = useI18n();
   const [rows, setRows] = useState<Contact[]>([]);
   const [stages, setStages] = useState<Array<{ id: string; slug: string; name: string }>>([]);
   const [managers, setManagers] = useState<Array<{ id: string; name: string }>>([]);
@@ -67,6 +67,8 @@ function LeadsInner() {
   const [importNotice, setImportNotice] = useState("");
   const [role, setRole] = useState("MANAGER");
   const nextOffset = useRef(0);
+  const createLock = useRef(false);
+  const [creating, setCreating] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const isAdmin = role === "ADMIN" || role === "SUPERVISOR";
@@ -127,18 +129,14 @@ function LeadsInner() {
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
-    setError("");
-    const res = await fetch("/api/contacts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    if (!res.ok) {
-      setError(t("leads.createFailed"));
-      return;
-    }
-    setForm({ firstName: "", phone: "", source: "MANUAL", comment: "" });
-    await load();
+    if (createLock.current) return;
+    createLock.current = true; setCreating(true); setError("");
+    try {
+      await mutationJson("/api/contacts", form);
+      setForm({ firstName: "", phone: "", source: "MANUAL", comment: "" });
+      await load();
+    } catch (e) { setError(friendlyError(e, locale)); }
+    finally { createLock.current = false; setCreating(false); }
   }
 
   async function importCsv(file: File) {
@@ -190,7 +188,7 @@ function LeadsInner() {
           ))}
         </select>
         <input placeholder={t("common.comment")} value={form.comment} onChange={(e) => setForm({ ...form, comment: e.target.value })} />
-        <button className="rounded-xl bg-[#2563eb]">{t("common.create")}</button>
+        <button disabled={creating} className="rounded-xl bg-[#2563eb] disabled:opacity-50">{t("common.create")}</button>
       </form>
       <div className="card p-4 mb-4 grid md:grid-cols-3 xl:grid-cols-6 gap-2">
         <input className="md:col-span-2" placeholder={t("common.searchShort")} value={filters.q} onChange={(e) => setFilters({ ...filters, q: e.target.value })} />

@@ -1,3 +1,4 @@
+import { idempotent } from "@/lib/idempotency";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { jsonError, requireUser } from "@/lib/api";
@@ -50,25 +51,28 @@ export async function POST(req: NextRequest) {
     const body = originateSchema.parse(await req.json());
     const contact = await prisma.contact.findUnique({ where: { id: body.contactId } });
     if (!contact) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+    if (scopeManagerId(user.role, user.id) && contact.managerId !== user.id) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
     const manager = await prisma.user.findUnique({
       where: { id: user.id },
       select: { sipExtension: true, sipUsername: true },
     });
     const callbackLogin = resolveZadarmaCallbackSip(manager?.sipExtension, manager?.sipUsername);
-    const result = await originateCall({
-      fromExtension: callbackLogin,
-      toNumber: contact.phoneNormalized,
-    });
-    const handled = await handleTelephonyEvent(prisma, {
-      event: "call.started",
-      callId: String(result.callId),
-      direction: "OUTBOUND",
-      from: callbackLogin,
-      to: contact.phoneNormalized,
-      managerExtension: manager?.sipExtension || undefined,
-      status: "RINGING",
-    });
-    return NextResponse.json({ call: handled.call, mocked: result.mocked });
+    return NextResponse.json(await idempotent(prisma, user.id, "calls", req.headers.get("Idempotency-Key"), body, async () => {
+      const result = await originateCall({
+        fromExtension: callbackLogin,
+        toNumber: contact.phoneNormalized,
+      });
+      const handled = await handleTelephonyEvent(prisma, {
+        event: "call.started",
+        callId: String(result.callId),
+        direction: "OUTBOUND",
+        from: callbackLogin,
+        to: contact.phoneNormalized,
+        managerExtension: manager?.sipExtension || undefined,
+        status: "RINGING",
+      });
+      return { call: handled.call, mocked: result.mocked };
+    }));
   } catch (err) {
     return jsonError(err);
   }
