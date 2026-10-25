@@ -73,13 +73,22 @@ describe("live greeting workflow with a simulated provider", () => {
     expect(await prisma.systemSetting.count({ where: { key: { startsWith: "whatsapp:opt-out:" } } })).toBe(1);
   });
 
-  it("does not greet an old dialog after enabling, an echo, or an old webhook", async () => {
+  it("greets an existing dialog once on the next inbound after enabling", async () => {
     await prisma.systemSetting.update({ where: { key: GREETING_SETTING }, data: { value: { enabled: false } } });
     await handleWazzupInbound(prisma, incoming("wz.old-dialog"));
     await prisma.systemSetting.update({ where: { key: GREETING_SETTING }, data: { value: {
       enabled: true, text: DEFAULT_WHATSAPP_GREETING, enabledAt: new Date(Date.now() - 60_000).toISOString(),
     } } });
     await handleWazzupInbound(prisma, incoming("wz.after-enable"));
+    await handleWazzupInbound(prisma, incoming("wz.later", "+"));
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(await prisma.message.count({ where: { direction: "OUTBOUND" } })).toBe(1);
+    expect((await prisma.conversation.findFirstOrThrow()).unreadCount).toBe(3);
+    expect(await prisma.contact.count()).toBe(1);
+    expect(await prisma.lead.count()).toBe(1);
+  });
+
+  it("does not greet an echo or an old webhook", async () => {
     await handleWazzupInbound(prisma, incoming("wz.echo", "Hi", { chatId: "77015550002", status: "sent", isEcho: true }));
     await handleWazzupInbound(prisma, incoming("wz.delayed", "Hi", { chatId: "77015550003", dateTime: new Date(Date.now() - 3_600_000).toISOString() }));
     expect(request).not.toHaveBeenCalled();

@@ -1,15 +1,18 @@
-# WhatsApp first-message greeting
+# WhatsApp one-time greeting for every sender
 
 The admin controls the switch and message in Settings → WhatsApp автоприветствие,
 using `GET/PUT /api/whatsapp/greeting`. It is off until explicitly enabled.
 The active configuration is `SystemSetting.whatsapp:auto-greeting`, including
-the server activation time. The supplied Quantum X text omits the Instagram
-paragraph until a real URL is provided; placeholder links are rejected.
+the server activation time. The production message includes the supplied
+Instagram URL `https://www.instagram.com/quantumx_kz_/`; placeholder links are rejected.
 
-Only a customer's first saved WhatsApp inbound after activation is eligible.
+Any fresh customer WhatsApp inbound after activation is eligible, including
+customers with existing conversations and archived contacts who write again.
+Each contact receives one greeting in total; an existing greeting claim is
+preserved across later messages, deployments, and switch changes.
 It works for organic and tracked advertising traffic, without changing source
-attribution. Existing dialogs, echoes, statuses, groups, other Wazzup channels,
-archived contacts and messages older than five minutes do not trigger a reply.
+attribution. Echoes, statuses, groups, other Wazzup channels,
+and messages older than five minutes do not trigger a reply.
 It uses the configured live transport and never falls back to a mock sender.
 The reply is stored in the normal conversation, tagged with
 `rawPayload.automation = whatsapp-welcome`. It preserves the manager's unread

@@ -10,7 +10,7 @@ import { sendOutboundMessage } from "../src/lib/outbound";
 import { whatsappTransport } from "../src/lib/whatsapp-transport";
 import { GREETING_SETTING, isWhatsAppOptOut, maybeSendWhatsAppGreeting } from "../src/lib/whatsapp-greeting";
 
-describe("WhatsApp first-message greeting", () => {
+describe("WhatsApp one-time greeting for every sender", () => {
   let rows: Map<string, unknown>;
   let db: PrismaClient;
   const params = () => ({ contactId: "contact-1", messageId: "in-1", receivedAt: new Date(), text: "Сәлем", provider: "wazzup" as const, channelId: "live-channel" });
@@ -29,7 +29,6 @@ describe("WhatsApp first-message greeting", () => {
         update: vi.fn(async ({ where, data }) => { rows.set(where.key, data.value); return data; }),
         upsert: vi.fn(async ({ where, create }) => { rows.set(where.key, create.value); return create; }),
       },
-      message: { findFirst: vi.fn().mockResolvedValue({ id: "in-1" }) },
       contact: { findUnique: vi.fn().mockResolvedValue({ id: "contact-1", managerId: "mgr-1", archivedAt: null }) },
     } as unknown as PrismaClient;
   });
@@ -41,10 +40,16 @@ describe("WhatsApp first-message greeting", () => {
     expect(rows.get("whatsapp:welcome:contact-1")).toMatchObject({ state: "SENT", messageId: "out-1" });
   });
 
-  it("does not greet an existing conversation or a later message", async () => {
-    vi.mocked(db.message.findFirst).mockResolvedValue({ id: "older-inbound" } as never);
-    await maybeSendWhatsAppGreeting(db, params());
+  it("does not greet a previously greeted sender again on a new inbound", async () => {
+    rows.set("whatsapp:welcome:contact-1", { state: "SENT", messageId: "prior-greeting" });
+    await maybeSendWhatsAppGreeting(db, { ...params(), messageId: "later-inbound" });
     expect(sendOutboundMessage).not.toHaveBeenCalled();
+  });
+
+  it("greets an existing archived contact when they write, without changing their CRM state", async () => {
+    vi.mocked(db.contact.findUnique).mockResolvedValue({ id: "contact-1", managerId: "mgr-1", archivedAt: new Date() } as never);
+    await maybeSendWhatsAppGreeting(db, params());
+    expect(sendOutboundMessage).toHaveBeenCalledTimes(1);
   });
 
   it.each(["Тоқтату", " ТОҚТАТУ! ", "«Тоқтату»", "Стоп", "stop", "Отписаться"])("persists %s even while greetings are disabled", async (text) => {

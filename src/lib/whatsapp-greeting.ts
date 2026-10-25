@@ -69,14 +69,8 @@ export async function maybeSendWhatsAppGreeting(db: PrismaClient, params: Greeti
     if (!params.channelId || params.channelId !== channel.channelId) return;
   }
 
-  const first = await db.message.findFirst({
-    where: { contactId: params.contactId, direction: "INBOUND" },
-    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-    select: { id: true },
-  });
-  if (first?.id !== params.messageId) return;
   const contact = await db.contact.findUnique({ where: { id: params.contactId } });
-  if (!contact || contact.archivedAt) return;
+  if (!contact) return;
 
   // A durable unique claim precedes the network request. Uncertain sends are not retried.
   const claimKey = `whatsapp:welcome:${params.contactId}`;
