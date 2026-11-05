@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { jsonError, requireUser } from "@/lib/api";
 import { scopeManagerId } from "@/lib/rbac";
+import { LEAD_ACTIVITY_ORDER } from "@/lib/customer-inbound";
 
 const contactInclude = {
   manager: { select: { id: true, name: true } },
@@ -27,7 +28,7 @@ export async function GET(req: NextRequest) {
         prisma.contact.findMany({
           where,
           include: contactInclude,
-          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+          orderBy: [...LEAD_ACTIVITY_ORDER],
           skip: offset,
           take: limit,
         }),
@@ -42,7 +43,7 @@ export async function GET(req: NextRequest) {
         contacts: {
           where: contactWhere,
           include: contactInclude,
-          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+          orderBy: [...LEAD_ACTIVITY_ORDER],
           take: 100,
         },
         _count: { select: { contacts: { where: contactWhere } } },

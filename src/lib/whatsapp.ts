@@ -7,6 +7,7 @@ import { notifyUser } from "./notifications";
 import { emitToUser, emitToAdmins } from "./realtime";
 import { extensionFor, putObject, storageConfigured } from "./storage";
 import { maybeSendWhatsAppGreeting } from "./whatsapp-greeting";
+import { recordCustomerInbound } from "./customer-inbound";
 
 /** Meta allows free-form replies only within 24h of the customer's last message. */
 export const SERVICE_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -151,7 +152,6 @@ export async function handleWhatsAppInbound(db: PrismaClient, payload: unknown) 
           update: {
             lastMessage: extractText(msg),
             lastMessageAt: receivedAt,
-            lastCustomerMessageAt: receivedAt,
             serviceWindowExpiresAt: windowExpiresAt,
             unreadCount: { increment: 1 },
             managerId: ingest.managerId ?? undefined,
@@ -175,6 +175,7 @@ export async function handleWhatsAppInbound(db: PrismaClient, payload: unknown) 
           },
         });
         await storeInboundMedia(db, saved.id, saved.mediaId, msg.document?.filename);
+        await recordCustomerInbound(db, ingest.contactId, conversation.id, receivedAt);
         await attachTrackingAndGreet(db, {
           text: inboundText,
           contactId: ingest.contactId,

@@ -8,6 +8,7 @@ import { MissingStageFieldsError } from "@/lib/pipeline-rules";
 import { applyContactStage, OutcomeReasonRequiredError } from "@/lib/outcomes";
 import { contactWhere, parseContactFilters } from "@/lib/contact-filters";
 import { z } from "zod";
+import { LEAD_ACTIVITY_ORDER } from "@/lib/customer-inbound";
 
 export async function GET(req: NextRequest) {
   try {
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
         tags: { include: { tag: true } },
         tasks: { where: { status: "OPEN" }, take: 1, orderBy: { dueAt: "asc" } },
       },
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      orderBy: [...LEAD_ACTIVITY_ORDER],
       skip: offset,
       take: limit,
     });

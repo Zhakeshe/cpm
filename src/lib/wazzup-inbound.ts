@@ -1,11 +1,12 @@
 import type { PrismaClient } from "@prisma/client";
-import { ingestContact } from "./contacts";
+import { findContactByPhone, ingestContact, type IngestResult } from "./contacts";
 import { attachTrackingAndGreet, inboundSourceFromText } from "./inbound-tracking";
 import { notifyUser } from "./notifications";
 import { emitToAdmins, emitToUser } from "./realtime";
 import { extensionFor, putObject, storageConfigured } from "./storage";
 import { SERVICE_WINDOW_MS } from "./whatsapp";
 import { maybeSendWhatsAppGreeting } from "./whatsapp-greeting";
+import { recordCustomerInbound } from "./customer-inbound";
 
 export type WazzupMessage = {
   messageId?: string;
@@ -95,14 +96,22 @@ export async function handleWazzupInbound(db: PrismaClient, payload: unknown) {
     }
     const inbound = msg.status === "inbound" && !msg.isEcho;
     const names = (msg.contact?.name || "").split(" ").filter(Boolean);
-    const tracked = await inboundSourceFromText(db, msg.text);
-    const ingest = await ingestContact(db, {
-      phone: msg.chatId,
-      firstName: names[0] || "WhatsApp",
-      lastName: names.slice(1).join(" "),
-      source: tracked.source,
-      campaign: tracked.campaign,
-    });
+    let ingest: IngestResult;
+    if (inbound) {
+      const tracked = await inboundSourceFromText(db, msg.text);
+      ingest = await ingestContact(db, {
+        phone: msg.chatId, firstName: names[0] || "WhatsApp", lastName: names.slice(1).join(" "),
+        source: tracked.source, campaign: tracked.campaign,
+      });
+    } else {
+      // A message sent by us is history, not a new enquiry or manager-assignment trigger.
+      const contact = await findContactByPhone(db, msg.chatId);
+      if (!contact) {
+        results.push({ type: "ignored_unknown_outbound", id: msg.messageId });
+        continue;
+      }
+      ingest = { contactId: contact.id, managerId: contact.managerId, leadId: null, createdContact: false, createdLead: false, duplicate: true };
+    }
     const receivedAt = msg.dateTime ? new Date(msg.dateTime) : new Date();
     const windowExpiresAt = new Date(receivedAt.getTime() + SERVICE_WINDOW_MS);
     const preview = msg.text || (msg.contentUri ? "Вложение" : "WhatsApp");
@@ -121,7 +130,6 @@ export async function handleWazzupInbound(db: PrismaClient, payload: unknown) {
       update: {
         lastMessage: preview,
         lastMessageAt: receivedAt,
-        lastCustomerMessageAt: inbound ? receivedAt : undefined,
         serviceWindowExpiresAt: inbound ? windowExpiresAt : undefined,
         unreadCount: inbound ? { increment: 1 } : undefined,
         managerId: ingest.managerId ?? undefined,
@@ -144,6 +152,7 @@ export async function handleWazzupInbound(db: PrismaClient, payload: unknown) {
     });
     await storeWazzupMedia(db, saved.id, msg.contentUri, msg.type);
     if (inbound) {
+      await recordCustomerInbound(db, ingest.contactId, conversation.id, receivedAt);
       await attachTrackingAndGreet(db, {
         text: msg.text,
         contactId: ingest.contactId,

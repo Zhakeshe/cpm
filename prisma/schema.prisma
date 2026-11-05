@@ -267,6 +267,7 @@ model Contact {
   archivedAt       DateTime?
   customFields     Json           @default("{}")
   lastContactAt    DateTime?
+  leadActivityAt   DateTime       @default(now())
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
@@ -289,6 +290,7 @@ model Contact {
   @@index([email])
   @@index([companyId])
   @@index([archivedAt])
+  @@index([leadActivityAt, id])
 }
 
 model Lead {
