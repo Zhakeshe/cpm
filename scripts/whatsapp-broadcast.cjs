@@ -36,4 +36,9 @@ function print(status) {
   console.error('broadcast_runner_failed', /^[A-Z_]{1,80}$/.test(error.message) ? error.message : 'RUNNER_ERROR');
   if (action === 'run') await pauseBroadcast(db, id, 'RUNNER_ERROR').catch(() => undefined);
   process.exitCode = 1;
-}).finally(() => db.$disconnect());
+}).finally(async () => {
+  await db.$disconnect();
+  // The shared realtime publisher has an open Redis socket after a send.
+  // This is a dedicated one-shot CLI process, so exit after flushing its report.
+  process.stdout.write('', () => process.exit(process.exitCode || 0));
+});
