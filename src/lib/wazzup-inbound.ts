@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@prisma/client";
+import type { Message, PrismaClient } from "@prisma/client";
 import { findContactByPhone, ingestContact, type IngestResult } from "./contacts";
 import { attachTrackingAndGreet, inboundSourceFromText } from "./inbound-tracking";
 import { notifyUser } from "./notifications";
@@ -60,6 +60,35 @@ function mapStatus(status?: string) {
   return "SENT" as const;
 }
 
+/** Wazzup also sends delivery receipts in messages[], reusing the original message ID. */
+export async function applyWazzupDeliveryStatus(
+  db: PrismaClient,
+  message: Pick<Message, "id" | "status" | "deliveredAt" | "readAt" | "errorMessage">,
+  status?: string,
+  observedAt = new Date(),
+): Promise<boolean> {
+  if (!["sent", "delivered", "read", "error"].includes(status || "")) return false;
+  const next = mapStatus(status);
+  if (message.status === "READ" || next === message.status) return false;
+  if (message.status === "DELIVERED" && next !== "READ") return false;
+  if (next === "SENT" && message.status !== "PENDING") return false;
+  const changed = await db.message.updateMany({
+    where: { id: message.id, status: message.status },
+    data: {
+      status: next,
+      deliveredAt: next === "DELIVERED" || next === "READ" ? message.deliveredAt || observedAt : message.deliveredAt,
+      readAt: next === "READ" ? message.readAt || observedAt : message.readAt,
+      errorMessage: next === "FAILED" ? "WAZZUP_ERROR" : next === "DELIVERED" || next === "READ" ? null : message.errorMessage,
+    },
+  });
+  if (!changed.count) {
+    const current = await db.message.findUnique({ where: { id: message.id } });
+    if (current && current.status !== message.status) return applyWazzupDeliveryStatus(db, current, status, observedAt);
+    return false;
+  }
+  return true;
+}
+
 export async function handleWazzupInbound(db: PrismaClient, payload: unknown) {
   const body = payload as WazzupPayload;
   if (body.test) return [{ type: "test" }];
@@ -70,15 +99,7 @@ export async function handleWazzupInbound(db: PrismaClient, payload: unknown) {
     const existing = await db.message.findUnique({ where: { externalMessageId: status.messageId } });
     if (!existing) continue;
     const mapped = mapStatus(status.status);
-    await db.message.update({
-      where: { id: existing.id },
-      data: {
-        status: mapped,
-        deliveredAt: mapped === "DELIVERED" ? new Date() : existing.deliveredAt,
-        readAt: mapped === "READ" ? new Date() : existing.readAt,
-        errorMessage: status.status === "error" ? "WAZZUP_ERROR" : existing.errorMessage,
-      },
-    });
+    await applyWazzupDeliveryStatus(db, existing, status.status);
     results.push({ type: "status", id: status.messageId, status: mapped });
   }
 
@@ -91,6 +112,7 @@ export async function handleWazzupInbound(db: PrismaClient, payload: unknown) {
     if (msg.isDeleted) continue;
     const already = await db.message.findUnique({ where: { externalMessageId: msg.messageId } });
     if (already) {
+      if (already.direction === "OUTBOUND") await applyWazzupDeliveryStatus(db, already, msg.status);
       results.push({ type: "duplicate_message", id: msg.messageId });
       continue;
     }

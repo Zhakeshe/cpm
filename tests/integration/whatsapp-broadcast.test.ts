@@ -81,6 +81,14 @@ describe("one-time WhatsApp broadcast", () => {
     expect((await prisma.message.findFirstOrThrow()).rawPayload).toMatchObject({ automation: "whatsapp-broadcast", campaignId: id });
     expect((await getBroadcastStatus(prisma, id)).counts.SENT).toBe(1);
     expect(await prisma.lead.count()).toBe(1);
+    const receipt = (status: string) => handleWazzupInbound(prisma, { messages: [{ messageId: "echo-before-ack", chatId: "77015550006", chatType: "whatsapp", isEcho: true, status }] });
+    await receipt("delivered"); await receipt("sent");
+    expect((await getBroadcastStatus(prisma, id)).delivery.DELIVERED).toBe(1);
+    await receipt("read"); await receipt("delivered");
+    expect((await getBroadcastStatus(prisma, id)).delivery.READ).toBe(1);
+    expect(await prisma.message.count()).toBe(1);
+    expect(await prisma.lead.count()).toBe(1);
+    expect((await prisma.message.findFirstOrThrow()).readAt).not.toBeNull();
   });
 
   it("rechecks opt-out and changed destination immediately before sending", async () => {
@@ -89,6 +97,17 @@ describe("one-time WhatsApp broadcast", () => {
     await startBroadcast(prisma, id); await sendNextBroadcastRecipient(prisma, id);
     expect((await getBroadcastStatus(prisma, id)).counts.SKIPPED).toBe(1);
     expect(postCount).toBe(0);
+  });
+
+  it("keeps READ when delivery and read receipts are processed concurrently", async () => {
+    await add("77015550011"); await prepare(); await startBroadcast(prisma, id); await sendNextBroadcastRecipient(prisma, id);
+    await Promise.all([
+      handleWazzupInbound(prisma, { statuses: [{ messageId: "broadcast-out-1", status: "read" }] }),
+      handleWazzupInbound(prisma, { messages: [{ messageId: "broadcast-out-1", chatId: "77015550011", isEcho: true, status: "delivered" }] }),
+    ]);
+    await handleWazzupInbound(prisma, { statuses: [{ messageId: "broadcast-out-1", status: "sent" }] });
+    expect((await getBroadcastStatus(prisma, id)).delivery.READ).toBe(1);
+    expect(await prisma.lead.count()).toBe(1);
   });
 
   it("pauses on unknown provider failure without retrying or marking it sent", async () => {
