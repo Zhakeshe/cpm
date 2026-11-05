@@ -93,6 +93,7 @@ export async function sendWazzupText(params: { apiKey: string; channelId: string
       ...(params.clearUnanswered !== undefined ? { clearUnanswered: params.clearUnanswered } : {}),
     }),
   })) as { messageId?: string };
+  if (params.crmMessageId && !data.messageId) throw new WazzupApiError("WAZZUP_ACK_MISSING");
   return { mocked: false, id: data.messageId || `wazzup-${crypto.randomUUID()}` };
 }
 

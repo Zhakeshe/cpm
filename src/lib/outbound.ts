@@ -31,6 +31,7 @@ type SendParams = {
   contactId: string;
   senderId: string | null;
   automatic?: boolean;
+  campaign?: { id: string; recipient: string; channelId: string };
   text?: string;
   templateId?: string;
   templateParameters?: string[];
@@ -59,6 +60,17 @@ export async function sendOutboundMessage(db: PrismaClient, params: SendParams) 
   const windowOpen = allowsFreeform(transport) || isServiceWindowOpen(conversation.serviceWindowExpiresAt);
   const to = contact.whatsappNumber || contact.phoneNormalized;
   const wazzup = transport === "wazzup" ? await getWazzupConfig(db) : null;
+  if (params.campaign) {
+    if (transport !== "wazzup" || !wazzup?.configured || wazzup.channelId !== params.campaign.channelId) {
+      throw Object.assign(new Error("BROADCAST_CHANNEL_CHANGED"), { status: 409 });
+    }
+    if (wazzupChatId(to) !== params.campaign.recipient || contact.archivedAt) {
+      throw Object.assign(new Error("BROADCAST_RECIPIENT_CHANGED"), { status: 409 });
+    }
+    if (await db.systemSetting.findUnique({ where: { key: `whatsapp:opt-out:${contact.id}` } })) {
+      throw Object.assign(new Error("WHATSAPP_OPTED_OUT"), { status: 409 });
+    }
+  }
 
   let sent: { mocked: boolean; id: string };
   let type: MessageType = "TEXT";
@@ -113,19 +125,19 @@ export async function sendOutboundMessage(db: PrismaClient, params: SendParams) 
         chatId: wazzupChatId(to),
         text: params.text,
         ...(params.automatic ? { crmMessageId: `welcome-${contact.id}`, clearUnanswered: false, timeoutMs: 15_000 } : {}),
+        ...(params.campaign ? { crmMessageId: `${params.campaign.id}-${contact.id}`, clearUnanswered: false, timeoutMs: 15_000 } : {}),
       });
     } else {
       sent = await sendWhatsAppText({ to, text: params.text });
     }
   }
 
-  const message = await db.message.create({
-    data: {
+  const messageData = {
       externalMessageId: sent.id,
       conversationId: conversation.id,
       contactId: contact.id,
       managerId: params.senderId,
-      direction: "OUTBOUND",
+      direction: "OUTBOUND" as const,
       type,
       text,
       templateId: params.templateId,
@@ -134,25 +146,30 @@ export async function sendOutboundMessage(db: PrismaClient, params: SendParams) 
       mediaMimeType: params.media?.mimeType,
       mediaFileName: params.media?.fileName,
       mediaSize: params.media?.size,
-      status: "SENT",
-      rawPayload: params.automatic ? { automation: "whatsapp-welcome" } : undefined,
-    },
-  });
+      status: "SENT" as const,
+      rawPayload: params.campaign ? { automation: "whatsapp-broadcast", campaignId: params.campaign.id } : params.automatic ? { automation: "whatsapp-welcome" } : undefined,
+  };
+  // An echo can reach the webhook before the provider's POST response is stored.
+  const message = params.campaign
+    ? await db.message.upsert({ where: { externalMessageId: sent.id }, create: messageData, update: {
+      managerId: params.senderId, rawPayload: messageData.rawPayload, text,
+    } })
+    : await db.message.create({ data: messageData });
 
   await db.conversation.update({
     where: { id: conversation.id },
-    data: { lastMessage: text || "Вложение", lastMessageAt: new Date(), unreadCount: params.automatic ? undefined : 0 },
+    data: { lastMessage: text || "Вложение", lastMessageAt: new Date(), unreadCount: params.automatic || params.campaign ? undefined : 0 },
   });
   await db.activity.create({
     data: {
       contactId: contact.id,
       managerId: params.senderId,
       type: "WHATSAPP_OUT",
-      title: params.automatic ? "Автоматическое приветствие WhatsApp" : params.templateId ? "Отправлен шаблон WhatsApp" : "Исходящее сообщение WhatsApp",
+      title: params.campaign ? "Рассылка WhatsApp" : params.automatic ? "Автоматическое приветствие WhatsApp" : params.templateId ? "Отправлен шаблон WhatsApp" : "Исходящее сообщение WhatsApp",
       payload: { messageId: message.id },
     },
   });
-  await db.contact.update({ where: { id: contact.id }, data: { lastContactAt: new Date() } });
+  if (!params.campaign) await db.contact.update({ where: { id: contact.id }, data: { lastContactAt: new Date() } });
 
   if (params.senderId) emitToUser(params.senderId, "whatsapp:message", { conversationId: conversation.id, messageId: message.id });
   if (contact.managerId && contact.managerId !== params.senderId) {

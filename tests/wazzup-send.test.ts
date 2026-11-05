@@ -36,4 +36,9 @@ describe("Wazzup live-send response handling", () => {
     await expect(sendWazzupText(params)).rejects.toMatchObject({ details: { providerStatus: 502 } });
     expect(JSON.stringify(log.mock.calls)).not.toContain("private HTML error");
   });
+
+  it("does not invent an accepted ID for an automation without a provider acknowledgement", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 201 })));
+    await expect(sendWazzupText({ ...params, crmMessageId: "one-time-send" })).rejects.toThrow("WAZZUP_ACK_MISSING");
+  });
 });

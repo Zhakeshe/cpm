@@ -19,8 +19,8 @@ migration allowed. Back up first; do not run the compose seed/migrate service.
 
 The exact requested copy is in
 `scripts/campaigns/kaspi-zhuma-20261105.txt`. It is a draft, not an instruction
-to start sending. The user was asked whether this is a one-time broadcast or
-an automatic greeting replacement. Sending must wait for that scope answer.
+to start sending. The user subsequently confirmed a one-time broadcast;
+preparation and execution are described in `ops/whatsapp-broadcast.md`.
 At inspection on 5 November the CRM had 2,930 active contacts, one archived
 contact, and zero recorded WhatsApp opt-outs. Destination validation excluded
 five invalid phone numbers, leaving 2,925 eligible destinations and no duplicate
