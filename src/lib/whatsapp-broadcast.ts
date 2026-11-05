@@ -21,11 +21,16 @@ export async function getBroadcastStatus(db: PrismaClient, id: string) {
   const campaign = row.value as unknown as Campaign;
   const recipients = await db.systemSetting.findMany({ where: { key: { startsWith: recipientPrefix(id) } }, select: { value: true } });
   const counts: Record<string, number> = {};
-  for (const row of recipients) { const state = (row.value as unknown as Recipient).state; counts[state] = (counts[state] || 0) + 1; }
+  const failureReasons: Record<string, number> = {};
+  for (const row of recipients) {
+    const recipient = row.value as unknown as Recipient;
+    counts[recipient.state] = (counts[recipient.state] || 0) + 1;
+    if (recipient.reason) failureReasons[recipient.reason] = (failureReasons[recipient.reason] || 0) + 1;
+  }
   const messages = await db.message.groupBy({
     by: ["status"], where: { direction: "OUTBOUND", rawPayload: { path: ["campaignId"], equals: id } }, _count: true,
   });
-  return { campaign, counts, delivery: Object.fromEntries(messages.map(row => [row.status, row._count])) };
+  return { campaign, counts, failureReasons, delivery: Object.fromEntries(messages.map(row => [row.status, row._count])) };
 }
 
 export async function prepareBroadcast(db: PrismaClient, params: { id: string; text: string; actorId: string }) {
@@ -129,8 +134,9 @@ export async function sendNextBroadcastRecipient(db: PrismaClient, id: string) {
       await update({ state: "SKIPPED", reason: code }); return true;
     }
     const details = err instanceof WazzupApiError ? json(err.details) as object : {};
-    if (err instanceof WazzupApiError && err.details.providerErrors?.includes("BAD_CONTACT")) {
-      await update({ state: "FAILED", reason: "BAD_CONTACT", ...details }); return true;
+    const recipientRejection = err instanceof WazzupApiError ? err.details.providerErrors?.find(code => ["BAD_CONTACT", "MESSAGES_NOT_TEXT_FIRST"].includes(code)) : undefined;
+    if (recipientRejection) {
+      await update({ state: "FAILED", reason: recipientRejection, ...details }); return true;
     }
     await update({ state: "UNCERTAIN", reason: /^[A-Z_]{1,80}$/.test(code) ? code : "SEND_FAILED", ...details });
     await pauseBroadcast(db, id, "SEND_FAILED_REQUIRES_REVIEW");

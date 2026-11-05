@@ -26,7 +26,10 @@ UNKNOWN_ERROR, timeout, interrupted SENDING records, or other uncertain failures
 pause the campaign. Do not automatically retry those destinations. BAD_CONTACT
 is recorded as FAILED and does not block the rest. `crmMessageId` is stable but
 the provider only deduplicates it for 60 seconds; the persistent local ledger
-is the source of truth for preventing repeated sends.
+is the source of truth for preventing repeated sends. A definitive
+`MESSAGES_NOT_TEXT_FIRST` rejection is recorded as FAILED without retrying;
+the current Wazzup Inbox plan does not allow initiating that chat. Other
+eligible destinations continue. No account upgrade or billing change is made.
 
 Live validation found Wazzup delivery receipts inside `messages[]`, with the
 same ID as the saved outgoing message. These update the saved message's status

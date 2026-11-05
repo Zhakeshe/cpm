@@ -7,8 +7,8 @@ let stopping = false;
 process.on('SIGTERM', () => { stopping = true; });
 process.on('SIGINT', () => { stopping = true; });
 function print(status) {
-  const { campaign, counts, delivery } = status;
-  console.log(JSON.stringify({ id: campaign.id, state: campaign.state, audience: campaign.audience, textHash: campaign.textHash, exclusions: campaign.exclusions, counts, delivery, reason: campaign.reason }));
+  const { campaign, counts, delivery, failureReasons } = status;
+  console.log(JSON.stringify({ id: campaign.id, state: campaign.state, audience: campaign.audience, textHash: campaign.textHash, exclusions: campaign.exclusions, counts, delivery, failureReasons, reason: campaign.reason }));
 }
 (async () => {
   if (!id || !['prepare', 'run', 'status', 'pause'].includes(action)) throw Error('Usage: whatsapp-broadcast.cjs prepare|run|status|pause campaign-id [text-file]');

@@ -133,4 +133,17 @@ describe("one-time WhatsApp broadcast", () => {
     expect(status.campaign.state).toBe("COMPLETED"); expect(status.counts.FAILED).toBe(1); expect(status.counts.SENT).toBe(1);
     log.mockRestore();
   });
+
+  it("records Inbox-plan first-message rejection and continues without bypassing it", async () => {
+    await add("77015550012"); await add("77015550013"); await prepare(); await startBroadcast(prisma, id);
+    onPost = async () => postCount === 1
+      ? new Response(JSON.stringify({ error: "POST_MESSAGE_ERROR", data: [{ code: "MESSAGES_NOT_TEXT_FIRST" }] }), { status: 400 })
+      : new Response(JSON.stringify({ messageId: "existing-chat-out" }), { status: 201 });
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    await sendNextBroadcastRecipient(prisma, id); await sendNextBroadcastRecipient(prisma, id); await sendNextBroadcastRecipient(prisma, id);
+    const status = await getBroadcastStatus(prisma, id);
+    expect(status.campaign.state).toBe("COMPLETED"); expect(status.counts.FAILED).toBe(1); expect(status.counts.SENT).toBe(1);
+    expect(status.failureReasons.MESSAGES_NOT_TEXT_FIRST).toBe(1); expect(postCount).toBe(2);
+    log.mockRestore();
+  });
 });
