@@ -35,8 +35,10 @@ export async function requireUser(): Promise<SessionUser> {
 }
 
 export function jsonError(err: unknown) {
-  const status = (err as { status?: number }).status || 500;
-  const message = (err as Error).message || "ERROR";
+  const code = (err as { code?: string }).code;
+  const validation = (err as { name?: string }).name === "ZodError";
+  const status = validation ? 400 : code === "P2002" ? 409 : code === "P2025" ? 404 : (err as { status?: number }).status || 500;
+  const message = validation ? "INVALID_INPUT" : code === "P2002" ? "ALREADY_EXISTS" : code === "P2025" ? "NOT_FOUND" : status >= 500 ? "SERVER_ERROR" : (err as Error).message || "ERROR";
   if (status >= 500) {
     console.error(err);
   }

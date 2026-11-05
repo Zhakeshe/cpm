@@ -4,18 +4,21 @@ import { AppShell } from "@/components/AppShell";
 import { ExportButton } from "@/components/ExportButton";
 import { useI18n } from "@/components/I18nProvider";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { useRealtime } from "@/lib/use-realtime";
+import { apiJson, mutationJson, friendlyError } from "@/lib/client-api";
 
 type Contact = {
   id: string;
   firstName: string;
   lastName: string;
   phoneDisplay: string;
+  email?: string | null;
+  city: string;
+  createdAt: string;
   source: string;
-  dealAmount: string | number;
   manager?: { name: string };
   pipelineStage?: { name: string };
   company?: { name: string } | null;
@@ -35,76 +38,105 @@ const SOURCES = [
   "OTHER",
 ];
 
+const TAG_COLORS = ["#2563eb", "#059669", "#d97706", "#dc2626", "#7c3aed", "#db2777", "#0891b2"];
+const PAGE_SIZE = 200;
+type Page<T> = { items: T[]; total: number; nextOffset: number; hasMore: boolean };
+
+function tagBadgeColor(tag: { name: string; color: string }) {
+  if (tag.color && tag.color.toLowerCase() !== "#2563eb") return tag.color;
+  const hash = Array.from(tag.name).reduce((total, character) => total + character.charCodeAt(0), 0);
+  return TAG_COLORS[hash % TAG_COLORS.length];
+}
+
 function LeadsInner() {
   const params = useSearchParams();
-  const { t } = useI18n();
+  const { t, localeTag, locale } = useI18n();
   const [rows, setRows] = useState<Contact[]>([]);
-  const [stages, setStages] = useState<Array<{ id: string; name: string }>>([]);
+  const [stages, setStages] = useState<Array<{ id: string; slug: string; name: string }>>([]);
   const [managers, setManagers] = useState<Array<{ id: string; name: string }>>([]);
   const [tags, setTags] = useState<Array<{ id: string; name: string }>>([]);
-  const [views, setViews] = useState<Array<{ id: string; name: string; filters: Record<string, string> }>>([]);
-  const [selected, setSelected] = useState<string[]>([]);
   const [form, setForm] = useState({ firstName: "", phone: "", source: "MANUAL", comment: "" });
   const [filters, setFilters] = useState({
     q: params.get("q") || "",
     stage: params.get("stage") || "",
     manager: params.get("manager") || "",
-    source: params.get("source") || "",
     tag: params.get("tag") || "",
-    company: params.get("company") || "",
-    from: "",
-    to: "",
-    archived: "",
+    date: "",
   });
   const [error, setError] = useState("");
   const [importNotice, setImportNotice] = useState("");
-  const [bulkStage, setBulkStage] = useState("");
-  const [bulkTag, setBulkTag] = useState("");
-  const [viewName, setViewName] = useState("");
   const [role, setRole] = useState("MANAGER");
+  const nextOffset = useRef(0);
+  const createLock = useRef(false);
+  const [creating, setCreating] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const isAdmin = role === "ADMIN" || role === "SUPERVISOR";
 
   const query = useCallback(() => {
     const qs = new URLSearchParams();
     Object.entries(filters).forEach(([k, v]) => {
-      if (v) qs.set(k, v);
+      if (v && k !== "date") qs.set(k, v);
     });
+    if (filters.date) {
+      const start = new Date(`${filters.date}T00:00:00`);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 1);
+      qs.set("from", start.toISOString());
+      qs.set("to", end.toISOString());
+    }
     return qs.toString();
   }, [filters]);
 
-  const load = useCallback(async () => {
-    const data = await fetch(`/api/contacts?${query()}`).then((r) => r.json());
-    setRows(Array.isArray(data) ? data : []);
-  }, [query]);
+  const load = useCallback(async (append = false) => {
+    if (append) setLoadingMore(true);
+    try {
+      const qs = new URLSearchParams(query());
+      qs.set("page", "1");
+      qs.set("limit", String(PAGE_SIZE));
+      qs.set("offset", String(append ? nextOffset.current : 0));
+      const data = await apiJson<Page<Contact>>(`/api/contacts?${qs}`);
+      setRows((current) => append ? [...current, ...data.items] : data.items);
+      nextOffset.current = data.nextOffset;
+      setHasMore(data.hasMore);
+      setError("");
+    } catch {
+      setError(t("common.loadFailed", "Не удалось загрузить данные"));
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [query, t]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   useEffect(() => {
-    fetch("/api/auth/me").then((r) => r.json()).then((u) => setRole(u.role || "MANAGER"));
-    fetch("/api/pipeline").then((r) => r.json()).then(setStages);
-    fetch("/api/users").then((r) => r.json()).then(setManagers);
-    fetch("/api/tags").then((r) => r.json()).then(setTags);
-    fetch("/api/views").then((r) => r.json()).then(setViews);
-  }, []);
+    Promise.all([
+      apiJson<{ role?: string }>("/api/auth/me"),
+      apiJson<Array<{ id: string; slug: string; name: string }>>("/api/pipeline"),
+      apiJson<Array<{ id: string; name: string }>>("/api/users"),
+      apiJson<Array<{ id: string; name: string }>>("/api/tags"),
+    ]).then(([u, pipeline, users, loadedTags]) => {
+      setRole(u.role || "MANAGER");
+      setStages(pipeline);
+      setManagers(users);
+      setTags(loadedTags);
+    }).catch(() => setError(t("common.loadFailed", "Не удалось загрузить данные")));
+  }, [t]);
 
   useRealtime({ "lead:new": () => load() });
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
-    setError("");
-    const res = await fetch("/api/contacts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    if (!res.ok) {
-      setError(t("leads.createFailed"));
-      return;
-    }
-    setForm({ firstName: "", phone: "", source: "MANUAL", comment: "" });
-    await load();
+    if (createLock.current) return;
+    createLock.current = true; setCreating(true); setError("");
+    try {
+      await mutationJson("/api/contacts", form);
+      setForm({ firstName: "", phone: "", source: "MANUAL", comment: "" });
+      await load();
+    } catch (e) { setError(friendlyError(e, locale)); }
+    finally { createLock.current = false; setCreating(false); }
   }
 
   async function importCsv(file: File) {
@@ -119,17 +151,6 @@ function LeadsInner() {
       return;
     }
     setImportNotice(t("leads.importResult", { created: data.created, duplicates: data.duplicates, errors: data.errors?.length || 0 }));
-    await load();
-  }
-
-  async function bulk(payload: object) {
-    if (!selected.length) return;
-    await fetch("/api/contacts/bulk", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: selected, ...payload }),
-    });
-    setSelected([]);
     await load();
   }
 
@@ -167,13 +188,13 @@ function LeadsInner() {
           ))}
         </select>
         <input placeholder={t("common.comment")} value={form.comment} onChange={(e) => setForm({ ...form, comment: e.target.value })} />
-        <button className="rounded-xl bg-[#2563eb]">{t("common.create")}</button>
+        <button disabled={creating} className="rounded-xl bg-[#2563eb] disabled:opacity-50">{t("common.create")}</button>
       </form>
-      <div className="card p-4 mb-4 grid md:grid-cols-4 xl:grid-cols-8 gap-2">
-        <input placeholder={t("common.search")} value={filters.q} onChange={(e) => setFilters({ ...filters, q: e.target.value })} />
+      <div className="card p-4 mb-4 grid md:grid-cols-3 xl:grid-cols-6 gap-2">
+        <input className="md:col-span-2" placeholder={t("common.searchShort")} value={filters.q} onChange={(e) => setFilters({ ...filters, q: e.target.value })} />
         <select value={filters.stage} onChange={(e) => setFilters({ ...filters, stage: e.target.value })}>
           <option value="">{t("common.stage")}</option>
-          {stages.map((s) => (
+          {stages.filter((stage) => stage.slug !== "paid" && stage.slug !== "lost").map((s) => (
             <option key={s.id} value={s.id}>{s.name}</option>
           ))}
         </select>
@@ -185,106 +206,71 @@ function LeadsInner() {
           ))}
         </select>
         )}
-        <select value={filters.source} onChange={(e) => setFilters({ ...filters, source: e.target.value })}>
-          <option value="">{t("common.source")}</option>
-          {SOURCES.map((s) => (
-            <option key={s} value={s}>{t(`sources.${s}`)}</option>
-          ))}
-        </select>
         <select value={filters.tag} onChange={(e) => setFilters({ ...filters, tag: e.target.value })}>
           <option value="">{t("leads.tag")}</option>
           {tags.map((tag) => (
             <option key={tag.id} value={tag.id}>{tag.name}</option>
           ))}
         </select>
-        <input type="date" value={filters.from} onChange={(e) => setFilters({ ...filters, from: e.target.value })} />
-        <input type="date" value={filters.to} onChange={(e) => setFilters({ ...filters, to: e.target.value })} />
-        <select value={filters.archived} onChange={(e) => setFilters({ ...filters, archived: e.target.value })}>
-          <option value="">{t("leads.activeOnly")}</option>
-          <option value="1">{t("leads.archived")}</option>
-        </select>
+        <label className="flex items-center gap-2 rounded-xl border border-[#2a3650] px-3 text-sm">
+          <span className="muted shrink-0">{t("common.date")}</span>
+          <input className="min-w-0 border-0 bg-transparent p-0" aria-label={t("common.date")} type="date" value={filters.date} onChange={(e) => setFilters({ ...filters, date: e.target.value })} />
+        </label>
       </div>
-      {isAdmin && (
-      <div className="flex flex-wrap gap-2 mb-4 items-center">
-        <select value={bulkStage} onChange={(e) => setBulkStage(e.target.value)}>
-          <option value="">{t("leads.bulkStage")}</option>
-          {stages.map((s) => (
-            <option key={s.id} value={s.id}>{s.name}</option>
-          ))}
-        </select>
-        <button className="chip" type="button" onClick={() => bulk({ pipelineStageId: bulkStage })}>{t("leads.apply")}</button>
-        <select value={bulkTag} onChange={(e) => setBulkTag(e.target.value)}>
-          <option value="">{t("leads.bulkTag")}</option>
-          {tags.map((tag) => (
-            <option key={tag.id} value={tag.id}>{tag.name}</option>
-          ))}
-        </select>
-        <button className="chip" type="button" onClick={() => bulk({ tagId: bulkTag })}>{t("leads.apply")}</button>
-        <button className="chip" type="button" onClick={() => bulk({ archive: true })}>{t("leads.archive")}</button>
-        <input className="w-40" placeholder={t("leads.saveView")} value={viewName} onChange={(e) => setViewName(e.target.value)} />
-        <button
-          className="chip"
-          type="button"
-          onClick={async () => {
-            if (!viewName) return;
-            await fetch("/api/views", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: viewName, filters }) });
-            setViewName("");
-            setViews(await fetch("/api/views").then((r) => r.json()));
-          }}
-        >
-          {t("common.save")}
-        </button>
-        {views.map((v) => (
-          <button key={v.id} className="chip" type="button" onClick={() => setFilters({ ...filters, ...v.filters })}>
-            {v.name}
-          </button>
-        ))}
-      </div>
-      )}
       {error && <div className="text-sm text-[#f87171] mb-3">{error}</div>}
       {importNotice && <div className="text-sm text-[#34d399] mb-3">{importNotice}</div>}
-      <div className="card overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="card max-w-full overflow-x-auto">
+        <table className="w-full min-w-[1080px] text-sm">
           <thead className="bg-[#182235] text-[#93a0bb]">
             <tr>
-              {isAdmin && (
-              <th className="p-3 w-8">
-                <input type="checkbox" className="w-auto" checked={selected.length === rows.length && rows.length > 0} onChange={(e) => setSelected(e.target.checked ? rows.map((r) => r.id) : [])} />
-              </th>
-              )}
               <th className="text-left p-3">{t("common.client")}</th>
+              <th className="text-left p-3">{t("common.date")}</th>
               <th className="text-left p-3">{t("common.phone")}</th>
+              <th className="text-left p-3">{t("common.email")}</th>
               <th className="text-left p-3">{t("common.source")}</th>
               {isAdmin && <th className="text-left p-3">{t("common.manager")}</th>}
               <th className="text-left p-3">{t("common.stage")}</th>
               <th className="text-left p-3">{t("leads.tag")}</th>
-              <th className="text-left p-3">{t("common.amount")}</th>
+              <th className="text-left p-3">{t("contact.city")}</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((c) => (
               <tr key={c.id} className="border-t border-[#243049]">
-                {isAdmin && (
-                <td className="p-3">
-                  <input type="checkbox" className="w-auto" checked={selected.includes(c.id)} onChange={(e) => setSelected((prev) => (e.target.checked ? [...prev, c.id] : prev.filter((id) => id !== c.id)))} />
-                </td>
-                )}
                 <td className="p-3">
                   <Link href={`/contacts/${c.id}`} className="text-[#93c5fd]">
                     {c.firstName} {c.lastName}
                   </Link>
                   {c.company?.name ? <div className="muted text-xs">{c.company.name}</div> : null}
                 </td>
-                <td className="p-3">{c.phoneDisplay}</td>
+                <td className="whitespace-nowrap p-3">{new Date(c.createdAt).toLocaleString(localeTag)}</td>
+                <td className="whitespace-nowrap p-3">{c.phoneDisplay}</td>
+                <td className="p-3">{c.email || t("common.dash")}</td>
                 <td className="p-3">{t(`sources.${c.source}`, c.source)}</td>
                 {isAdmin && <td className="p-3">{c.manager?.name || t("common.dash")}</td>}
                 <td className="p-3">{c.pipelineStage?.name || t("common.dash")}</td>
-                <td className="p-3">{(c.tags || []).map((x) => x.tag.name).join(", ")}</td>
-                <td className="p-3">{Number(c.dealAmount || 0)}</td>
+                <td className="p-3">
+                  <div className="flex flex-wrap gap-1.5">
+                    {(c.tags || []).length === 0 && <span className="muted">{t("common.dash")}</span>}
+                    {(c.tags || []).map(({ tag }) => (
+                      <span key={tag.id} className="rounded-full px-2.5 py-1 text-xs font-medium text-white" style={{ backgroundColor: tagBadgeColor(tag) }}>
+                        {tag.name}
+                      </span>
+                    ))}
+                  </div>
+                </td>
+                <td className="p-3">{c.city || t("common.dash")}</td>
               </tr>
             ))}
           </tbody>
         </table>
+        {hasMore && (
+          <div className="border-t border-[#243049] p-3 text-center">
+            <button type="button" className="chip" disabled={loadingMore} onClick={() => load(true)}>
+              {loadingMore ? t("common.loading", "Загрузка…") : t("tasks.showMore")}
+            </button>
+          </div>
+        )}
       </div>
     </AppShell>
   );

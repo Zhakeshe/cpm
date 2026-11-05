@@ -1,3 +1,4 @@
+import { getRedis } from "./lib/redis";
 import { createWebhookWorker } from "./lib/queue";
 import { prisma } from "./lib/db";
 import { applyLeadSla } from "./lib/sla";
@@ -31,3 +32,11 @@ setInterval(() => {
 }, 60_000);
 
 console.log("crm worker started");
+
+// Heartbeat is independent of jobs, so an idle worker is still observable.
+function heartbeat() {
+  const redis = getRedis();
+  if (redis) void redis.set("crm:worker:heartbeat", String(Date.now()), "EX", 180).catch(() => console.error("worker_heartbeat_failed"));
+}
+heartbeat();
+setInterval(heartbeat, 30_000);

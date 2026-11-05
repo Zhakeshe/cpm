@@ -1,3 +1,4 @@
+import { idempotent } from "@/lib/idempotency";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { jsonError, requireUser } from "@/lib/api";
@@ -32,15 +33,17 @@ export async function POST(req: NextRequest) {
     if (scopeManagerId(user.role, user.id) && contact.managerId !== user.id) {
       return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
     }
-    const result = await sendOutboundMessage(prisma, {
-      contactId: body.contactId,
-      senderId: user.id,
-      text: body.text,
-      templateId: body.templateId,
-      templateParameters: body.templateParameters,
-      media: body.media,
-    });
-    return NextResponse.json({ message: result.message, mocked: result.mocked });
+    return NextResponse.json(await idempotent(prisma, user.id, "send", req.headers.get("Idempotency-Key"), body, async () => {
+      const result = await sendOutboundMessage(prisma, {
+        contactId: body.contactId,
+        senderId: user.id,
+        text: body.text,
+        templateId: body.templateId,
+        templateParameters: body.templateParameters,
+        media: body.media,
+      });
+      return { message: result.message, mocked: result.mocked };
+    }));
   } catch (err) {
     return jsonError(err);
   }

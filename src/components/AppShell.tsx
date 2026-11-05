@@ -7,7 +7,6 @@ import {
   Activity,
   BarChart3,
   Bell,
-  Calendar,
   Clock,
   LayoutDashboard,
   MessageSquare,
@@ -20,8 +19,6 @@ import {
   Kanban,
   Search,
   Sun,
-  Package,
-  FileText,
   Building2,
 } from "lucide-react";
 import { useRealtime, usePresence } from "@/lib/use-realtime";
@@ -36,10 +33,7 @@ const NAV = [
   { href: "/pipeline", key: "nav.pipeline", icon: Kanban },
   { href: "/messages", key: "nav.messages", icon: MessageSquare },
   { href: "/tasks", key: "nav.tasks", icon: Shield },
-  { href: "/meetings", key: "nav.meetings", icon: Calendar },
-  { href: "/quotes", key: "nav.quotes", icon: FileText },
   { href: "/calls", key: "nav.calls", icon: Phone, admin: true },
-  { href: "/catalog", key: "nav.catalog", icon: Package, admin: true },
   { href: "/companies", key: "nav.companies", icon: Building2, admin: true },
   { href: "/sla", key: "nav.sla", icon: Clock, admin: true },
   { href: "/analytics", key: "nav.analytics", icon: BarChart3, admin: true },
@@ -61,7 +55,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [openNotes, setOpenNotes] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [incoming, setIncoming] = useState<{ contactId?: string } | null>(null);
 
   useEffect(() => {
     fetch("/api/auth/me").then(async (r) => {
@@ -72,9 +65,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       }
       setMe(r.ok ? await r.json() : null);
     });
-    fetch("/api/notifications")
-      .then((r) => (r.ok ? r.json() : []))
-      .then(setNotes);
+    let cancelled = false;
+    const loadNotifications = () => fetch("/api/notifications")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (!cancelled && Array.isArray(data)) setNotes(data); })
+      .catch(() => undefined);
+    void loadNotifications();
+    const timer = setInterval(loadNotifications, 30_000);
+    return () => { cancelled = true; clearInterval(timer); };
+
   }, [router]);
 
   usePresence();
@@ -84,10 +83,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       setToast(n.title);
       setTimeout(() => setToast(null), 6000);
     },
-    "call:incoming": (payload: { contactId?: string }) => {
-      setIncoming(payload);
-      setTimeout(() => setIncoming(null), 20000);
-    },
+    "call:incoming": () => window.dispatchEvent(new Event("crm:incoming-call")),
   });
 
   const items = useMemo(
@@ -192,17 +188,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
             ))}
             {notes.length === 0 && <div className="muted text-sm">{t("common.noNotifications")}</div>}
-          </div>
-        )}
-        {incoming && (
-          <div className="fixed bottom-4 right-4 z-30 card p-4 w-80">
-            <div className="font-medium">{t("softphone.incomingToast")}</div>
-            <div className="muted text-sm">{t("softphone.incomingHint")}</div>
-            {incoming.contactId && (
-              <Link href={`/contacts/${incoming.contactId}`} className="mt-3 inline-block chip">
-                {t("softphone.openCard")}
-              </Link>
-            )}
           </div>
         )}
         {toast && (

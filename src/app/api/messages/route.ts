@@ -4,6 +4,7 @@ import { jsonError, requireUser } from "@/lib/api";
 import { scopeManagerId } from "@/lib/rbac";
 import { sendOutboundMessage } from "@/lib/outbound";
 import { z } from "zod";
+import { CUSTOMER_CONVERSATION_ORDER } from "@/lib/customer-inbound";
 
 export async function GET() {
   try {
@@ -15,7 +16,7 @@ export async function GET() {
         contact: { include: { manager: { select: { id: true, name: true } }, pipelineStage: true } },
         manager: { select: { id: true, name: true } },
       },
-      orderBy: { lastMessageAt: "desc" },
+      orderBy: [...CUSTOMER_CONVERSATION_ORDER],
       take: 200,
     });
     return NextResponse.json(conversations);

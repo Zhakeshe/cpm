@@ -58,10 +58,15 @@ export function contactWhere(filters: ContactFilterInput, scopedManagerId?: stri
     });
   }
   if (filters.from || filters.to) {
+    const toExclusive = filters.to
+      ? /^\d{4}-\d{2}-\d{2}$/.test(filters.to)
+        ? new Date(`${filters.to}T00:00:00.000Z`).getTime() + 24 * 60 * 60 * 1000
+        : new Date(filters.to).getTime()
+      : undefined;
     and.push({
       createdAt: {
         ...(filters.from ? { gte: new Date(filters.from) } : {}),
-        ...(filters.to ? { lte: new Date(`${filters.to}T23:59:59`) } : {}),
+        ...(toExclusive ? { lt: new Date(toExclusive) } : {}),
       },
     });
   }
@@ -77,7 +82,11 @@ export function contactWhere(filters: ContactFilterInput, scopedManagerId?: stri
         { comment: { contains: q, mode: "insensitive" } },
         { address: { contains: q, mode: "insensitive" } },
         { city: { contains: q, mode: "insensitive" } },
-        ...(digits ? [{ phoneNormalized: { contains: digits } }, { altPhone: { contains: digits } }] : []),
+        { company: { name: { contains: q, mode: "insensitive" } } },
+        { manager: { name: { contains: q, mode: "insensitive" } } },
+        { pipelineStage: { name: { contains: q, mode: "insensitive" } } },
+        { tags: { some: { tag: { name: { contains: q, mode: "insensitive" } } } } },
+        ...(digits ? [{ phoneNormalized: { contains: digits } }, { phoneDisplay: { contains: q } }, { whatsappNumber: { contains: digits } }, { altPhone: { contains: digits } }] : []),
       ],
     });
   }

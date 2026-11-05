@@ -28,7 +28,7 @@ docker compose up -d --build
 
 Webhook: `https://quantum.ushqn.com/api/webhooks/wazzup`
 
-Публичный номер для ссылок соцсетей: `WHATSAPP_PUBLIC_NUMBER=77765079188` (цифры без +). Ссылки: `https://quantum.ushqn.com/w/instagram`, `/w/tiktok`, `/w/facebook`, `/w/youtube`, `/w/site`, `/w/ads`. Клик пишет уникальный `qc:токен` в WhatsApp; когда клиент пишет, источник карточки = сеть, не WhatsApp, и уходит авто-приветствие канала.
+Публичный номер для ссылок соцсетей: `WHATSAPP_PUBLIC_NUMBER=77765079188` (цифры без +). Ссылки: `https://quantum.ushqn.com/w/instagram`, `/w/tiktok`, `/w/facebook`, `/w/youtube`, `/w/site`, `/w/ads`. Клик пишет только `qc:токен` в WhatsApp (без авто-текста); когда клиент пишет, источник карточки = сеть, не WhatsApp. CRM сам в чат не отвечает.
 
 В кабинете Wazzup нажмите «Подписать вебхук» в CRM или `PATCH /v3/webhooks`. Пока ключ задан, исходящие идут в Wazzup, не в Graph.
 
@@ -70,12 +70,35 @@ Webhook: `https://quantum.ushqn.com/api/webhooks/wazzup`
 - `SIP_WS_URL=wss://pbx.zadarma.com:8089/ws`
 - `SIP_DOMAIN=pbx.zadarma.com`
 
-В АТС заведите внутренние **101–105**, включите **WebRTC**, пароли вставьте в CRM: Настройки → Zadarma SIP (JSON).
+Для АТС `593615` используйте внутренние **100–102** с SIP-логинами `593615-100`, `593615-101`, `593615-102`. Внутренний номер нужен для маршрутизации и callback, полный логин — для регистрации софтфона. Включите **WebRTC** в кабинете Zadarma.
+
+После смены тарифа Zadarma может выдать прямые SIP-логины без дефиса (`158925`, `200223` и т. п.). Оставьте ключи `101–104` как логические номера менеджеров, а новый SIP-логин укажите в `username`. Click-to-call использует `username`, webhook принимает и логический номер, и прямой SIP-логин.
+
+В CRM: Настройки → Zadarma SIP (JSON) поддерживается формат:
+
+```json
+{
+  "100": { "username": "593615-100", "password": "<пароль внутреннего 100>" },
+  "101": { "username": "593615-101", "password": "<пароль внутреннего 101>" },
+  "102": { "username": "593615-102", "password": "<пароль внутреннего 102>" }
+}
+```
+
+Добавьте этот JSON одной строкой в `SIP_EXTENSIONS_JSON` в серверном `.env` (не в git). Скрипт сохраняет текущих владельцев логических номеров, включая администратора; свободные номера назначает активным пользователям по порядку. Он также сохраняет настройки софтфона и снимает конфликтующие прежние назначения. Остальные настройки интеграций сохраняются. При нехватке пользователей изменения не выполняются.
+
+После сборки нового образа:
+
+```bash
+docker compose run --rm --no-deps app npm run zadarma:setup -- --dry-run
+docker compose run --rm --no-deps app npm run zadarma:setup
+```
+
+Обновите страницу CRM у менеджеров и проверьте официальный WebRTC-виджет Zadarma. CRM на сервере получает для текущего полного SIP-логина краткоживущий ключ через `/v1/webrtc/get_key`; SIP-пароль в браузер не передаётся. Домен CRM должен быть разрешён в настройках WebRTC-виджета Zadarma. Для click-to-call, WebRTC-ключа и уведомлений нужны API-ключи ниже; SIP-пароль не заменяет `ZADARMA_SECRET`.
 
 Уведомления PBX: `https://quantum.ushqn.com/api/webhooks/telephony`  
 (в кабинете Zadarma поле «Уведомления о звонках АТС», должен открываться `zd_echo`).
 
-Click-to-call с карточки клиента идёт через `GET /v1/request/callback/`. Софтфон в браузере регистрируется по WebSocket.
+Click-to-call с карточки клиента идёт через `GET /v1/request/callback/`. Софтфон использует официальный WebRTC-виджет Zadarma.
 
 После правок `.env`: `docker compose up -d app worker`.
 

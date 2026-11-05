@@ -7,6 +7,7 @@ import { BarChart, DonutChart, LineChart } from "@/components/Charts";
 import { dayLabel, sourceLabel } from "@/lib/chart-data";
 import { useRealtime } from "@/lib/use-realtime";
 import { useI18n } from "@/components/I18nProvider";
+import { apiJson } from "@/lib/client-api";
 
 type Stats = {
   newLeads: number;
@@ -46,22 +47,28 @@ export default function HomePage() {
   const [managers, setManagers] = useState<Array<Record<string, unknown>>>([]);
   const [tracking, setTracking] = useState<ChannelFunnel[]>([]);
   const [role, setRole] = useState("MANAGER");
+  const [error, setError] = useState("");
   const { t } = useI18n();
 
   const load = useCallback(async () => {
-    const [dash, week] = await Promise.all([
-      fetch("/api/dashboard").then((r) => r.json()),
-      fetch("/api/analytics?preset=week").then((r) => r.json()),
-    ]);
-    setStats(dash);
-    setCharts(week.stats || {});
-    setManagers(week.managers || []);
-    setTracking(week.tracking || []);
-  }, []);
+    try {
+      const [dash, week] = await Promise.all([
+        apiJson<Stats>("/api/dashboard"),
+        apiJson<{ stats?: Charts; managers?: Array<Record<string, unknown>>; tracking?: ChannelFunnel[] }>("/api/analytics?preset=week"),
+      ]);
+      setStats(dash);
+      setCharts(week.stats || {});
+      setManagers(week.managers || []);
+      setTracking(week.tracking || []);
+      setError("");
+    } catch {
+      setError(t("common.loadFailed", "Не удалось загрузить данные"));
+    }
+  }, [t]);
 
   useEffect(() => {
     load();
-    fetch("/api/auth/me").then((r) => r.json()).then((u) => setRole(u.role));
+    apiJson<{ role: string }>("/api/auth/me").then((u) => setRole(u.role)).catch(() => undefined);
   }, [load]);
 
   useRealtime({
@@ -91,6 +98,7 @@ export default function HomePage() {
         <h1 className="text-2xl font-semibold">{t("dashboard.title")}</h1>
         <Link href="/today" className="chip">{t("nav.today")}</Link>
       </div>
+      {error && <div className="card px-4 py-2 mb-4 text-sm text-[#f87171]">{error}</div>}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {cards.map(([label, value]) => {
           const href =

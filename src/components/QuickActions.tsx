@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { CalendarPlus, FileText, MessageSquare, PhoneCall } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
+import { mutationJson, friendlyError } from "@/lib/client-api";
 import { DemoBooker } from "@/components/DemoBooker";
 
 type Props = {
@@ -18,7 +19,7 @@ type Product = { id: string; name: string; price: string | number };
  * never leaves the client to take the next sales step.
  */
 export function QuickActions({ contactId, onDone, compact }: Props) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [panel, setPanel] = useState<"quote" | "demo" | "callback" | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -56,18 +57,15 @@ export function QuickActions({ contactId, onDone, compact }: Props) {
       return;
     }
     const text = `${data.number || "КП"}: ${items.map((i) => i.title).join(", ")} — ${Number(data.total || 0).toLocaleString("ru-KZ")} ₸`;
-    await fetch("/api/messages/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contactId, text }),
-    }).catch(() => undefined);
+    try { await mutationJson("/api/messages/send", { contactId, text }); }
+    catch (e) { setError(friendlyError(e, locale)); }
     setMessage(t("quickActions.quoteCreated", { number: data.number || "" }));
     setPanel(null);
     setPicked([]);
     onDone?.();
   }
 
-  async function callback(preset: "today" | "tomorrow" | "in3days") {
+  async function callback(preset: "today" | "tomorrow") {
     setError("");
     setMessage("");
     const res = await fetch("/api/follow-ups", {
@@ -155,9 +153,6 @@ export function QuickActions({ contactId, onDone, compact }: Props) {
             </button>
             <button className="rounded-xl bg-[#2563eb] px-3 py-2 text-sm" type="button" onClick={() => callback("tomorrow")}>
               {t("followUps.tomorrow")}
-            </button>
-            <button className="chip" type="button" onClick={() => callback("in3days")}>
-              {t("followUps.in3days")}
             </button>
           </div>
         </div>

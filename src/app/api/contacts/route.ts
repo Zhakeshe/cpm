@@ -1,3 +1,4 @@
+import { idempotent } from "@/lib/idempotency";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { jsonError, requireUser } from "@/lib/api";
@@ -7,14 +8,18 @@ import { MissingStageFieldsError } from "@/lib/pipeline-rules";
 import { applyContactStage, OutcomeReasonRequiredError } from "@/lib/outcomes";
 import { contactWhere, parseContactFilters } from "@/lib/contact-filters";
 import { z } from "zod";
+import { LEAD_ACTIVITY_ORDER } from "@/lib/customer-inbound";
 
 export async function GET(req: NextRequest) {
   try {
     const user = await requireUser();
     const filters = parseContactFilters(req.nextUrl.searchParams);
     const managerId = scopeManagerId(user.role, user.id);
+    const offset = Math.max(0, Number(req.nextUrl.searchParams.get("offset")) || 0);
+    const limit = Math.min(200, Math.max(1, Number(req.nextUrl.searchParams.get("limit")) || 200));
+    const where = contactWhere(filters, managerId);
     const contacts = await prisma.contact.findMany({
-      where: contactWhere(filters, managerId),
+      where,
       include: {
         manager: { select: { id: true, email: true, name: true, role: true, sipExtension: true } },
         pipelineStage: true,
@@ -22,9 +27,19 @@ export async function GET(req: NextRequest) {
         tags: { include: { tag: true } },
         tasks: { where: { status: "OPEN" }, take: 1, orderBy: { dueAt: "asc" } },
       },
-      orderBy: { updatedAt: "desc" },
-      take: 200,
+      orderBy: [...LEAD_ACTIVITY_ORDER],
+      skip: offset,
+      take: limit,
     });
+    if (req.nextUrl.searchParams.get("page") === "1") {
+      const total = await prisma.contact.count({ where });
+      return NextResponse.json({
+        items: contacts,
+        total,
+        nextOffset: offset + contacts.length,
+        hasMore: offset + contacts.length < total,
+      });
+    }
     return NextResponse.json(contacts);
   } catch (err) {
     return jsonError(err);
@@ -57,33 +72,35 @@ export async function POST(req: NextRequest) {
   try {
     const user = await requireUser();
     const body = createSchema.parse(await req.json());
-    const ingest = await ingestContact(prisma, {
-      phone: body.phone,
-      firstName: body.firstName,
-      lastName: body.lastName,
-      email: body.email || undefined,
-      source: body.source,
-      comment: body.comment,
-      actorId: user.id,
-      createLeadOnDuplicate: false,
-    });
-    if (user.role === "MANAGER" && ingest.createdContact) {
-      await prisma.contact.update({
-        where: { id: ingest.contactId },
-        data: { managerId: user.id },
+    return NextResponse.json(await idempotent(prisma, user.id, "contacts", req.headers.get("Idempotency-Key"), body, async () => {
+      const ingest = await ingestContact(prisma, {
+        phone: body.phone,
+        firstName: body.firstName,
+        lastName: body.lastName,
+        email: body.email || undefined,
+        source: body.source,
+        comment: body.comment,
+        actorId: user.id,
+        createLeadOnDuplicate: false,
       });
-    }
-    if (body.dealAmount) {
-      await prisma.contact.update({
+      if (user.role === "MANAGER" && ingest.createdContact) {
+        await prisma.contact.update({
+          where: { id: ingest.contactId },
+          data: { managerId: user.id },
+        });
+      }
+      if (body.dealAmount) {
+        await prisma.contact.update({
+          where: { id: ingest.contactId },
+          data: { dealAmount: body.dealAmount },
+        });
+      }
+      const contact = await prisma.contact.findUnique({
         where: { id: ingest.contactId },
-        data: { dealAmount: body.dealAmount },
+        include: { manager: { select: { id: true, name: true, email: true, role: true } }, pipelineStage: true },
       });
-    }
-    const contact = await prisma.contact.findUnique({
-      where: { id: ingest.contactId },
-      include: { manager: { select: { id: true, name: true, email: true, role: true } }, pipelineStage: true },
-    });
-    return NextResponse.json({ contact, ingest });
+      return { contact, ingest };
+    }));
   } catch (err) {
     return jsonError(err);
   }

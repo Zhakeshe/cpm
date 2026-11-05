@@ -1,0 +1,10 @@
+[Unit]
+Description=CRM host and dependency checks
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/crm-monitor.env
+ExecStart=/usr/bin/flock -n /run/crm-monitor.lock /usr/bin/python3 /opt/crm/scripts/monitor-host.py
+TimeoutStartSec=100
+UMask=0077
