@@ -27,3 +27,9 @@ five invalid phone numbers, leaving 2,925 eligible destinations and no duplicate
 or business-number destinations at the time of the preview. Final preparation must
 deduplicate destination numbers, exclude the business's own number, recheck
 opt-outs, and report invalid numbers before starting any campaign.
+
+The full integration run exposed two stale test fixtures: the Meta service-window
+suite used permissive mock transport rather than Meta policy, and the phone-routing
+test referenced a callback stage absent from its seed. Tests now explicitly use
+the Meta transport and an existing seeded stage. No telephony runtime behavior
+was changed.

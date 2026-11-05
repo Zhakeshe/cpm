@@ -1,8 +1,15 @@
-import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma, resetDatabase, seedBaseline, whatsappPayload } from "./helpers";
 import { handleWhatsAppInbound, SERVICE_WINDOW_MS, isServiceWindowOpen } from "../../src/lib/whatsapp";
 import { renderTemplate, sendOutboundMessage, ServiceWindowClosedError } from "../../src/lib/outbound";
 import { avgResponseSeconds } from "../../src/lib/analytics";
+
+// Exercise Meta's policy even without live credentials. Mock transport allows
+// free-form Wazzup-style sends and therefore cannot validate the Meta window.
+vi.mock("../../src/lib/whatsapp-transport", async (importOriginal) => ({
+  ...await importOriginal<typeof import("../../src/lib/whatsapp-transport")>(),
+  whatsappTransport: vi.fn().mockResolvedValue("meta"),
+}));
 
 async function approvedTemplate() {
   return prisma.messageTemplate.create({

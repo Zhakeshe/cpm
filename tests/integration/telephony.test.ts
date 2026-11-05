@@ -72,12 +72,12 @@ describe("SIP телефония", () => {
       to: "77270000000",
     });
     const first = await prisma.call.findUniqueOrThrow({ where: { externalCallId: "call-300" } });
-    const callbackStage = await prisma.pipelineStage.findUniqueOrThrow({
-      where: { pipelineId_slug: { pipelineId: "default", slug: "callback" } },
+    const existingStage = await prisma.pipelineStage.findFirstOrThrow({
+      where: { pipeline: { isDefault: true }, slug: "contacted" },
     });
     await prisma.contact.update({
       where: { id: first.contactId! },
-      data: { managerId: "mgr-2", pipelineStageId: callbackStage.id, status: "IN_PROGRESS" },
+      data: { managerId: "mgr-2", pipelineStageId: existingStage.id, status: "IN_PROGRESS" },
     });
 
     await handleTelephonyEvent(prisma, {
@@ -92,7 +92,7 @@ describe("SIP телефония", () => {
     const contact = await prisma.contact.findUniqueOrThrow({ where: { id: first.contactId! } });
     expect(second.managerId).toBe("mgr-2");
     expect(await prisma.contact.count()).toBe(1);
-    expect(contact.pipelineStageId).toBe(callbackStage.id);
+    expect(contact.pipelineStageId).toBe(existingStage.id);
     expect(contact.status).toBe("IN_PROGRESS");
   });
 
