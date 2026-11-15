@@ -1,5 +1,7 @@
 "use client";
 
+import { useAccess, WriteAccess } from "@/components/AccessProvider";
+
 import { AppShell } from "@/components/AppShell";
 import { useI18n } from "@/components/I18nProvider";
 import { useEffect, useState } from "react";
@@ -8,6 +10,7 @@ type Product = { id: string; sku: string; name: string; price: string | number; 
 
 export default function CatalogPage() {
   const { t } = useI18n();
+  const { readOnly } = useAccess();
   const [rows, setRows] = useState<Product[]>([]);
   const [draft, setDraft] = useState({ sku: "", name: "", price: "", stock: "0", category: "vacuum" });
   const load = () => fetch("/api/products").then((r) => r.json()).then(setRows);
@@ -18,11 +21,11 @@ export default function CatalogPage() {
     <AppShell>
       <div className="flex justify-between mb-6">
         <h1 className="text-2xl font-semibold">{t("catalog.title")}</h1>
-        <button className="chip" type="button" onClick={() => fetch("/api/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ seed: true }) }).then(load)}>
+        <button disabled={readOnly} className="chip" type="button" onClick={() => fetch("/api/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ seed: true }) }).then(load)}>
           {t("catalog.seed")}
         </button>
       </div>
-      <form
+      <WriteAccess><form
         className="card p-4 mb-6 grid md:grid-cols-5 gap-2"
         onSubmit={async (e) => {
           e.preventDefault();
@@ -40,7 +43,7 @@ export default function CatalogPage() {
         <input required placeholder={t("common.amount")} value={draft.price} onChange={(e) => setDraft({ ...draft, price: e.target.value })} />
         <input placeholder="stock" value={draft.stock} onChange={(e) => setDraft({ ...draft, stock: e.target.value })} />
         <button className="rounded-xl bg-[#2563eb]">{t("common.add")}</button>
-      </form>
+      </form></WriteAccess>
       <div className="card overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-[#182235] text-[#93a0bb]">

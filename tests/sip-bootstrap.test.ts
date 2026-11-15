@@ -1,6 +1,6 @@
 import { beforeEach, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({ extension: "101", key: vi.fn(async () => "test-bootstrap-key"), registration: vi.fn(async () => ({ wsUrl: "wss://pbxfr1.zadarma.com:4443", uri: "sip:test-101@pbxfr1.zadarma.com", password: "test-only" })) }));
-vi.mock("../src/lib/api", () => ({ requireUser: async () => ({ id: "manager", name: "Test" }), jsonError: (e: Error) => new Response(JSON.stringify({error:e.message}),{status:500}) }));
+vi.mock("../src/lib/api", () => ({ requireWritableUser: async () => ({ id: "manager", name: "Test" }), jsonError: (e: Error) => new Response(JSON.stringify({error:e.message}),{status:500}) }));
 vi.mock("../src/lib/db", () => ({ prisma: { user: { findUnique: async () => ({ sipExtension: state.extension, sipUsername: "test-101" }) }, integration: { findUnique: async () => ({ config: { extensions: { "101": { username: "test-101", password: "permanent-test-only" } } } }) } } }));
 vi.mock("../src/lib/zadarma", () => ({ ZADARMA_DEFAULTS: { wsUrl: "wss://pbx.zadarma.com:8089/ws", domain: "pbx.zadarma.com" }, zadarmaCredentials: () => ({ configured: true }), zadarmaWebrtcKey: state.key }));
 vi.mock("../src/lib/zadarma-webrtc", () => ({ zadarmaWebrtcCredentials: state.registration }));

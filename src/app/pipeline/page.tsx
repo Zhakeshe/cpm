@@ -1,5 +1,7 @@
 "use client";
 
+import { useAccess } from "@/components/AccessProvider";
+
 import { AppShell } from "@/components/AppShell";
 import { useI18n } from "@/components/I18nProvider";
 import Link from "next/link";
@@ -26,6 +28,7 @@ const WON_REASONS = ["paid_full", "installment", "repeat"];
 
 export default function PipelinePage() {
   const { t } = useI18n();
+  const { readOnly } = useAccess();
   const [stages, setStages] = useState<Stage[]>([]);
   const [error, setError] = useState("");
   const [pending, setPending] = useState<{ contactId: string; stage: Stage } | null>(null);
@@ -83,6 +86,7 @@ export default function PipelinePage() {
   }
 
   function dropOn(contactId: string, stage: Stage) {
+    if (readOnly) return;
     if (stage.isWon || stage.isLost) {
       setPending({ contactId, stage });
       setReason("");
@@ -123,7 +127,7 @@ export default function PipelinePage() {
               {stage.contacts.map((c) => (
                 <div
                   key={c.id}
-                  draggable
+                  draggable={!readOnly}
                   onDragStart={(e) => e.dataTransfer.setData("id", c.id)}
                   className="card p-3 cursor-grab"
                 >

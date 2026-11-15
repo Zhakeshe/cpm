@@ -1,5 +1,7 @@
 "use client";
 
+import { useAccess } from "@/components/AccessProvider";
+
 import { AppShell } from "@/components/AppShell";
 import { useI18n } from "@/components/I18nProvider";
 import Link from "next/link";
@@ -23,6 +25,7 @@ const PRESETS = ["today", "tomorrow"] as const;
 
 export default function FollowUpsPage() {
   const { t, localeTag } = useI18n();
+  const { readOnly } = useAccess();
   const [items, setItems] = useState<Item[]>([]);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -84,7 +87,7 @@ export default function FollowUpsPage() {
             </div>
             <div className="flex flex-wrap gap-2 shrink-0">
               {PRESETS.map((preset) => (
-                <button key={preset} className="chip" onClick={() => schedule(item.id, preset)}>
+                <button disabled={readOnly} key={preset} className="chip" onClick={() => schedule(item.id, preset)}>
                   {t(`followUps.${preset}`)}
                 </button>
               ))}

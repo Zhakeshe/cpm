@@ -1,5 +1,7 @@
 "use client";
 
+import { useAccess } from "@/components/AccessProvider";
+
 import { AppShell } from "@/components/AppShell";
 import { ExportButton } from "@/components/ExportButton";
 import { useI18n } from "@/components/I18nProvider";
@@ -27,6 +29,7 @@ type Page<T> = { items: T[]; nextOffset: number; hasMore: boolean };
 
 export default function CallsPage() {
   const { t, localeTag } = useI18n();
+  const { readOnly } = useAccess();
   const [calls, setCalls] = useState<Call[]>([]);
   const [modal, setModal] = useState<Call | null>(null);
   const [callbackAt, setCallbackAt] = useState("");
@@ -103,7 +106,7 @@ export default function CallsPage() {
                   {c.recordingUrl ? <audio controls src={c.recordingUrl} className="h-8" /> : t("common.dash")}
                 </td>
                 <td className="p-3">
-                  <button className="chip" onClick={() => setModal(c)}>
+                  <button disabled={readOnly} className="chip" onClick={() => setModal(c)}>
                     {c.result ? t(`callResults.${c.result}`) : t("calls.setResult")}
                   </button>
                 </td>

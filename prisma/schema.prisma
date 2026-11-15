@@ -12,6 +12,7 @@ enum Role {
   MANAGER
   SUPERVISOR
   OPERATOR
+  OBSERVER
 }
 
 enum ContactSource {

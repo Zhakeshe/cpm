@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { getSession, type SessionUser } from "./auth";
 import { prisma } from "./db";
-import { canManageSettings, type Role } from "./rbac";
+import { canManageSettings, isReadOnly, type Role } from "./rbac";
 import { clientIp, rateLimit } from "./rate-limit";
 
 const API_LIMIT = Number(process.env.API_RATE_LIMIT || 600);
@@ -52,6 +52,13 @@ export async function requireRole(roles: Role[]) {
   if (!roles.includes(user.role)) {
     throw Object.assign(new Error("FORBIDDEN"), { status: 403 });
   }
+  return user;
+}
+
+/** Uses the live database role, so an older manager session cannot bypass a demotion. */
+export async function requireWritableUser(): Promise<SessionUser> {
+  const user = await requireUser();
+  if (isReadOnly(user.role)) throw Object.assign(new Error("READ_ONLY"), { status: 403 });
   return user;
 }
 

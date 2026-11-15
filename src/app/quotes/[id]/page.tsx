@@ -1,5 +1,7 @@
 "use client";
 
+import { useAccess } from "@/components/AccessProvider";
+
 import { AppShell } from "@/components/AppShell";
 import { useI18n } from "@/components/I18nProvider";
 import { useParams } from "next/navigation";
@@ -19,6 +21,7 @@ type Quote = {
 
 export default function QuotePrintPage() {
   const { t, localeTag } = useI18n();
+  const { readOnly } = useAccess();
   const params = useParams<{ id: string }>();
   const [q, setQ] = useState<Quote | null>(null);
   const load = useCallback(() => fetch(`/api/quotes/${params.id}`).then((r) => r.json()).then(setQ), [params.id]);
@@ -67,7 +70,7 @@ export default function QuotePrintPage() {
         <div className="muted mt-2">{q.note}</div>
         <div className="flex gap-2 mt-6">
           {["SENT", "ACCEPTED", "REJECTED"].map((status) => (
-            <button
+            <button disabled={readOnly}
               key={status}
               type="button"
               className="chip"
@@ -82,7 +85,7 @@ export default function QuotePrintPage() {
               {t(`quoteStatus.${status}`)}
             </button>
           ))}
-          <button type="button" className="rounded-xl bg-[#2563eb] px-3 py-2 text-sm" onClick={() => window.print()}>
+          <button disabled={readOnly} type="button" className="rounded-xl bg-[#2563eb] px-3 py-2 text-sm" onClick={() => window.print()}>
             {t("quotes.print")}
           </button>
         </div>

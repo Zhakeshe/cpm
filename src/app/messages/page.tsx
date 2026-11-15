@@ -1,5 +1,7 @@
 "use client";
 
+import { useAccess } from "@/components/AccessProvider";
+
 import { AppShell } from "@/components/AppShell";
 import { QuickActions } from "@/components/QuickActions";
 import { useI18n } from "@/components/I18nProvider";
@@ -86,6 +88,7 @@ function MediaBubble({ message, t }: { message: Message; t: (path: string, vars?
 function MessagesInbox() {
   const params = useSearchParams();
   const { t, localeTag, locale } = useI18n();
+  const { readOnly } = useAccess();
   const requestedContact = params.get("contact");
   const [list, setList] = useState<Conv[]>([]);
   const [active, setActive] = useState<string | null>(null);
@@ -303,7 +306,7 @@ function MessagesInbox() {
             {!thread && <div className="muted">{t("messages.pickDialog")}</div>}
           </div>
 
-          {thread && (
+          {thread && !readOnly && (
             <div className="border-t border-[#243049] p-3 space-y-2">
               {freeform ? (
                 <div className="text-xs text-[#34d399]">🟢 {t("messages.wazzupOpen")}</div>

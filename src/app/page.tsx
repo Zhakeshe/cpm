@@ -85,7 +85,7 @@ export default function HomePage() {
     [t("dashboard.overdue"), stats?.overdue],
     [t("dashboard.needsFollowUp"), stats?.needsFollowUp],
   ];
-  if (role === "ADMIN" || role === "SUPERVISOR") {
+  if (role === "ADMIN" || role === "SUPERVISOR" || role === "OBSERVER") {
     cards.push(
       [t("dashboard.activeClients"), stats?.activeClients],
       [t("dashboard.missed"), stats?.missed],
@@ -126,7 +126,7 @@ export default function HomePage() {
           );
         })}
       </div>
-      {(role === "ADMIN" || role === "SUPERVISOR") && (
+      {(role === "ADMIN" || role === "SUPERVISOR" || role === "OBSERVER") && (
         <div className="grid md:grid-cols-2 gap-4 mt-6">
           <div className="card p-5">
             <div className="muted text-sm">{t("dashboard.conversion")}</div>
@@ -138,7 +138,7 @@ export default function HomePage() {
           </div>
         </div>
       )}
-      {(role === "ADMIN" || role === "SUPERVISOR") && (
+      {(role === "ADMIN" || role === "SUPERVISOR" || role === "OBSERVER") && (
       <div className="grid lg:grid-cols-2 gap-4 mt-6">
         <div className="card p-5">
           <div className="muted text-sm mb-3">{t("dashboard.leadsWeek")}</div>

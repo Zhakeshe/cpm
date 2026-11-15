@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { jsonError, requireUser } from "@/lib/api";
+import { jsonError, requireUser, requireWritableUser } from "@/lib/api";
 import { scopeManagerId } from "@/lib/rbac";
 import { z } from "zod";
 import { bookDemo, SlotTakenError, SlotUnavailableError, updateMeeting } from "@/lib/meetings";
@@ -32,7 +32,7 @@ const createSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireUser();
+    const user = await requireWritableUser();
     const body = createSchema.parse(await req.json());
     if (!body.auto && !body.startsAt) {
       return NextResponse.json({ error: "STARTS_AT_REQUIRED" }, { status: 400 });
@@ -68,7 +68,7 @@ const patchSchema = z.object({
 
 export async function PATCH(req: NextRequest) {
   try {
-    const user = await requireUser();
+    const user = await requireWritableUser();
     const body = patchSchema.parse(await req.json());
     const meeting = await updateMeeting(prisma, {
       id: body.id,

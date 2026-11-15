@@ -1,7 +1,7 @@
 import { idempotent } from "@/lib/idempotency";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { jsonError, requireUser } from "@/lib/api";
+import { jsonError, requireWritableUser } from "@/lib/api";
 import { scopeManagerId } from "@/lib/rbac";
 import { sendOutboundMessage } from "@/lib/outbound";
 import { z } from "zod";
@@ -26,7 +26,7 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireUser();
+    const user = await requireWritableUser();
     const body = schema.parse(await req.json());
     const contact = await prisma.contact.findUnique({ where: { id: body.contactId } });
     if (!contact) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });

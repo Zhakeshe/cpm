@@ -1,5 +1,7 @@
 "use client";
 
+import { WriteAccess } from "@/components/AccessProvider";
+
 import { AppShell } from "@/components/AppShell";
 import { useI18n } from "@/components/I18nProvider";
 import Link from "next/link";
@@ -18,7 +20,7 @@ export default function CompaniesPage() {
   return (
     <AppShell>
       <h1 className="text-2xl font-semibold mb-6">{t("companies.title")}</h1>
-      <form
+      <WriteAccess><form
         className="card p-4 mb-6 grid md:grid-cols-4 gap-2"
         onSubmit={async (e) => {
           e.preventDefault();
@@ -31,7 +33,7 @@ export default function CompaniesPage() {
         <input placeholder="BIN" value={draft.bin} onChange={(e) => setDraft({ ...draft, bin: e.target.value })} />
         <input placeholder={t("common.phone")} value={draft.phone} onChange={(e) => setDraft({ ...draft, phone: e.target.value })} />
         <button className="rounded-xl bg-[#2563eb]">{t("common.create")}</button>
-      </form>
+      </form></WriteAccess>
       <div className="card overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-[#182235] text-[#93a0bb]">

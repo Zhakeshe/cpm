@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jsonError, requireUser } from "@/lib/api";
+import { jsonError, requireUser, requireWritableUser } from "@/lib/api";
 import { prisma } from "@/lib/db";
 
 export async function GET() {
@@ -18,7 +18,7 @@ export async function GET() {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const user = await requireUser();
+    const user = await requireWritableUser();
     const body = await req.json();
     await prisma.notification.updateMany({
       where: { userId: user.id, id: body.id ? body.id : undefined, readAt: null },

@@ -31,7 +31,9 @@ async function main() {
       if (!token) return nextMw(new Error("auth"));
       const secret = new TextEncoder().encode(process.env.SESSION_SECRET!);
       const { payload } = await jwtVerify(token, secret);
-      socket.data.user = payload;
+      const live = await prisma.user.findUnique({ where: { id: String(payload.id) }, select: { role: true, isActive: true } });
+      if (!live?.isActive) return nextMw(new Error("auth"));
+      socket.data.user = { ...payload, role: live.role };
       nextMw();
     } catch {
       nextMw(new Error("auth"));
@@ -42,11 +44,12 @@ async function main() {
     const user = socket.data.user as { id: string; role: string };
     socket.join(`user:${user.id}`);
     socket.join(`role:${user.role}`);
-    await prisma.user.update({
+    if (user.role !== "OBSERVER") await prisma.user.update({
       where: { id: user.id },
       data: { lastSeenAt: new Date() },
     });
     socket.on("presence", async () => {
+      if (user.role === "OBSERVER") return;
       await prisma.user.update({
         where: { id: user.id },
         data: { lastSeenAt: new Date() },

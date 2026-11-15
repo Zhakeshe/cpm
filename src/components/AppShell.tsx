@@ -24,6 +24,7 @@ import {
 import { useRealtime, usePresence } from "@/lib/use-realtime";
 import { Softphone } from "@/components/Softphone";
 import { LOCALES, useI18n, type Locale } from "@/components/I18nProvider";
+import { useAccess } from "@/components/AccessProvider";
 
 const NAV = [
   { href: "/", key: "nav.home", icon: LayoutDashboard },
@@ -50,6 +51,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { t, locale, setLocale } = useI18n();
+  const { readOnly } = useAccess();
   const [me, setMe] = useState<Me | null>(null);
   const [q, setQ] = useState("");
   const [notes, setNotes] = useState<Note[]>([]);
@@ -87,7 +89,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   });
 
   const items = useMemo(
-    () => NAV.filter((n) => !n.admin || me?.role === "ADMIN" || me?.role === "SUPERVISOR"),
+    () => NAV.filter((n) => me?.role === "OBSERVER" ? !["/settings", "/audit", "/monitoring"].includes(n.href) : !n.admin || me?.role === "ADMIN" || me?.role === "SUPERVISOR"),
     [me],
   );
   const unread = notes.filter((n) => !n.readAt).length;
@@ -99,7 +101,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   async function markNotesRead() {
     setOpenNotes((v) => !v);
-    if (unread === 0) return;
+    if (unread === 0 || readOnly) return;
     await fetch("/api/notifications", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -141,7 +143,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="mt-4 text-sm text-[#93a0bb] space-y-2">
           <div>
             <div className="font-medium text-white">{me?.name}</div>
-            <div>{me?.role}</div>
+            <div>{me?.role === "OBSERVER" ? t("auth.observer") : me?.role}</div>
           </div>
           <select
             aria-label={t("common.language")}
@@ -193,7 +195,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {toast && (
           <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 card px-4 py-3 text-sm">{toast}</div>
         )}
-        <Softphone />
+        {!readOnly && <Softphone />}
+        {me?.role === "OBSERVER" && <div className="border-b border-[#334155] bg-[#17243a] px-6 py-3 text-sm text-[#bfdbfe]">{t("auth.readOnly")}</div>}
         <main className="p-4 md:p-6">{children}</main>
       </div>
     </div>

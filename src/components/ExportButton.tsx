@@ -1,10 +1,13 @@
 "use client";
 
+import { useAccess } from "@/components/AccessProvider";
+
 import { useState } from "react";
 import { useI18n } from "@/components/I18nProvider";
 
 export function ExportButton({ href }: { href: string }) {
   const { t } = useI18n();
+  const { readOnly } = useAccess();
   const [busy, setBusy] = useState(false);
 
   async function download() {
@@ -25,6 +28,8 @@ export function ExportButton({ href }: { href: string }) {
       setBusy(false);
     }
   }
+
+  if (readOnly) return null;
 
   return (
     <button className="chip" disabled={busy} onClick={download}>

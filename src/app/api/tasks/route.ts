@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { jsonError, requireUser } from "@/lib/api";
+import { jsonError, requireUser, requireWritableUser } from "@/lib/api";
 import { canReassignManager, scopeManagerId } from "@/lib/rbac";
 import { notifyUser } from "@/lib/notifications";
 import { clientDayStart, TASK_BUCKETS, taskBucketFilter, type TaskBucket } from "@/lib/task-buckets";
@@ -95,7 +95,7 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireUser();
+    const user = await requireWritableUser();
     const body = schema.parse(await req.json());
     const managerId = body.managerId && canReassignManager(user.role) ? body.managerId : user.id;
     const task = await prisma.$transaction(async (tx) => {
@@ -147,7 +147,7 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const user = await requireUser();
+    const user = await requireWritableUser();
     const body = z
       .object({
         id: z.string().min(1),

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jsonError, requireUser } from "@/lib/api";
+import { jsonError, requireWritableUser } from "@/lib/api";
 import { rangeFromPreset } from "@/lib/analytics";
 import { csvFilename, toCsv } from "@/lib/csv";
 import { exportAnalytics } from "@/lib/export-data";
@@ -7,7 +7,7 @@ import { canSeeAllRecords } from "@/lib/rbac";
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await requireUser();
+    const user = await requireWritableUser();
     const preset = req.nextUrl.searchParams.get("preset") || "week";
     const from = req.nextUrl.searchParams.get("from") || undefined;
     const to = req.nextUrl.searchParams.get("to") || undefined;

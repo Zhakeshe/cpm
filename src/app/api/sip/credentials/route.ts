@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { jsonError, requireUser } from "@/lib/api";
+import { jsonError, requireWritableUser } from "@/lib/api";
 import { zadarmaWebrtcCredentials } from "@/lib/zadarma-webrtc";
 import { ZADARMA_DEFAULTS, zadarmaCredentials, zadarmaWebrtcKey } from "@/lib/zadarma";
 import { resolveSipAccount, type SipSettings } from "@/lib/sip-config";
@@ -11,7 +11,7 @@ import { resolveSipAccount, type SipSettings } from "@/lib/sip-config";
  */
 export async function GET(req: Request) {
   try {
-    const user = await requireUser();
+    const user = await requireWritableUser();
     const me = await prisma.user.findUnique({
       where: { id: user.id },
       select: { sipExtension: true, sipUsername: true },

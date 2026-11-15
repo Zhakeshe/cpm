@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { jsonError, requireUser } from "@/lib/api";
+import { jsonError, requireWritableUser } from "@/lib/api";
 import { canSeeAllRecords, scopeManagerId } from "@/lib/rbac";
 import { mergeContacts } from "@/lib/merge-contacts";
 
@@ -12,7 +12,7 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireUser();
+    const user = await requireWritableUser();
     if (!canSeeAllRecords(user.role) && user.role !== "MANAGER") {
       return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
     }

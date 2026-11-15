@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jsonError, requireUser } from "@/lib/api";
+import { jsonError, requireWritableUser } from "@/lib/api";
 import { prisma } from "@/lib/db";
 import { canReassignManager, scopeManagerId } from "@/lib/rbac";
 import { Prisma } from "@prisma/client";
@@ -18,7 +18,7 @@ const schema = z.discriminatedUnion("action", [
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireUser();
+    const user = await requireWritableUser();
     const body = schema.parse(await req.json());
     if (body.action === "REASSIGN" && !canReassignManager(user.role)) {
       return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });

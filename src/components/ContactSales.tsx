@@ -1,5 +1,7 @@
 "use client";
 
+import { useAccess } from "@/components/AccessProvider";
+
 import { useEffect, useState } from "react";
 import { useI18n } from "@/components/I18nProvider";
 
@@ -23,6 +25,7 @@ export function ContactSales({
   onChange: () => void;
 }) {
   const { t } = useI18n();
+  const { readOnly } = useAccess();
   const [allTags, setAllTags] = useState<Tag[]>([]);
 
   useEffect(() => {
@@ -38,6 +41,7 @@ export function ContactSales({
             const on = tags.some((x) => x.tag.id === tag.id);
             return (
               <button
+                disabled={readOnly}
                 key={tag.id}
                 type="button"
                 className="rounded-full border px-3 py-1.5 text-sm font-medium transition-opacity hover:opacity-80"

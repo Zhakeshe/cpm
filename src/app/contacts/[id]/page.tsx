@@ -1,5 +1,7 @@
 "use client";
 
+import { useAccess } from "@/components/AccessProvider";
+
 import { AppShell } from "@/components/AppShell";
 import { ContactSales } from "@/components/ContactSales";
 import { ContactTaskPanel } from "@/components/ContactTaskPanel";
@@ -47,6 +49,7 @@ type Contact = {
 
 export default function ContactPage() {
   const { t, localeTag, locale } = useI18n();
+  const { readOnly } = useAccess();
   const params = useParams<{ id: string }>();
   const [c, setC] = useState<Contact | null>(null);
   const [stages, setStages] = useState<Stage[]>([]);
@@ -156,7 +159,7 @@ export default function ContactPage() {
     <AppShell>
       <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
         <div className="space-y-4">
-          <div className="card p-6">
+          <fieldset disabled={readOnly} className="card p-6">
             <div className="flex justify-between gap-4">
               <div>
                 <h1 className="text-2xl font-semibold">
@@ -262,7 +265,7 @@ export default function ContactPage() {
                 {t("contact.reassign")}
                 <select className="mt-1" value={c.manager?.id || ""} onChange={(e) => reassign(e.target.value)}>
                   {managers
-                    .filter((m) => m.role !== "ADMIN")
+                    .filter((m) => m.role !== "ADMIN" && m.role !== "OBSERVER")
                     .map((m) => (
                       <option key={m.id} value={m.id}>
                         {m.name}
@@ -271,7 +274,7 @@ export default function ContactPage() {
                 </select>
               </label>
             )}
-          </div>
+          </fieldset>
 
           <div className="grid gap-4">
             <div className="card p-5">

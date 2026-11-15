@@ -1,5 +1,7 @@
 "use client";
 
+import { useAccess } from "@/components/AccessProvider";
+
 import { useEffect, useState } from "react";
 import { CalendarPlus, FileText, MessageSquare, PhoneCall } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
@@ -20,6 +22,7 @@ type Product = { id: string; name: string; price: string | number };
  */
 export function QuickActions({ contactId, onDone, compact }: Props) {
   const { t, locale } = useI18n();
+  const { readOnly } = useAccess();
   const [panel, setPanel] = useState<"quote" | "demo" | "callback" | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -81,6 +84,8 @@ export function QuickActions({ contactId, onDone, compact }: Props) {
     setPanel(null);
     onDone?.();
   }
+
+  if (readOnly) return null;
 
   return (
     <div className="space-y-2">

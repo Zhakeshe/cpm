@@ -1,7 +1,7 @@
 import { idempotent } from "@/lib/idempotency";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { jsonError, requireUser } from "@/lib/api";
+import { jsonError, requireUser, requireWritableUser } from "@/lib/api";
 import { ingestContact, reassignContact } from "@/lib/contacts";
 import { canReassignManager, scopeManagerId } from "@/lib/rbac";
 import { MissingStageFieldsError } from "@/lib/pipeline-rules";
@@ -70,7 +70,7 @@ const createSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireUser();
+    const user = await requireWritableUser();
     const body = createSchema.parse(await req.json());
     return NextResponse.json(await idempotent(prisma, user.id, "contacts", req.headers.get("Idempotency-Key"), body, async () => {
       const ingest = await ingestContact(prisma, {
@@ -114,7 +114,7 @@ const reassignSchema = z.object({
 
 export async function PATCH(req: NextRequest) {
   try {
-    const user = await requireUser();
+    const user = await requireWritableUser();
     const body = await req.json();
     if (body.managerId && body.contactId) {
       if (!canReassignManager(user.role)) {

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jsonError, requireRole, requireUser } from "@/lib/api";
+import { jsonError, requireRole, requireWritableUser } from "@/lib/api";
 import { prisma } from "@/lib/db";
 import { sipReasons } from "@/lib/sip-diagnostics";
 import { z } from "zod";
 const schema = z.object({ state: z.enum(["registering", "ready", "incoming", "connecting", "in-call", "disabled", "error"]), reason: z.enum(sipReasons), sipStatus: z.number().int().min(100).max(699).nullable().optional(), clientVersion: z.string().max(40).optional() });
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireUser();
+    const user = await requireWritableUser();
     const value = { ...schema.parse(await req.json()), checkedAt: new Date().toISOString() };
     await prisma.systemSetting.upsert({ where: { key: `sip:status:${user.id}` }, create: { key: `sip:status:${user.id}`, value }, update: { value } });
     return NextResponse.json({ ok: true }, { headers: { "Cache-Control": "no-store" } });

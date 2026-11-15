@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { jsonError, requireUser } from "@/lib/api";
+import { jsonError, requireWritableUser } from "@/lib/api";
 import { scopeManagerId } from "@/lib/rbac";
 import { uploadMediaToMeta } from "@/lib/whatsapp";
 import { extensionFor, putObject, storageConfigured } from "@/lib/storage";
@@ -24,7 +24,7 @@ function mediaTypeFor(mime: string, voiceNote?: boolean): "IMAGE" | "DOCUMENT" |
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireUser();
+    const user = await requireWritableUser();
     const form = await req.formData();
     const contactId = String(form.get("contactId") || "");
     const file = form.get("file");

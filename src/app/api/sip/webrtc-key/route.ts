@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { jsonError, requireUser } from "@/lib/api";
+import { jsonError, requireWritableUser } from "@/lib/api";
 import { zadarmaWebrtcKey } from "@/lib/zadarma";
 
 export async function GET() {
   try {
-    const user = await requireUser();
+    const user = await requireWritableUser();
     const account = await prisma.user.findUnique({
       where: { id: user.id },
       select: { sipExtension: true, sipUsername: true },

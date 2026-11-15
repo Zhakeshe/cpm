@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { jsonError, requireUser } from "@/lib/api";
+import { jsonError, requireUser, requireWritableUser } from "@/lib/api";
 import { canManageSettings } from "@/lib/rbac";
 import { getWazzupConfig } from "@/lib/whatsapp-transport";
 import { listWazzupChannels, subscribeWazzupWebhooks } from "@/lib/wazzup";
@@ -42,7 +42,7 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireUser();
+    const user = await requireWritableUser();
     if (!canManageSettings(user.role)) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
     const body = schema.parse(await req.json());
     const existing = await prisma.integration.findUnique({ where: { type: "WAZZUP" } });

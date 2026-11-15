@@ -1,5 +1,7 @@
 "use client";
 
+import { useAccess } from "@/components/AccessProvider";
+
 import { useI18n } from "@/components/I18nProvider";
 import { FileSignature } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -23,6 +25,7 @@ export function ContactContract({
   onChange: () => void;
 }) {
   const { t } = useI18n();
+  const { readOnly } = useAccess();
   const [purchase, setPurchase] = useState("");
   const [price, setPrice] = useState("");
   const [gift, setGift] = useState("");
@@ -55,7 +58,7 @@ export function ContactContract({
   }
 
   return (
-    <div className="card p-5">
+    <fieldset disabled={readOnly} className="card p-5">
       <div className="mb-4 flex items-center gap-2 font-medium"><FileSignature className="h-4 w-4 text-[#a78bfa]" />{t("contact.contract")}</div>
       <div className="mb-4 grid gap-2 text-sm">
         <div><span className="muted">{t("common.client")}:</span> {clientName}</div>
@@ -102,6 +105,6 @@ export function ContactContract({
 
       <button type="button" className="w-full rounded-xl bg-[#2563eb] px-3 py-2 text-sm" onClick={save}>{t("common.save")}</button>
       {saved && <div className="mt-2 text-xs text-[#34d399]">{t("contact.saved")}</div>}
-    </div>
+    </fieldset>
   );
 }

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 const mocks = vi.hoisted(() => ({ actor: { id: "admin", role: "ADMIN" }, findMany: vi.fn(async (_args: any) => []), findUnique: vi.fn(async () => ({ role: "MANAGER" })), update: vi.fn(async () => ({ id: "manager" })), audit: vi.fn(async () => ({})) }));
-vi.mock("../src/lib/api", () => ({ requireUser: async () => mocks.actor, requireAdmin: async () => mocks.actor, jsonError: (e: Error) => new Response(JSON.stringify({ error: e.message }), { status: 500 }) }));
+vi.mock("../src/lib/api", () => ({ requireUser: async () => mocks.actor, requireWritableUser: async () => mocks.actor, requireAdmin: async () => mocks.actor, jsonError: (e: Error) => new Response(JSON.stringify({ error: e.message }), { status: 500 }) }));
 vi.mock("../src/lib/db", () => ({ prisma: { $transaction: async (fn: any) => fn({ user: { update: mocks.update }, auditLog: { create: mocks.audit } }), user: { findMany: mocks.findMany, findUnique: mocks.findUnique, update: mocks.update }, auditLog: { create: mocks.audit } } }));
 import { GET, PATCH } from "../src/app/api/users/route";
 function patch(data: object) { return PATCH(new NextRequest("http://localhost/api/users", { method: "PATCH", body: JSON.stringify({ id: "manager", ...data }) })); }

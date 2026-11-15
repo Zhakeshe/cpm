@@ -1,5 +1,7 @@
 "use client";
 
+import { useAccess } from "@/components/AccessProvider";
+
 import { AppShell } from "@/components/AppShell";
 import { useI18n } from "@/components/I18nProvider";
 import { addDays, startOfDay } from "date-fns";
@@ -61,6 +63,7 @@ function TaskIcon({ type }: { type: string }) {
 
 export default function TasksPage() {
   const { t, localeTag } = useI18n();
+  const { readOnly } = useAccess();
   const [buckets, setBuckets] = useState(emptyBuckets);
   const [counts, setCounts] = useState<Record<BucketKey, number>>(() => Object.fromEntries(GROUPS.map(({ key }) => [key, 0])) as unknown as Record<BucketKey, number>);
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -257,7 +260,7 @@ export default function TasksPage() {
           </div>
         </div>
 
-        {selectedIds.size > 0 && (
+        {!readOnly && selectedIds.size > 0 && (
           <div className="card sticky top-2 z-20 mb-4 flex flex-wrap items-center gap-2 border-[#2563eb] p-3 shadow-xl">
             <strong className="mr-2 text-sm">{t("tasks.selected", { count: selectedIds.size })}</strong>
             <button className="chip" disabled={saving} onClick={() => bulk("RESCHEDULE")}>{t("tasks.moveTomorrow")}</button>
@@ -279,7 +282,7 @@ export default function TasksPage() {
               return (
                 <section key={group.key} className={`min-w-0 rounded-2xl border ${group.tone}`}>
                   <div className={`flex items-center gap-2 px-4 py-3 ${collapsed.has(group.key) ? "" : "border-b border-white/10"}`}>
-                    <input className="!h-4 !w-4 shrink-0 !p-0" type="checkbox" checked={allChecked} disabled={!state.items.length} onChange={() => setSelectedIds((current) => { const next = new Set(current); state.items.forEach((task) => allChecked ? next.delete(task.id) : next.size < 500 && next.add(task.id)); return next; })} onClick={(event) => event.stopPropagation()} />
+                    <input className="!h-4 !w-4 shrink-0 !p-0" type="checkbox" checked={allChecked} disabled={readOnly || !state.items.length} onChange={() => setSelectedIds((current) => { const next = new Set(current); state.items.forEach((task) => allChecked ? next.delete(task.id) : next.size < 500 && next.add(task.id)); return next; })} onClick={(event) => event.stopPropagation()} />
                     <button type="button" onClick={() => toggleGroup(group.key)} aria-expanded={!collapsed.has(group.key)} className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left">
                       <span className="flex min-w-0 items-center gap-2 font-medium">{collapsed.has(group.key) ? <ChevronRight className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />}{isOverdue ? <AlertTriangle className="h-4 w-4 shrink-0 text-[#f87171]" /> : <Clock3 className="h-4 w-4 shrink-0 text-[#93c5fd]" />}<span className="truncate">{t(`tasks.${group.key}`)}</span></span>
                       <span className="chip shrink-0">{counts[group.key] || 0}</span>
@@ -290,9 +293,9 @@ export default function TasksPage() {
                     {!state.loading && !state.items.length && <div className="muted p-5 text-sm">{t("tasks.emptyGroup")}</div>}
                     {state.items.map((task) => (
                       <div key={task.id} role="button" tabIndex={0} onClick={() => setSelectedId(task.id)} onKeyDown={(event) => { if (event.key === "Enter") setSelectedId(task.id); }} className={`grid min-w-0 cursor-pointer gap-3 px-4 py-4 text-left hover:bg-white/5 md:grid-cols-[auto_minmax(0,1fr)_auto] ${selectedId === task.id ? "bg-white/5" : ""}`}>
-                        <input className="mt-2 !h-4 !w-4 shrink-0 !p-0" type="checkbox" checked={selectedIds.has(task.id)} onChange={() => toggleTask(task.id)} onClick={(event) => event.stopPropagation()} />
+                        <input className="mt-2 !h-4 !w-4 shrink-0 !p-0" type="checkbox" disabled={readOnly} checked={selectedIds.has(task.id)} onChange={() => toggleTask(task.id)} onClick={(event) => event.stopPropagation()} />
                         <div className="min-w-0"><div className="mb-2 flex min-w-0 items-center gap-2"><span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${isOverdue ? "bg-[#7f1d1d] text-[#fecaca]" : "bg-[#1e3a5f] text-[#93c5fd]"}`}><TaskIcon type={task.type} /></span><span className={`truncate ${task.status === "DONE" ? "text-[#9ca3af] line-through" : "font-medium"}`}>{task.description}</span></div><div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">{task.contact ? <Link href={`/contacts/${task.contact.id}`} onClick={(event) => event.stopPropagation()} className="flex items-center gap-1 text-[#93c5fd] hover:underline"><CircleUserRound className="h-3.5 w-3.5" />{task.contact.firstName} {task.contact.lastName}</Link> : <span className="muted">{t("tasks.noClient")}</span>}<span className="muted flex items-center gap-1"><UserRound className="h-3.5 w-3.5" />{task.manager.name}</span>{(task.contact?.tags || []).map(({ tag }) => <span key={tag.id} className="rounded-full px-2 py-0.5" style={{ color: tag.color, backgroundColor: `${tag.color}20` }}>{tag.name}</span>)}</div></div>
-                        <div className="flex items-center justify-between gap-3 md:justify-end"><div className={`whitespace-nowrap text-right text-xs ${isOverdue ? "text-[#fca5a5]" : "muted"}`}><div>{formatDate(task.dueAt)}</div><div className="mt-1">{t(`taskTypes.${task.type}`)}</div></div>{task.status === "OPEN" && <button title={t("tasks.markDone")} onClick={(event) => { event.stopPropagation(); updateTask(task.id, { status: "DONE" }); }} className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[#334155] text-[#93a0bb] hover:border-[#34d399] hover:text-[#34d399]"><Check className="h-4 w-4" /></button>}<ChevronRight className="muted h-4 w-4 shrink-0" /></div>
+                        <div className="flex items-center justify-between gap-3 md:justify-end"><div className={`whitespace-nowrap text-right text-xs ${isOverdue ? "text-[#fca5a5]" : "muted"}`}><div>{formatDate(task.dueAt)}</div><div className="mt-1">{t(`taskTypes.${task.type}`)}</div></div>{!readOnly && task.status === "OPEN" && <button title={t("tasks.markDone")} onClick={(event) => { event.stopPropagation(); updateTask(task.id, { status: "DONE" }); }} className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[#334155] text-[#93a0bb] hover:border-[#34d399] hover:text-[#34d399]"><Check className="h-4 w-4" /></button>}<ChevronRight className="muted h-4 w-4 shrink-0" /></div>
                       </div>
                     ))}
                     {state.hasMore && <div className="p-3 text-center"><button className="chip" disabled={state.loading} onClick={() => fetchBucket(group.key, state.nextOffset)}>{state.loading ? t("common.loading", "Загрузка…") : t("tasks.showMore")}</button></div>}
@@ -307,7 +310,7 @@ export default function TasksPage() {
             {selected.contact && <Link href={`/contacts/${selected.contact.id}`} className="mb-5 block rounded-xl border border-[#243049] bg-[#0e1626] p-4 hover:border-[#3b82f6]"><div className="flex items-center justify-between"><span className="font-medium text-[#93c5fd]">{selected.contact.firstName} {selected.contact.lastName}</span><ChevronRight className="h-4 w-4" /></div><div className="muted text-xs">{selected.contact.phoneDisplay}</div>{selected.contact.pipelineStage?.name && <div className="mt-2 text-xs">{selected.contact.pipelineStage.name}</div>}</Link>}
             <dl className="mb-5 grid grid-cols-2 gap-4 text-sm"><div><dt className="muted text-xs">{t("tasks.createdAt")}</dt><dd>{formatDate(selected.createdAt)}</dd></div><div><dt className="muted text-xs">{t("tasks.dueAt")}</dt><dd>{formatDate(selected.dueAt)}</dd></div><div><dt className="muted text-xs">{t("tasks.createdBy")}</dt><dd>{selected.creator?.name || "—"}</dd></div><div><dt className="muted text-xs">{t("tasks.assignee")}</dt><dd>{selected.manager.name}</dd></div></dl>
             {selected.contact?.comment && <div className="mb-5 rounded-xl border border-[#243049] p-3"><div className="muted text-xs">{t("common.comment")}</div><p className="whitespace-pre-wrap break-words text-sm">{selected.contact.comment}</p></div>}
-            {selected.status === "OPEN" && <div className="mb-5 space-y-3 border-t border-[#243049] pt-4"><div className="text-sm font-medium">{t("tasks.reschedule")}</div><div className="flex min-w-0 gap-2"><input className="min-w-0" type="datetime-local" value={rescheduleAt} onChange={(event) => setRescheduleAt(event.target.value)} /><button className="chip shrink-0" disabled={saving || !rescheduleAt} onClick={() => updateTask(selected.id, { dueAt: new Date(rescheduleAt).toISOString() })}>{t("common.save")}</button></div><button className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#166534] px-4 py-2.5 text-sm" disabled={saving} onClick={() => updateTask(selected.id, { status: "DONE" })}><CheckCircle2 className="h-4 w-4" />{t("tasks.markDone")}</button></div>}
+            {!readOnly && selected.status === "OPEN" && <div className="mb-5 space-y-3 border-t border-[#243049] pt-4"><div className="text-sm font-medium">{t("tasks.reschedule")}</div><div className="flex min-w-0 gap-2"><input className="min-w-0" type="datetime-local" value={rescheduleAt} onChange={(event) => setRescheduleAt(event.target.value)} /><button className="chip shrink-0" disabled={saving || !rescheduleAt} onClick={() => updateTask(selected.id, { dueAt: new Date(rescheduleAt).toISOString() })}>{t("common.save")}</button></div><button className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#166534] px-4 py-2.5 text-sm" disabled={saving} onClick={() => updateTask(selected.id, { status: "DONE" })}><CheckCircle2 className="h-4 w-4" />{t("tasks.markDone")}</button></div>}
             <div className="border-t border-[#243049] pt-4"><div className="mb-3 flex items-center gap-2 font-medium"><History className="h-4 w-4" />{t("tasks.history")}</div><div className="space-y-3"><div className="relative pl-5 text-sm before:absolute before:left-1 before:top-2 before:h-2 before:w-2 before:rounded-full before:bg-[#3b82f6]"><div>{t("tasks.historyCreated")}</div><div className="muted text-xs">{selected.creator?.name || "—"} · {formatDate(selected.createdAt)}</div></div>{history.filter((entry) => !entry.action.includes("create")).map((entry) => <div key={entry.id} className="relative pl-5 text-sm before:absolute before:left-1 before:top-2 before:h-2 before:w-2 before:rounded-full before:bg-[#64748b]"><div>{historyLabel(entry.action)} <span className="muted">{historyDetail(entry)}</span></div><div className="muted text-xs">{entry.actor?.name || "—"} · {formatDate(entry.createdAt)}</div></div>)}</div></div>
           </aside>}
         </div>

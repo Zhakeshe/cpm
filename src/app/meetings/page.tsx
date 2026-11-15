@@ -1,5 +1,7 @@
 "use client";
 
+import { useAccess } from "@/components/AccessProvider";
+
 import { AppShell } from "@/components/AppShell";
 import { DemoBooker } from "@/components/DemoBooker";
 import { useI18n } from "@/components/I18nProvider";
@@ -23,6 +25,7 @@ const STATUSES = ["COMPLETED", "CANCELLED", "NO_SHOW"];
 
 export default function MeetingsPage() {
   const { t, localeTag } = useI18n();
+  const { readOnly } = useAccess();
   const [items, setItems] = useState<Meeting[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [contactId, setContactId] = useState("");
@@ -113,19 +116,19 @@ export default function MeetingsPage() {
                       </div>
                       <div className="flex flex-wrap gap-2 justify-end">
                         {STATUSES.map((s) => (
-                          <button key={s} className="chip" onClick={() => setStatus(m.id, s)}>
+                          <button disabled={readOnly} key={s} className="chip" onClick={() => setStatus(m.id, s)}>
                             {t(`meetingStatuses.${s}`)}
                           </button>
                         ))}
                       </div>
                     </div>
                     <div className="mt-2 flex gap-2">
-                      <input
+                      <input disabled={readOnly}
                         type="datetime-local"
                         value={reschedule[m.id] || ""}
                         onChange={(e) => setReschedule({ ...reschedule, [m.id]: e.target.value })}
                       />
-                      <button className="chip" onClick={() => move(m.id)}>
+                      <button disabled={readOnly} className="chip" onClick={() => move(m.id)}>
                         {t("meetings.reschedule")}
                       </button>
                     </div>

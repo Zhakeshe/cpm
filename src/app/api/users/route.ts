@@ -1,6 +1,6 @@
 import { idempotent } from "@/lib/idempotency";
 import { NextRequest, NextResponse } from "next/server";
-import { jsonError, requireAdmin, requireUser } from "@/lib/api";
+import { jsonError, requireAdmin, requireUser, requireWritableUser } from "@/lib/api";
 import { prisma } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
 import { canManageUsers } from "@/lib/rbac";
@@ -60,7 +60,7 @@ const createSchema = z.object({
   email: z.string().email(),
   name: z.string().min(1),
   password: z.string().min(8),
-  role: z.enum(["ADMIN", "MANAGER", "SUPERVISOR", "OPERATOR"]).optional(),
+  role: z.enum(["ADMIN", "MANAGER", "SUPERVISOR", "OPERATOR", "OBSERVER"]).optional(),
   sipExtension: z.string().optional(),
 });
 
@@ -75,7 +75,8 @@ export async function POST(req: NextRequest) {
           name: body.name,
           passwordHash: await hashPassword(body.password),
           role: body.role || "MANAGER",
-          sipExtension: body.sipExtension,
+          sipExtension: body.role === "OBSERVER" ? null : body.sipExtension,
+          ...(body.role === "OBSERVER" ? { acceptsNewLeads: false, isOnline: false } : {}),
         },
       });
       await prisma.auditLog.create({
@@ -97,14 +98,14 @@ export async function POST(req: NextRequest) {
 const patchSchema = z.object({
   id: z.string().min(1), isActive: z.boolean().optional(), confirmDisable: z.boolean().optional(),
   acceptsNewLeads: z.boolean().optional(), isOnline: z.boolean().optional(),
-  role: z.enum(["ADMIN", "MANAGER", "SUPERVISOR", "OPERATOR"]).optional(),
+  role: z.enum(["ADMIN", "MANAGER", "SUPERVISOR", "OPERATOR", "OBSERVER"]).optional(),
   name: z.string().trim().min(1).optional(), password: z.string().min(8).optional(),
   sipExtension: z.string().nullable().optional(),
 });
 
 export async function PATCH(req: NextRequest) {
   try {
-    const actor = await requireUser();
+    const actor = await requireWritableUser();
     const body = patchSchema.parse(await req.json());
     if (!canManageUsers(actor.role) && body.id !== actor.id) {
       return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
@@ -141,6 +142,13 @@ export async function PATCH(req: NextRequest) {
     if (data.isActive === true) {
       data.acceptsNewLeads = true;
       data.isOnline = false;
+    }
+    const targetRole = data.role || (await prisma.user.findUnique({ where: { id: body.id }, select: { role: true } }))?.role;
+    if (targetRole === "OBSERVER") {
+      data.acceptsNewLeads = false;
+      data.isOnline = false;
+      data.sipExtension = null;
+      data.sipUsername = null;
     }
     const auditValue = { ...data };
     delete auditValue.passwordHash;

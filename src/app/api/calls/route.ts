@@ -1,7 +1,7 @@
 import { idempotent } from "@/lib/idempotency";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { jsonError, requireUser } from "@/lib/api";
+import { jsonError, requireUser, requireWritableUser } from "@/lib/api";
 import { canListenAllRecordings, scopeManagerId } from "@/lib/rbac";
 import { originateCall, handleTelephonyEvent } from "@/lib/telephony";
 import { resolveZadarmaCallbackSip } from "@/lib/zadarma";
@@ -47,7 +47,7 @@ const originateSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireUser();
+    const user = await requireWritableUser();
     const body = originateSchema.parse(await req.json());
     const contact = await prisma.contact.findUnique({ where: { id: body.contactId } });
     if (!contact) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
@@ -86,7 +86,7 @@ const resultSchema = z.object({
 
 export async function PATCH(req: NextRequest) {
   try {
-    const user = await requireUser();
+    const user = await requireWritableUser();
     const body = resultSchema.parse(await req.json());
     const call = await prisma.call.findUnique({ where: { id: body.callId } });
     if (!call) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });

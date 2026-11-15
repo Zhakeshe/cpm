@@ -1,5 +1,7 @@
 "use client";
 
+import { WriteAccess } from "@/components/AccessProvider";
+
 import { AppShell } from "@/components/AppShell";
 import { ExportButton } from "@/components/ExportButton";
 import { useI18n } from "@/components/I18nProvider";
@@ -72,6 +74,7 @@ function LeadsInner() {
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const isAdmin = role === "ADMIN" || role === "SUPERVISOR";
+  const canViewManagers = isAdmin || role === "OBSERVER";
 
   const query = useCallback(() => {
     const qs = new URLSearchParams();
@@ -177,7 +180,7 @@ function LeadsInner() {
         </div>
         )}
       </div>
-      <form onSubmit={create} className="card p-4 mb-4 grid md:grid-cols-5 gap-3">
+      <WriteAccess><form onSubmit={create} className="card p-4 mb-4 grid md:grid-cols-5 gap-3">
         <input placeholder={t("common.name")} value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
         <input placeholder={t("common.phone")} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
         <select value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })}>
@@ -189,7 +192,7 @@ function LeadsInner() {
         </select>
         <input placeholder={t("common.comment")} value={form.comment} onChange={(e) => setForm({ ...form, comment: e.target.value })} />
         <button disabled={creating} className="rounded-xl bg-[#2563eb] disabled:opacity-50">{t("common.create")}</button>
-      </form>
+      </form></WriteAccess>
       <div className="card p-4 mb-4 grid md:grid-cols-3 xl:grid-cols-6 gap-2">
         <input className="md:col-span-2" placeholder={t("common.searchShort")} value={filters.q} onChange={(e) => setFilters({ ...filters, q: e.target.value })} />
         <select value={filters.stage} onChange={(e) => setFilters({ ...filters, stage: e.target.value })}>
@@ -198,7 +201,7 @@ function LeadsInner() {
             <option key={s.id} value={s.id}>{s.name}</option>
           ))}
         </select>
-        {isAdmin && (
+        {canViewManagers && (
         <select value={filters.manager} onChange={(e) => setFilters({ ...filters, manager: e.target.value })}>
           <option value="">{t("common.manager")}</option>
           {managers.map((m) => (
@@ -228,7 +231,7 @@ function LeadsInner() {
               <th className="text-left p-3">{t("common.phone")}</th>
               <th className="text-left p-3">{t("common.email")}</th>
               <th className="text-left p-3">{t("common.source")}</th>
-              {isAdmin && <th className="text-left p-3">{t("common.manager")}</th>}
+              {canViewManagers && <th className="text-left p-3">{t("common.manager")}</th>}
               <th className="text-left p-3">{t("common.stage")}</th>
               <th className="text-left p-3">{t("leads.tag")}</th>
               <th className="text-left p-3">{t("contact.city")}</th>
@@ -247,7 +250,7 @@ function LeadsInner() {
                 <td className="whitespace-nowrap p-3">{c.phoneDisplay}</td>
                 <td className="p-3">{c.email || t("common.dash")}</td>
                 <td className="p-3">{t(`sources.${c.source}`, c.source)}</td>
-                {isAdmin && <td className="p-3">{c.manager?.name || t("common.dash")}</td>}
+                {canViewManagers && <td className="p-3">{c.manager?.name || t("common.dash")}</td>}
                 <td className="p-3">{c.pipelineStage?.name || t("common.dash")}</td>
                 <td className="p-3">
                   <div className="flex flex-wrap gap-1.5">

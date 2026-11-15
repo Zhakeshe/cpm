@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { jsonError, requireUser } from "@/lib/api";
+import { jsonError, requireUser, requireWritableUser } from "@/lib/api";
 import { scopeManagerId } from "@/lib/rbac";
 import { putObject, storageConfigured } from "@/lib/storage";
 
@@ -29,7 +29,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
-    const user = await requireUser();
+    const user = await requireWritableUser();
     const { id } = await ctx.params;
     if (!(await loadContact(id, user.id, user.role))) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
     const form = await req.formData();

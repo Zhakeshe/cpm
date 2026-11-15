@@ -120,6 +120,7 @@ export default function ManagersPage() {
         <select value={role} onChange={(e) => setRole(e.target.value)}>
           <option value="MANAGER">MANAGER</option>
           <option value="SUPERVISOR">SUPERVISOR</option>
+          <option value="OBSERVER">{t("auth.observer")}</option>
           <option value="OPERATOR">OPERATOR</option>
         </select>
         <button disabled={busy} className="rounded-xl bg-[#2563eb] py-2 font-medium disabled:opacity-50">{t("common.create")}</button>
