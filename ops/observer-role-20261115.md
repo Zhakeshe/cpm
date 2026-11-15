@@ -29,3 +29,22 @@ off via Gateway stored value `crm-observer-password-20261115`, then used only
 on the VPS. Do not print, commit or reset existing credentials. Verify a real
 password login and demonstrate both successful reads and rejected write/call
 requests before reporting account creation complete.
+
+Validation: both production images built and all 128 unit tests passed. The
+additive migration was applied without seed. On the public HTTPS site a temporary
+OBSERVER completed a real browser password login, read business APIs and browsed
+leads, contact details, pipeline and chat history. Creation/composer controls
+were hidden, contact fields/call controls disabled and pipeline dragging disabled.
+35 write requests returned 403, repeated successfully with a stale ADMIN claim
+against the same live observer record. SIP/bootstrap, exports and settings reads
+were denied. A separate focused manager check confirmed the enabled create form,
+phone iframe and real SIP bootstrap 200. The temporary observer was removed.
+
+The requested permanent account is still pending its Gateway password handoff;
+the proposed default login is `observer@quantum.ushqn.com`, name `Наблюдатель`.
+The root-only creation/verification script is
+`/root/crm-observer-account-20261115.cjs`; it takes the password only from
+`CRM_OBSERVER_PASSWORD`, supplied by the stored-value name above, and refuses to
+overwrite another account. The script verifies password login, a successful read,
+and denied write/SIP requests. Do not report the permanent account as created
+until that script succeeds.
