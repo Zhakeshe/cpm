@@ -1,5 +1,10 @@
 # CRM access suspension — 15 November 2026
 
+Status: access restored at the owner's request on 15 November 2026. The Caddyfile
+again proxies the full site to the application. The suspension and restoration
+changed no application containers, credentials or CRM data. The notes below
+describe the historical suspension and its rollback procedure.
+
 At the owner's request, Caddy serves a static Russian notice for all CRM pages,
 login/logout and other auth endpoints, private APIs, downloads, assets and
 WebSocket transports. The notice wording was supplied by the owner; it is not a
