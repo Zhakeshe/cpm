@@ -14,9 +14,53 @@ http://quantum.ushqn.com {
 
 quantum.ushqn.com {
 	encode gzip
-	reverse_proxy app:3000 {
-		flush_interval -1
-		header_up Host {host}
-		header_up X-Forwarded-Proto https
+	# Keep inbound integrations and health monitoring running during access suspension.
+	@service_endpoints {
+		method GET POST
+		path /api/health /api/webhooks/wazzup /api/webhooks/whatsapp /api/webhooks/meta-leads /api/webhooks/telephony
+	}
+	handle @service_endpoints {
+		reverse_proxy app:3000 {
+			flush_interval -1
+			header_up Host {host}
+			header_up X-Forwarded-Proto https
+		}
+	}
+	# This also blocks login, authenticated APIs, assets and WebSocket connections.
+	handle {
+		header {
+			Content-Type "text/html; charset=utf-8"
+			Cache-Control "no-store, no-cache, must-revalidate"
+			Pragma "no-cache"
+			Retry-After "3600"
+			X-Robots-Tag "noindex, nofollow"
+			X-Content-Type-Options "nosniff"
+			Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'; form-action 'none'"
+		}
+		respond 503 {
+		body <<HTML
+		<!doctype html>
+		<html lang="ru">
+		<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="robots" content="noindex, nofollow">
+		<title>Quantum CRM — доступ временно ограничен</title>
+		<style>
+		*{box-sizing:border-box}body{margin:0;min-height:100vh;min-height:100svh;display:grid;place-items:center;padding:24px;background:#0b1120;color:#eef2ff;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}main{width:100%;max-width:560px;padding:44px 36px;border:1px solid #263249;border-radius:24px;background:#111b2d;box-shadow:0 24px 80px #0004}.brand{margin:0 0 32px;color:#94a3b8;font-size:13px;font-weight:700;letter-spacing:.14em}.badge{display:inline-block;padding:7px 12px;border:1px solid #7c4824;border-radius:999px;background:#38251b;color:#fdba74;font-size:12px}h1{margin:24px 0 16px;font-size:clamp(25px,5vw,34px);line-height:1.25;letter-spacing:-.025em}p{margin:0;color:#b8c5d9;font-size:17px;line-height:1.7}.contact{margin-top:24px;padding-top:24px;border-top:1px solid #263249;color:#e2e8f0}@media(max-width:420px){main{padding:32px 24px}}
+		</style>
+		</head>
+		<body>
+		<main>
+		<div class="brand">QUANTUM CRM</div>
+		<div class="badge">Доступ временно ограничен</div>
+		<h1>Техническая проблема от Zadarma</h1>
+		<p>Вход в CRM временно недоступен.</p>
+		<p class="contact">Для восстановления доступа напишите Жорику.</p>
+		</main>
+		</body>
+		</html>
+		HTML
+		}
 	}
 }
