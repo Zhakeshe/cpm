@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     const actor = await requireAdmin();
     await ensureTrackingChannels(prisma);
     const body = createSchema.parse(await req.json());
-    const waPrefill = body.waPrefill || `Сәлем! ${body.title}-тан жазып тұрмын qc:{token}`;
+    const waPrefill = body.waPrefill || "qc:{token}";
     if (!waPrefill.includes("{token}")) {
       return NextResponse.json({ error: "TOKEN_PLACEHOLDER_REQUIRED" }, { status: 400 });
     }

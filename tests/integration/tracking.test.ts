@@ -45,10 +45,10 @@ describe("social tracking attribution", () => {
     const outbound = await prisma.message.findFirst({
       where: { contactId: contact.id, direction: "OUTBOUND" },
     });
-    expect(outbound?.text).toContain("Instagram");
+    expect(outbound).toBeNull();
   });
 
-  it("attributes Wazzup TikTok inbound and does not greet twice", async () => {
+  it("attributes Wazzup TikTok inbound and does not send an auto greeting", async () => {
     const recorded = await recordTrackingClick(prisma, { slug: "tiktok" });
     const prefill = recorded!.prefill;
     await handleWazzupInbound(prisma, {
@@ -83,8 +83,7 @@ describe("social tracking attribution", () => {
     const greetings = await prisma.message.findMany({
       where: { contactId: contact.id, direction: "OUTBOUND" },
     });
-    expect(greetings).toHaveLength(1);
-    expect(greetings[0].text).toContain("TikTok");
+    expect(greetings).toHaveLength(0);
   });
 
   it("keeps organic WhatsApp as WHATSAPP when there is no token", async () => {

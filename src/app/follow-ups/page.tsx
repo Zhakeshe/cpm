@@ -1,9 +1,12 @@
 "use client";
 
+import { useAccess } from "@/components/AccessProvider";
+
 import { AppShell } from "@/components/AppShell";
 import { useI18n } from "@/components/I18nProvider";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { apiJson } from "@/lib/client-api";
 
 type Item = {
   id: string;
@@ -18,18 +21,23 @@ type Item = {
   pipelineStage?: { name: string } | null;
 };
 
-const PRESETS = ["today", "tomorrow", "in3days"] as const;
+const PRESETS = ["today", "tomorrow"] as const;
 
 export default function FollowUpsPage() {
   const { t, localeTag } = useI18n();
+  const { readOnly } = useAccess();
   const [items, setItems] = useState<Item[]>([]);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
   const load = useCallback(async () => {
-    const data = await fetch("/api/follow-ups").then((r) => r.json());
-    setItems(Array.isArray(data.items) ? data.items : []);
-  }, []);
+    try {
+      const data = await apiJson<{ items: Item[] }>("/api/follow-ups");
+      setItems(Array.isArray(data.items) ? data.items : []);
+    } catch {
+      setError(t("common.loadFailed", "Не удалось загрузить данные"));
+    }
+  }, [t]);
 
   useEffect(() => {
     load();
@@ -79,7 +87,7 @@ export default function FollowUpsPage() {
             </div>
             <div className="flex flex-wrap gap-2 shrink-0">
               {PRESETS.map((preset) => (
-                <button key={preset} className="chip" onClick={() => schedule(item.id, preset)}>
+                <button disabled={readOnly} key={preset} className="chip" onClick={() => schedule(item.id, preset)}>
                   {t(`followUps.${preset}`)}
                 </button>
               ))}

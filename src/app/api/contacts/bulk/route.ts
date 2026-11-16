@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { jsonError, requireUser } from "@/lib/api";
+import { jsonError, requireWritableUser } from "@/lib/api";
 import { canReassignManager, scopeManagerId } from "@/lib/rbac";
 import { reassignContact } from "@/lib/contacts";
 import { applyContactStage } from "@/lib/outcomes";
@@ -16,7 +16,7 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireUser();
+    const user = await requireWritableUser();
     const body = schema.parse(await req.json());
     const scoped = scopeManagerId(user.role, user.id);
     const contacts = await prisma.contact.findMany({

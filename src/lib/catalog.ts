@@ -1,7 +1,41 @@
 import type { PrismaClient } from "@prisma/client";
 import { vacuumDefaults } from "./quotes";
 
+async function mergeLegacyTags(db: PrismaClient, legacyNames: string[], targetName: string, color: string) {
+  const target = await db.tag.upsert({
+    where: { name: targetName },
+    update: { color },
+    create: { name: targetName, color },
+  });
+  const legacy = await db.tag.findMany({
+    where: { name: { in: legacyNames }, id: { not: target.id } },
+    select: { id: true, contacts: { select: { contactId: true } } },
+  });
+  const contactIds = [...new Set(legacy.flatMap((tag) => tag.contacts.map((contact) => contact.contactId)))];
+  if (contactIds.length) {
+    await db.contactTag.createMany({
+      data: contactIds.map((contactId) => ({ contactId, tagId: target.id })),
+      skipDuplicates: true,
+    });
+  }
+  if (legacy.length) await db.tag.deleteMany({ where: { id: { in: legacy.map((tag) => tag.id) } } });
+}
+
 export async function seedVacuumCatalog(db: PrismaClient) {
+  const retiredThreeDayRules = [
+    "3 күн тиілмесе — қайта қоңырау",
+    "3 күннен соң хабарлас",
+    "3 күннен кейін хабарлас",
+    "Связаться через 3 дня",
+  ];
+  await db.task.deleteMany({
+    where: {
+      type: "FOLLOW_UP",
+      OR: retiredThreeDayRules.map((name) => ({ description: { startsWith: name } })),
+    },
+  });
+  await db.automationRule.deleteMany({ where: { name: { in: retiredThreeDayRules } } });
+
   for (const product of vacuumDefaults()) {
     await db.product.upsert({
       where: { sku: product.sku },
@@ -9,13 +43,38 @@ export async function seedVacuumCatalog(db: PrismaClient) {
       create: product,
     });
   }
+  await mergeLegacyTags(db, ["демо басқа күнге", "Демо шықты", "демо шықты "], "демо шықты ертеңге", "#10b981");
+  await db.tag.deleteMany({
+    where: {
+      name: {
+        in: [
+          "B2B",
+          "b2b",
+          "бөліп төлеу",
+          "ыстық",
+          "кепілдік",
+          "қайта қоңырау",
+          "демо өтті",
+          "бағасын білу",
+          "Бағасын білейін",
+          "бағасын білейін",
+          "бағасын білейін деп едім",
+          "Багасын билейин",
+          "багасын билейин",
+          "потом звондау керек",
+          "Потом звондау керек",
+          "потом звандау керек",
+          "Потом звандау керек",
+          "потом зв керек",
+        ],
+      },
+    },
+  });
   const tags = [
-    { name: "ыстық", color: "#ef4444" },
-    { name: "қайта қоңырау", color: "#f59e0b" },
-    { name: "кепілдік", color: "#10b981" },
-    { name: "B2B", color: "#6366f1" },
-    { name: "бөліп төлеу", color: "#8b5cf6" },
-    { name: "демо өтті", color: "#2563eb" },
+    { name: "демо шықты", color: "#2563eb" },
+    { name: "керек емес", color: "#ef4444" },
+    { name: "демо шықты ертеңге", color: "#10b981" },
+    { name: "кешке зв", color: "#f472b6" },
   ];
   for (const tag of tags) {
     await db.tag.upsert({ where: { name: tag.name }, update: { color: tag.color }, create: tag });
@@ -32,12 +91,6 @@ export async function seedVacuumCatalog(db: PrismaClient) {
       where: { key: field.key },
       update: { name: field.name, options: field.options, fieldType: field.fieldType },
       create: field,
-    });
-  }
-  const existing = await db.automationRule.count();
-  if (!existing) {
-    await db.automationRule.create({
-      data: { name: "3 күн тиілмесе — қайта қоңырау", enabled: true, staleDays: 3, action: "CREATE_TASK", taskType: "FOLLOW_UP" },
     });
   }
   return { products: vacuumDefaults().length, tags: tags.length, fields: fields.length };

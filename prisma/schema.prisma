@@ -12,6 +12,7 @@ enum Role {
   MANAGER
   SUPERVISOR
   OPERATOR
+  OBSERVER
 }
 
 enum ContactSource {
@@ -267,6 +268,7 @@ model Contact {
   archivedAt       DateTime?
   customFields     Json           @default("{}")
   lastContactAt    DateTime?
+  leadActivityAt   DateTime       @default(now())
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
@@ -289,6 +291,7 @@ model Contact {
   @@index([email])
   @@index([companyId])
   @@index([archivedAt])
+  @@index([leadActivityAt, id])
 }
 
 model Lead {
@@ -751,4 +754,13 @@ model TrackingClick {
   @@index([slug])
   @@index([contactId])
   @@index([createdAt])
+}
+
+// Request claims survive restarts and Redis outages; no credential material is stored.
+model OperationRequest {
+  id          String   @id
+  fingerprint String
+  state       String   @default("PENDING")
+  result      Json?
+  createdAt   DateTime @default(now())
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { jsonError, requireUser } from "@/lib/api";
+import { jsonError, requireUser, requireWritableUser } from "@/lib/api";
 import { canManageSettings } from "@/lib/rbac";
 
 export async function GET() {
@@ -15,7 +15,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireUser();
+    const user = await requireWritableUser();
     const body = z.object({ name: z.string().min(1), color: z.string().optional() }).parse(await req.json());
     if (!canManageSettings(user.role) && user.role !== "SUPERVISOR" && user.role !== "MANAGER") {
       return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const user = await requireUser();
+    const user = await requireWritableUser();
     const body = z.object({ contactId: z.string(), tagId: z.string(), remove: z.boolean().optional() }).parse(await req.json());
     if (body.remove) {
       await prisma.contactTag.deleteMany({ where: { contactId: body.contactId, tagId: body.tagId } });

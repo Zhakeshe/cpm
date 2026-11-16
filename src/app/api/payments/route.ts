@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { jsonError, requireUser } from "@/lib/api";
+import { jsonError, requireUser, requireWritableUser } from "@/lib/api";
 import { scopeManagerId } from "@/lib/rbac";
 
 export async function GET(req: NextRequest) {
@@ -29,7 +29,7 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireUser();
+    const user = await requireWritableUser();
     const body = schema.parse(await req.json());
     const scoped = scopeManagerId(user.role, user.id);
     const contact = await prisma.contact.findUnique({ where: { id: body.contactId } });

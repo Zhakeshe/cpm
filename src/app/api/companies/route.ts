@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { jsonError, requireUser } from "@/lib/api";
+import { jsonError, requireUser, requireWritableUser } from "@/lib/api";
 
 export async function GET(req: NextRequest) {
   try {
@@ -31,7 +31,7 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    await requireUser();
+    await requireWritableUser();
     const body = schema.parse(await req.json());
     const company = await prisma.company.create({
       data: {

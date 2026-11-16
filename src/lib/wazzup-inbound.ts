@@ -1,10 +1,12 @@
-import type { PrismaClient } from "@prisma/client";
-import { ingestContact } from "./contacts";
+import type { Message, PrismaClient } from "@prisma/client";
+import { findContactByPhone, ingestContact, type IngestResult } from "./contacts";
 import { attachTrackingAndGreet, inboundSourceFromText } from "./inbound-tracking";
 import { notifyUser } from "./notifications";
 import { emitToAdmins, emitToUser } from "./realtime";
 import { extensionFor, putObject, storageConfigured } from "./storage";
 import { SERVICE_WINDOW_MS } from "./whatsapp";
+import { maybeSendWhatsAppGreeting } from "./whatsapp-greeting";
+import { recordCustomerInbound } from "./customer-inbound";
 
 export type WazzupMessage = {
   messageId?: string;
@@ -58,6 +60,35 @@ function mapStatus(status?: string) {
   return "SENT" as const;
 }
 
+/** Wazzup also sends delivery receipts in messages[], reusing the original message ID. */
+export async function applyWazzupDeliveryStatus(
+  db: PrismaClient,
+  message: Pick<Message, "id" | "status" | "deliveredAt" | "readAt" | "errorMessage">,
+  status?: string,
+  observedAt = new Date(),
+): Promise<boolean> {
+  if (!["sent", "delivered", "read", "error"].includes(status || "")) return false;
+  const next = mapStatus(status);
+  if (message.status === "READ" || next === message.status) return false;
+  if (message.status === "DELIVERED" && next !== "READ") return false;
+  if (next === "SENT" && message.status !== "PENDING") return false;
+  const changed = await db.message.updateMany({
+    where: { id: message.id, status: message.status },
+    data: {
+      status: next,
+      deliveredAt: next === "DELIVERED" || next === "READ" ? message.deliveredAt || observedAt : message.deliveredAt,
+      readAt: next === "READ" ? message.readAt || observedAt : message.readAt,
+      errorMessage: next === "FAILED" ? "WAZZUP_ERROR" : next === "DELIVERED" || next === "READ" ? null : message.errorMessage,
+    },
+  });
+  if (!changed.count) {
+    const current = await db.message.findUnique({ where: { id: message.id } });
+    if (current && current.status !== message.status) return applyWazzupDeliveryStatus(db, current, status, observedAt);
+    return false;
+  }
+  return true;
+}
+
 export async function handleWazzupInbound(db: PrismaClient, payload: unknown) {
   const body = payload as WazzupPayload;
   if (body.test) return [{ type: "test" }];
@@ -68,15 +99,7 @@ export async function handleWazzupInbound(db: PrismaClient, payload: unknown) {
     const existing = await db.message.findUnique({ where: { externalMessageId: status.messageId } });
     if (!existing) continue;
     const mapped = mapStatus(status.status);
-    await db.message.update({
-      where: { id: existing.id },
-      data: {
-        status: mapped,
-        deliveredAt: mapped === "DELIVERED" ? new Date() : existing.deliveredAt,
-        readAt: mapped === "READ" ? new Date() : existing.readAt,
-        errorMessage: status.status === "error" ? "WAZZUP_ERROR" : existing.errorMessage,
-      },
-    });
+    await applyWazzupDeliveryStatus(db, existing, status.status);
     results.push({ type: "status", id: status.messageId, status: mapped });
   }
 
@@ -89,19 +112,28 @@ export async function handleWazzupInbound(db: PrismaClient, payload: unknown) {
     if (msg.isDeleted) continue;
     const already = await db.message.findUnique({ where: { externalMessageId: msg.messageId } });
     if (already) {
+      if (already.direction === "OUTBOUND") await applyWazzupDeliveryStatus(db, already, msg.status);
       results.push({ type: "duplicate_message", id: msg.messageId });
       continue;
     }
     const inbound = msg.status === "inbound" && !msg.isEcho;
     const names = (msg.contact?.name || "").split(" ").filter(Boolean);
-    const tracked = await inboundSourceFromText(db, msg.text);
-    const ingest = await ingestContact(db, {
-      phone: msg.chatId,
-      firstName: names[0] || "WhatsApp",
-      lastName: names.slice(1).join(" "),
-      source: tracked.source,
-      campaign: tracked.campaign,
-    });
+    let ingest: IngestResult;
+    if (inbound) {
+      const tracked = await inboundSourceFromText(db, msg.text);
+      ingest = await ingestContact(db, {
+        phone: msg.chatId, firstName: names[0] || "WhatsApp", lastName: names.slice(1).join(" "),
+        source: tracked.source, campaign: tracked.campaign,
+      });
+    } else {
+      // A message sent by us is history, not a new enquiry or manager-assignment trigger.
+      const contact = await findContactByPhone(db, msg.chatId);
+      if (!contact) {
+        results.push({ type: "ignored_unknown_outbound", id: msg.messageId });
+        continue;
+      }
+      ingest = { contactId: contact.id, managerId: contact.managerId, leadId: null, createdContact: false, createdLead: false, duplicate: true };
+    }
     const receivedAt = msg.dateTime ? new Date(msg.dateTime) : new Date();
     const windowExpiresAt = new Date(receivedAt.getTime() + SERVICE_WINDOW_MS);
     const preview = msg.text || (msg.contentUri ? "Вложение" : "WhatsApp");
@@ -120,7 +152,6 @@ export async function handleWazzupInbound(db: PrismaClient, payload: unknown) {
       update: {
         lastMessage: preview,
         lastMessageAt: receivedAt,
-        lastCustomerMessageAt: inbound ? receivedAt : undefined,
         serviceWindowExpiresAt: inbound ? windowExpiresAt : undefined,
         unreadCount: inbound ? { increment: 1 } : undefined,
         managerId: ingest.managerId ?? undefined,
@@ -143,11 +174,16 @@ export async function handleWazzupInbound(db: PrismaClient, payload: unknown) {
     });
     await storeWazzupMedia(db, saved.id, msg.contentUri, msg.type);
     if (inbound) {
+      await recordCustomerInbound(db, ingest.contactId, conversation.id, receivedAt);
       await attachTrackingAndGreet(db, {
         text: msg.text,
         contactId: ingest.contactId,
         managerId: ingest.managerId,
         inbound: true,
+      });
+      await maybeSendWhatsAppGreeting(db, {
+        contactId: ingest.contactId, messageId: saved.id, text: msg.text,
+        receivedAt, provider: "wazzup", channelId: msg.channelId,
       });
       await db.activity.create({
         data: {

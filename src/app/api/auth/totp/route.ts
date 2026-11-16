@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { jsonError, requireUser } from "@/lib/api";
+import { jsonError, requireUser, requireWritableUser } from "@/lib/api";
 import { generateTotpSecret, otpauthUrl, verifyTotp } from "@/lib/totp";
 
 export async function GET() {
@@ -16,7 +16,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireUser();
+    const user = await requireWritableUser();
     const body = z.object({ action: z.enum(["start", "confirm", "disable"]), code: z.string().optional() }).parse(await req.json());
     if (body.action === "start") {
       const secret = generateTotpSecret();

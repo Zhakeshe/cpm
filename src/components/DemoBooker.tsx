@@ -1,5 +1,7 @@
 "use client";
 
+import { useAccess } from "@/components/AccessProvider";
+
 import { useEffect, useState } from "react";
 import { useI18n } from "@/components/I18nProvider";
 
@@ -15,6 +17,7 @@ function toLocalInput(value: string) {
 
 export function DemoBooker({ contactId, onDone }: Props) {
   const { t } = useI18n();
+  const { readOnly } = useAccess();
   const timeOpts: Intl.DateTimeFormatOptions = { timeZone: "Asia/Almaty" };
   const [slots, setSlots] = useState<string[]>([]);
   const [next, setNext] = useState<string | null>(null);
@@ -60,6 +63,8 @@ export function DemoBooker({ contactId, onDone }: Props) {
     await loadSlots();
     onDone?.();
   }
+
+  if (readOnly) return null;
 
   return (
     <div className="space-y-2">

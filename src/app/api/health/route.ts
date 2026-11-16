@@ -19,9 +19,9 @@ export async function GET() {
   } catch {
     redis = "error";
   }
-  const ok = db === "ok";
+  const ok = db === "ok" && redis !== "error";
   return NextResponse.json(
     { status: ok ? "ok" : "degraded", db, redis, uptime: process.uptime() },
-    { status: ok ? 200 : 503 },
+    { status: ok ? 200 : 503, headers: { "Cache-Control": "no-store" } },
   );
 }

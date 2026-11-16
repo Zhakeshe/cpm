@@ -1,5 +1,6 @@
 "use client";
 
+import { SystemHealthPanel } from "@/components/SystemHealthPanel";
 import { AppShell } from "@/components/AppShell";
 import { useI18n } from "@/components/I18nProvider";
 import { useCallback, useEffect, useState } from "react";
@@ -47,10 +48,11 @@ export default function MonitoringPage() {
   }, [filter, t]);
 
   useEffect(() => {
-    load();
-    const timer = setInterval(load, 15000);
+    const safeLoad = () => load().catch(() => setError(t("common.loadFailed")));
+    safeLoad();
+    const timer = setInterval(safeLoad, 15000);
     return () => clearInterval(timer);
-  }, [load]);
+  }, [load, t]);
 
   async function retry(id?: string) {
     setBusy(id || "all");
@@ -93,6 +95,7 @@ export default function MonitoringPage() {
       </div>
       {notice && <div className="card px-4 py-2 mb-4 text-sm text-[#34d399]">{notice}</div>}
 
+      <SystemHealthPanel />
       <div className="grid sm:grid-cols-3 gap-4 mb-6">
         <div className="card p-4">
           <div className="muted text-sm">{t("monitoring.db")}</div>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 import { isManagerBlockedPath } from "./lib/pipeline-defaults";
+import { observerCanRequest } from "./lib/rbac";
 
 const PUBLIC = ["/login", "/forgot-password", "/reset-password", "/go", "/w"];
 const WEBHOOKS = ["/api/webhooks/", "/api/health"];
@@ -37,6 +38,7 @@ export async function middleware(req: NextRequest) {
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
+    pathname === "/manifest.json" ||
     isWebhookOrHealth(pathname)
   ) {
     return NextResponse.next();
@@ -46,18 +48,17 @@ export async function middleware(req: NextRequest) {
     return NextResponse.json({ error: "CROSS_ORIGIN_BLOCKED" }, { status: 403 });
   }
 
-  if (
+  const publicApi = (
     pathname.startsWith("/api/auth/login") ||
     pathname.startsWith("/api/auth/forgot") ||
     pathname.startsWith("/api/auth/reset") ||
     pathname.startsWith("/api/public/")
-  ) {
-    return NextResponse.next();
-  }
+  );
 
   const token = req.cookies.get("crm_session")?.value;
   const isPublic = PUBLIC.some((p) => pathname === p || pathname.startsWith(p));
   if (!token) {
+    if (publicApi) return NextResponse.next();
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
     }
@@ -68,13 +69,19 @@ export async function middleware(req: NextRequest) {
   try {
     const secret = new TextEncoder().encode(process.env.SESSION_SECRET || "dev-secret-change-me-please-32chars!!");
     const { payload } = await jwtVerify(token, secret);
-    if (isPublic && pathname !== "/go" && !pathname.startsWith("/w")) return NextResponse.redirect(new URL("/", req.url));
     const role = String(payload.role || "");
-    if (role !== "ADMIN" && role !== "SUPERVISOR" && isManagerBlockedPath(pathname)) {
+    if (role === "OBSERVER") {
+      if (!observerCanRequest(req.method, pathname)) return NextResponse.json({ error: "READ_ONLY" }, { status: 403 });
+      if (["/settings", "/security", "/sip-phone", "/audit", "/monitoring"].some(p => pathname === p || pathname.startsWith(p + "/"))) return NextResponse.redirect(new URL("/leads", req.url));
+    }
+    if (publicApi) return NextResponse.next();
+    if (isPublic && pathname !== "/go" && !pathname.startsWith("/w")) return NextResponse.redirect(new URL("/", req.url));
+    if (role !== "ADMIN" && role !== "SUPERVISOR" && role !== "OBSERVER" && isManagerBlockedPath(pathname)) {
       return NextResponse.redirect(new URL("/leads", req.url));
     }
     return NextResponse.next();
   } catch {
+    if (publicApi || isPublic) return NextResponse.next();
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
     }

@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { jsonError, requireUser } from "@/lib/api";
+import { jsonError, requireWritableUser } from "@/lib/api";
 import { csvFilename, toCsv } from "@/lib/csv";
 import { exportCalls } from "@/lib/export-data";
 import { scopeManagerId } from "@/lib/rbac";
 
 export async function GET() {
   try {
-    const user = await requireUser();
+    const user = await requireWritableUser();
     const rows = await exportCalls(user, scopeManagerId(user.role, user.id));
     const csv = toCsv(rows, [
       { key: "startedAt", label: "started_at" },

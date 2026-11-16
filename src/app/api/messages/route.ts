@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { jsonError, requireUser } from "@/lib/api";
+import { jsonError, requireUser, requireWritableUser } from "@/lib/api";
 import { scopeManagerId } from "@/lib/rbac";
 import { sendOutboundMessage } from "@/lib/outbound";
 import { z } from "zod";
+import { CUSTOMER_CONVERSATION_ORDER } from "@/lib/customer-inbound";
 
 export async function GET() {
   try {
@@ -15,7 +16,7 @@ export async function GET() {
         contact: { include: { manager: { select: { id: true, name: true } }, pipelineStage: true } },
         manager: { select: { id: true, name: true } },
       },
-      orderBy: { lastMessageAt: "desc" },
+      orderBy: [...CUSTOMER_CONVERSATION_ORDER],
       take: 200,
     });
     return NextResponse.json(conversations);
@@ -33,7 +34,7 @@ const sendSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireUser();
+    const user = await requireWritableUser();
     const body = sendSchema.parse(await req.json());
     const contact = await prisma.contact.findUnique({ where: { id: body.contactId } });
     if (!contact) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { jsonError, requireUser } from "@/lib/api";
+import { jsonError, requireUser, requireWritableUser } from "@/lib/api";
 import { canManageSettings } from "@/lib/rbac";
 
 export async function GET() {
@@ -24,7 +24,7 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireUser();
+    const user = await requireWritableUser();
     if (!canManageSettings(user.role)) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
     const body = schema.parse(await req.json());
     const row = body.id
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const user = await requireUser();
+    const user = await requireWritableUser();
     if (!canManageSettings(user.role)) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
     const id = req.nextUrl.searchParams.get("id");
     if (!id) return NextResponse.json({ error: "ID_REQUIRED" }, { status: 400 });

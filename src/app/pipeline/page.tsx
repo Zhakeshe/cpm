@@ -1,10 +1,13 @@
 "use client";
 
+import { useAccess } from "@/components/AccessProvider";
+
 import { AppShell } from "@/components/AppShell";
 import { useI18n } from "@/components/I18nProvider";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useRealtime } from "@/lib/use-realtime";
+import { apiJson } from "@/lib/client-api";
 
 type Card = {
   id: string;
@@ -17,20 +20,41 @@ type Card = {
   manager?: { name: string };
   tasks?: Array<{ dueAt: string; description: string }>;
 };
-type Stage = { id: string; name: string; isWon?: boolean; isLost?: boolean; contacts: Card[] };
+type Stage = { id: string; name: string; isWon?: boolean; isLost?: boolean; contacts: Card[]; contactTotal: number; hasMore: boolean };
+type StagePage = { items: Card[]; total: number; nextOffset: number; hasMore: boolean };
 
 const LOST_REASONS = ["price", "no_need", "competitor", "silent", "later", "other"];
 const WON_REASONS = ["paid_full", "installment", "repeat"];
 
 export default function PipelinePage() {
   const { t } = useI18n();
+  const { readOnly } = useAccess();
   const [stages, setStages] = useState<Stage[]>([]);
   const [error, setError] = useState("");
   const [pending, setPending] = useState<{ contactId: string; stage: Stage } | null>(null);
   const [reason, setReason] = useState("");
   const load = useCallback(async () => {
-    setStages(await fetch("/api/pipeline").then((r) => r.json()));
-  }, []);
+    try {
+      setStages(await apiJson<Stage[]>("/api/pipeline"));
+      setError("");
+    } catch {
+      setError(t("common.loadFailed", "Не удалось загрузить данные"));
+    }
+  }, [t]);
+
+  async function loadMore(stage: Stage) {
+    try {
+      const page = await apiJson<StagePage>(`/api/pipeline?stageId=${encodeURIComponent(stage.id)}&offset=${stage.contacts.length}&limit=100`);
+      setStages((current) => current.map((item) => item.id === stage.id ? {
+        ...item,
+        contacts: [...item.contacts, ...page.items],
+        contactTotal: page.total,
+        hasMore: page.hasMore,
+      } : item));
+    } catch {
+      setError(t("common.loadFailed", "Не удалось загрузить данные"));
+    }
+  }
 
   useEffect(() => {
     load();
@@ -62,6 +86,7 @@ export default function PipelinePage() {
   }
 
   function dropOn(contactId: string, stage: Stage) {
+    if (readOnly) return;
     if (stage.isWon || stage.isLost) {
       setPending({ contactId, stage });
       setReason("");
@@ -96,13 +121,13 @@ export default function PipelinePage() {
             }}
           >
             <div className="muted text-sm mb-2">
-              {stage.name} · {stage.contacts.length}
+              {stage.name} · {stage.contactTotal}
             </div>
             <div className="space-y-3 min-h-[200px]">
               {stage.contacts.map((c) => (
                 <div
                   key={c.id}
-                  draggable
+                  draggable={!readOnly}
                   onDragStart={(e) => e.dataTransfer.setData("id", c.id)}
                   className="card p-3 cursor-grab"
                 >
@@ -119,6 +144,11 @@ export default function PipelinePage() {
                   </div>
                 </div>
               ))}
+              {stage.hasMore && (
+                <button type="button" className="chip w-full justify-center" onClick={() => loadMore(stage)}>
+                  {t("tasks.showMore")}
+                </button>
+              )}
             </div>
           </div>
         ))}

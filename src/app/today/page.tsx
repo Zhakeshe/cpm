@@ -4,18 +4,23 @@ import { AppShell } from "@/components/AppShell";
 import { useI18n } from "@/components/I18nProvider";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { apiJson } from "@/lib/client-api";
 
 type Row = { id: string; description?: string; dueAt?: string; startsAt?: string; contact?: { id: string; firstName: string; lastName: string; phoneDisplay: string } | null; firstName?: string; phoneDisplay?: string; reason?: string };
 
 export default function TodayPage() {
   const { t, localeTag } = useI18n();
   const [data, setData] = useState<{ tasks: Row[]; meetings: Row[]; slaLeads: Array<{ id: string; contact: Row["contact"] }>; followUps: Row[] } | null>(null);
+  const [error, setError] = useState("");
   useEffect(() => {
-    fetch("/api/today").then((r) => r.json()).then(setData);
-  }, []);
+    apiJson<{ tasks: Row[]; meetings: Row[]; slaLeads: Array<{ id: string; contact: Row["contact"] }>; followUps: Row[] }>("/api/today")
+      .then(setData)
+      .catch(() => setError(t("common.loadFailed", "Не удалось загрузить данные")));
+  }, [t]);
   return (
     <AppShell>
       <h1 className="text-2xl font-semibold mb-6">{t("today.title")}</h1>
+      {error && <div className="card px-4 py-2 mb-4 text-sm text-[#f87171]">{error}</div>}
       <div className="grid lg:grid-cols-2 gap-4">
         <Section title={t("today.tasks")} items={data?.tasks || []} localeTag={localeTag} t={t} timeKey="dueAt" />
         <Section title={t("today.demos")} items={data?.meetings || []} localeTag={localeTag} t={t} timeKey="startsAt" />

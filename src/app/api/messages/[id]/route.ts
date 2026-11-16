@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { jsonError, requireUser } from "@/lib/api";
-import { scopeManagerId } from "@/lib/rbac";
+import { isReadOnly, scopeManagerId } from "@/lib/rbac";
 
 export async function GET(_: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
@@ -24,7 +24,7 @@ export async function GET(_: Request, ctx: { params: Promise<{ id: string }> }) 
     if (!conversation || (managerId && conversation.managerId !== user.id)) {
       return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
     }
-    await prisma.conversation.update({ where: { id }, data: { unreadCount: 0 } });
+    if (!isReadOnly(user.role)) await prisma.conversation.update({ where: { id }, data: { unreadCount: 0 } });
     return NextResponse.json(conversation);
   } catch (err) {
     return jsonError(err);

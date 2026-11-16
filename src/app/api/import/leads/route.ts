@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jsonError, requireUser } from "@/lib/api";
+import { jsonError, requireWritableUser } from "@/lib/api";
 import { canManageSettings } from "@/lib/rbac";
 import { prisma } from "@/lib/db";
 import { mapLeadImportRows, parseCsv } from "@/lib/csv";
@@ -10,7 +10,7 @@ const MAX_ROWS = 500;
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireUser();
+    const user = await requireWritableUser();
     if (!canManageSettings(user.role)) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
     const contentType = req.headers.get("content-type") || "";
     let text = "";

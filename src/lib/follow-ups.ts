@@ -3,7 +3,7 @@ import { notifyUser } from "./notifications";
 import { advanceOpenStage } from "./outcomes";
 
 export const DEFAULT_STALE_DAYS = 3;
-export const FOLLOW_UP_PRESETS = ["today", "tomorrow", "in3days"] as const;
+export const FOLLOW_UP_PRESETS = ["today", "tomorrow"] as const;
 export type FollowUpPreset = (typeof FOLLOW_UP_PRESETS)[number];
 
 export type FollowUpReason = "never" | "stale";
@@ -42,12 +42,7 @@ export function dueAtForPreset(preset: FollowUpPreset, now = new Date()) {
     due.setHours(due.getHours() + 3, 0, 0, 0);
     return due;
   }
-  if (preset === "tomorrow") {
-    due.setDate(due.getDate() + 1);
-    due.setHours(10, 0, 0, 0);
-    return due;
-  }
-  due.setDate(due.getDate() + 3);
+  due.setDate(due.getDate() + 1);
   due.setHours(10, 0, 0, 0);
   return due;
 }

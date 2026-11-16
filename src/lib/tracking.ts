@@ -16,45 +16,43 @@ export const DEFAULT_TRACKING_CHANNELS: ChannelSeed[] = [
     slug: "instagram",
     source: "INSTAGRAM",
     title: "Instagram",
-    waPrefill: "Сәлем! Instagram-нан жазып тұрмын qc:{token}",
-    greeting:
-      "Сәлем! Instagram-нан келдіңіз 👋 Quantum пелесос: Mini 45 000 ₸, Pro 400 — 89 000 ₸. Қай бөлме, кілем бар ма?",
+    waPrefill: "qc:{token}",
+    greeting: "",
   },
   {
     slug: "tiktok",
     source: "TIKTOK",
     title: "TikTok",
-    waPrefill: "Сәлем! TikTok-тан жазып тұрмын qc:{token}",
-    greeting:
-      "Сәлем! TikTok ролигінен келдіңіз 👋 2 минутта модель таңдаймыз. Бөлме саны мен кілем бар-жоғын жазыңыз.",
+    waPrefill: "qc:{token}",
+    greeting: "",
   },
   {
     slug: "facebook",
     source: "FACEBOOK",
     title: "Facebook / Reels",
-    waPrefill: "Сәлем! Facebook-тан жазып тұрмын qc:{token}",
-    greeting: "Сәлем! Facebook жарнамасынан келдіңіз. Quantum пелесос бойынша қазір жауап беремін — не қызықтырды?",
+    waPrefill: "qc:{token}",
+    greeting: "",
   },
   {
     slug: "youtube",
     source: "YOUTUBE",
     title: "YouTube",
-    waPrefill: "Сәлем! YouTube-тан жазып тұрмын qc:{token}",
-    greeting: "Сәлем! YouTube-тан келдіңіз. Қай модельді көрдіңіз — Mini, Pro 400 әлде Robot?",
+    waPrefill: "qc:{token}",
+    greeting: "",
   },
   {
     slug: "site",
     source: "WEBSITE",
     title: "Сайт / QR",
-    waPrefill: "Сәлем! Сайттан жазып тұрмын qc:{token}",
-    greeting: "Сәлем! Сайттан жазып отырсыз. Консультация немесе демо керек пе?",
+    waPrefill: "qc:{token}",
+    greeting: "",
   },
   {
     slug: "ads",
     source: "OTHER",
     title: "Басқа жарнама",
-    waPrefill: "Сәлем! Жарнамадан жазып тұрмын qc:{token}",
-    greeting: "Сәлем! Жарнамадан келдіңіз. Quantum пелесос бойынша көмектесемін — бюджет пен бөлмені жазыңыз.",
+    waPrefill: "qc:{token}",
+    greeting: "",
   },
 ];
 
@@ -81,7 +79,7 @@ export async function ensureTrackingChannels(db: PrismaClient) {
   for (const ch of DEFAULT_TRACKING_CHANNELS) {
     await db.trackingChannel.upsert({
       where: { slug: ch.slug },
-      update: {},
+      update: { greeting: ch.greeting, waPrefill: ch.waPrefill },
       create: ch,
     });
   }
@@ -104,7 +102,7 @@ export async function recordTrackingClick(
       userAgent: params.userAgent?.slice(0, 240) || null,
     },
   });
-  const prefill = (channel.waPrefill || "Сәлем qc:{token}").replaceAll("{token}", token);
+  const prefill = (channel.waPrefill || "qc:{token}").replaceAll("{token}", token);
   return { click, channel, prefill };
 }
 
