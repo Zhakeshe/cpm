@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Phone, PhoneIncoming, PhoneOff, RefreshCw } from "lucide-react";
 import { browserSipRegistration, SIP_CLIENT_VERSION } from "@/lib/sip-browser";
+import { openZadarmaPush } from "@/lib/zadarma-push";
 import { sipFailureReason, type sipReasons } from "@/lib/sip-diagnostics";
 import { useI18n } from "@/components/I18nProvider";
 
@@ -17,7 +18,7 @@ type CallState = "registering" | "ready" | "incoming" | "connecting" | "in-call"
 type PeerConnectionEvent = { peerconnection?: RTCPeerConnection };
 type SessionEventHandler = (event?: PeerConnectionEvent & { cause?: string }) => void;
 type JsSipSession = {
-  answer: (options: { mediaConstraints: { audio: boolean; video: boolean } }) => void;
+  answer: (options: { mediaConstraints: { audio: boolean; video: boolean }; pcConfig?: RTCConfiguration }) => void;
   terminate: (options?: { status_code: number; reason_phrase: string }) => void;
   on: (event: string, handler: SessionEventHandler) => void;
   connection?: RTCPeerConnection;
@@ -29,7 +30,7 @@ type UaLike = {
   on: (event: string, handler: (data?: { session: JsSipSession; originator: string; cause?: string; response?: { status_code?: number } }) => void) => void;
 };
 
-/** Direct SIP UI using the provider's browser WebRTC bootstrap. */
+/** Provider push notifications announce incoming calls; SIP connects when the user answers. */
 export function ZadarmaWebrtcWidget() {
   const { t } = useI18n();
   const [state, setState] = useState<CallState>("registering");
@@ -39,6 +40,11 @@ export function ZadarmaWebrtcWidget() {
   const [micResult, setMicResult] = useState("");
   const [testingMic, setTestingMic] = useState(false);
   const registeredRef = useRef(false);
+  const pendingPushRef = useRef(false);
+  const sipStartingRef = useRef(false);
+  const pushConnectedRef = useRef(false);
+  const answerPushRef = useRef<(() => Promise<void>) | null>(null);
+  const declinePushRef = useRef<(() => Promise<void>) | null>(null);
   const micStream = useRef<MediaStream | null>(null);
   const attached = useRef(new WeakSet<RTCPeerConnection>());
   const [attempt, setAttempt] = useState(0);
@@ -68,6 +74,7 @@ export function ZadarmaWebrtcWidget() {
     let cancelled = false;
     const controller = new AbortController();
     let registrationTimer: ReturnType<typeof setTimeout>;
+    let closePush: (() => void) | undefined;
     const startTimeout = () => {
       clearTimeout(registrationTimer);
       registrationTimer = setTimeout(() => { if (!cancelled && !registeredRef.current && !sessionRef.current) { setState("error"); setReason("REGISTRATION_TIMEOUT"); } }, 30_000);
@@ -87,70 +94,137 @@ export function ZadarmaWebrtcWidget() {
         return;
       }
 
-      const registration = "key" in config ? await browserSipRegistration(config, controller.signal) : config;
-      if (cancelled) return;
-      const JsSIP = (await import("jssip")).default;
-      if (cancelled) return;
-      const socket = new JsSIP.WebSocketInterface(registration.wsUrl);
-      const ua = new JsSIP.UA({
-        sockets: [socket],
-        uri: registration.uri,
-        password: registration.password,
-        display_name: config.displayName,
-        // Zadarma rejects its temporary WebRTC credentials for the default JsSIP agent.
-        user_agent: "Zadarma webRTC",
-        register: true,
-        register_expires: 300,
-        session_timers: false,
-        connection_recovery_min_interval: 2,
-        connection_recovery_max_interval: 30,
-      }) as unknown as UaLike;
-      uaRef.current = ua;
+      const activeConfig = config;
+      async function startSip(autoAnswer = false, decline = false) {
+        const previous = uaRef.current;
+        uaRef.current = null;
+        previous?.stop();
+        const registration = "key" in activeConfig ? await browserSipRegistration(activeConfig, controller.signal) : activeConfig;
+        if (cancelled) return;
+        const JsSIP = (await import("jssip")).default;
+        if (cancelled) return;
+        const socket = new JsSIP.WebSocketInterface(registration.wsUrl);
+        const ua = new JsSIP.UA({
+          sockets: [socket],
+          uri: registration.uri,
+          password: registration.password,
+          display_name: activeConfig.displayName,
+          // Zadarma rejects its temporary WebRTC credentials for the default JsSIP agent.
+          user_agent: "Zadarma webRTC",
+          register: true,
+          register_expires: 300,
+          session_timers: false,
+          connection_recovery_min_interval: 2,
+          connection_recovery_max_interval: 30,
+        }) as unknown as UaLike;
+        uaRef.current = ua;
 
-      ua.on("registered", () => {
-        if (cancelled) return;
-        registeredRef.current = true; clearTimeout(registrationTimer); setReason(""); setSipStatus(200);
-        if (!cancelled) setState((current) => current === "registering" || current === "error" ? "ready" : current);
-      });
-      ua.on("registrationFailed", (event) => {
-        if (!cancelled) {
-          registeredRef.current = false; clearTimeout(registrationTimer);
-          setReason("REGISTRATION_FAILED"); setSipStatus(event?.response?.status_code || null);
-          setState("error");
+        const current = () => !cancelled && uaRef.current === ua;
+        ua.on("registered", () => {
+          if (!current()) return;
+          registeredRef.current = true; if (!autoAnswer && !decline) clearTimeout(registrationTimer); setReason(""); setSipStatus(200);
+          if (!cancelled) setState((current) => current === "registering" || current === "error" ? "ready" : current);
+        });
+        ua.on("registrationFailed", (event) => {
+          if (current()) {
+            registeredRef.current = pushConnectedRef.current; sipStartingRef.current = false; clearTimeout(registrationTimer);
+            setReason("REGISTRATION_FAILED"); setSipStatus(event?.response?.status_code || null);
+            setState("error");
+          }
+        });
+        ua.on("disconnected", () => {
+          if (!current()) return;
+          registeredRef.current = pushConnectedRef.current; if (registeredRef.current) return; startTimeout(); setReason("CONNECTION_FAILED");
+          if (!sessionRef.current) setState("registering");
+        });
+        ua.on("unregistered", () => { if (current() && !pushConnectedRef.current) { registeredRef.current = false; startTimeout(); if (!sessionRef.current) setState("registering"); } });
+        ua.on("newRTCSession", (event) => {
+          if (!current() || !event?.session) return;
+          clearTimeout(registrationTimer); sipStartingRef.current = false;
+          if (event.originator === "remote" && decline) {
+            event.session.terminate({ status_code: 486, reason_phrase: "Busy Here" });
+            uaRef.current = null; ua.stop(); setPeer(""); setState(pushConnectedRef.current ? "ready" : "registering"); return;
+          }
+          if (sessionRef.current && sessionRef.current !== event.session) { event.session.terminate({ status_code: 486, reason_phrase: "Busy Here" }); return; }
+          const session = event.session;
+          sessionRef.current = session;
+          setPeer(session.remote_identity?.uri?.user || "");
+          session.on("peerconnection", (data) => attachAudio(session, data?.peerconnection));
+          session.on("accepted", () => { if (cancelled) return; setState("in-call"); attachAudio(session); });
+          session.on("confirmed", () => { if (cancelled) return; setState("in-call"); attachAudio(session); });
+          const finish = () => {
+            if (cancelled || sessionRef.current !== session) return;
+            sessionRef.current = null;
+            if (audioRef.current) audioRef.current.srcObject = null;
+            setPeer("");
+            pendingPushRef.current = false; sipStartingRef.current = false;
+            if ("key" in activeConfig) {
+              uaRef.current = null; ua.stop();
+              registeredRef.current = pushConnectedRef.current;
+            }
+            setState(registeredRef.current ? "ready" : "registering");
+          };
+          session.on("ended", finish);
+          session.on("failed", (data) => { if (cancelled) return; finish(); setReason(sipFailureReason(data?.cause)); });
+          if (event.originator === "remote") {
+            if (autoAnswer) {
+              setState("connecting");
+              try { session.answer({ mediaConstraints: { audio: true, video: false }, pcConfig: { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] } }); }
+              catch { finish(); setReason("CALL_FAILED"); }
+            } else {
+              setState("incoming");
+              window.parent.postMessage({ type: "crm:sip-incoming" }, window.location.origin);
+            }
+          } else {
+            setState("connecting");
+          }
+        });
+        if (autoAnswer || decline) {
+          clearTimeout(registrationTimer);
+          registrationTimer = setTimeout(() => {
+            if (!current() || sessionRef.current) return;
+            uaRef.current = null; ua.stop(); pendingPushRef.current = false; sipStartingRef.current = false; setPeer("");
+            setReason("REGISTRATION_TIMEOUT"); setState("error");
+          }, 30_000);
         }
-      });
-      ua.on("disconnected", () => {
-        if (cancelled) return;
-        registeredRef.current = false; startTimeout(); setReason("CONNECTION_FAILED");
-        if (!sessionRef.current) setState("registering");
-      });
-      ua.on("unregistered", () => { if (!cancelled) { registeredRef.current = false; startTimeout(); if (!sessionRef.current) setState("registering"); } });
-      ua.on("newRTCSession", (event) => {
-        if (cancelled || !event?.session) return;
-        if (sessionRef.current && sessionRef.current !== event.session) { event.session.terminate({ status_code: 486, reason_phrase: "Busy Here" }); return; }
-        const session = event.session;
-        sessionRef.current = session;
-        setPeer(session.remote_identity?.uri?.user || "");
-        session.on("peerconnection", (data) => attachAudio(session, data?.peerconnection));
-        session.on("accepted", () => { if (cancelled) return; setState("in-call"); attachAudio(session); });
-        session.on("confirmed", () => { if (cancelled) return; setState("in-call"); attachAudio(session); });
-        const finish = () => {
-          if (cancelled || sessionRef.current !== session) return;
-          sessionRef.current = null;
-          if (audioRef.current) audioRef.current.srcObject = null;
-          setPeer("");
-          setState(registeredRef.current ? "ready" : "registering");
+        ua.start();
+      }
+      if ("key" in activeConfig) {
+        const prepareIncoming = async (decline = false) => {
+          if (!pendingPushRef.current || sessionRef.current || sipStartingRef.current) return;
+          pendingPushRef.current = false; sipStartingRef.current = true; setState("connecting");
+          try { await startSip(!decline, decline); }
+          catch { if (!cancelled) { sipStartingRef.current = false; setReason("CONNECTION_FAILED"); setState("error"); } }
         };
-        session.on("ended", finish);
-        session.on("failed", (data) => { if (cancelled) return; finish(); setReason(sipFailureReason(data?.cause)); });
-        if (event.originator === "remote") {
-          setState("incoming");
-          window.parent.postMessage({ type: "crm:sip-incoming" }, window.location.origin);
-        } else {
-          setState("connecting");
-        }
-      });
-      ua.start();
+        answerPushRef.current = () => prepareIncoming();
+        declinePushRef.current = () => prepareIncoming(true);
+        closePush = await openZadarmaPush(activeConfig, {
+          ready: () => {
+            if (cancelled) return;
+            pushConnectedRef.current = true; registeredRef.current = true;
+            clearTimeout(registrationTimer); setReason("");
+            if (!sessionRef.current && !pendingPushRef.current && !sipStartingRef.current) setState("ready");
+          },
+          disconnected: () => {
+            if (cancelled) return;
+            pushConnectedRef.current = false; registeredRef.current = false;
+            if (!sessionRef.current && !pendingPushRef.current && !sipStartingRef.current) { setState("registering"); startTimeout(); }
+          },
+          incoming: (caller) => {
+            if (cancelled || sessionRef.current || pendingPushRef.current || sipStartingRef.current) return;
+            pendingPushRef.current = true; setPeer(caller); setReason(""); setState("incoming");
+            window.parent.postMessage({ type: "crm:sip-incoming" }, window.location.origin);
+          },
+          ended: () => {
+            if (cancelled || sessionRef.current || (!pendingPushRef.current && !sipStartingRef.current)) return;
+            pendingPushRef.current = false; sipStartingRef.current = false; setPeer("");
+            clearTimeout(registrationTimer);
+            const previous = uaRef.current; uaRef.current = null; previous?.stop();
+            setState(pushConnectedRef.current ? "ready" : "registering");
+          },
+        }, controller.signal);
+        if (cancelled) closePush();
+      } else await startSip();
     }
 
     boot().catch((error) => {
@@ -161,7 +235,8 @@ export function ZadarmaWebrtcWidget() {
       }
     });
     return () => {
-      cancelled = true; controller.abort(); clearTimeout(registrationTimer); registeredRef.current = false;
+      cancelled = true; controller.abort(); closePush?.(); clearTimeout(registrationTimer); registeredRef.current = false;
+      pushConnectedRef.current = false; pendingPushRef.current = false; sipStartingRef.current = false; answerPushRef.current = null; declinePushRef.current = null;
       try { sessionRef.current?.terminate(); } catch { /* Already ended. */ }
       uaRef.current?.stop();
       sessionRef.current = null;
@@ -171,10 +246,10 @@ export function ZadarmaWebrtcWidget() {
 
   function answer() {
     const session = sessionRef.current;
-    if (!session) return;
+    if (!session) { void answerPushRef.current?.(); return; }
     try {
       setState("connecting");
-      session.answer({ mediaConstraints: { audio: true, video: false } });
+      session.answer({ mediaConstraints: { audio: true, video: false }, pcConfig: { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] } });
     } catch (error) {
       setReason(sipFailureReason(error instanceof Error ? error.name : undefined));
       setState("error");
@@ -182,6 +257,8 @@ export function ZadarmaWebrtcWidget() {
   }
 
   function hangup() {
+    if (!sessionRef.current && sipStartingRef.current) { sipStartingRef.current = false; pendingPushRef.current = true; }
+    if (!sessionRef.current && pendingPushRef.current) { void declinePushRef.current?.(); return; }
     try { sessionRef.current?.terminate(); } catch { /* Already ended. */ }
     sessionRef.current = null;
     setPeer("");

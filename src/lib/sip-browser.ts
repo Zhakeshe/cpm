@@ -1,6 +1,6 @@
 import { ZADARMA_WEBRTC_CALLBACK, parseZadarmaWebrtcData } from "./zadarma-webrtc-data";
 
-export const SIP_CLIENT_VERSION = "browser-auth-v1";
+export const SIP_CLIENT_VERSION = "browser-push-v2";
 export type ZadarmaBrowserBootstrap = { provider: "zadarma"; key: string; sip: string };
 
 /** Fetch credentials from the same browser/network that opens the provider WebSocket. */
